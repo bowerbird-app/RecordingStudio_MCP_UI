@@ -1,16 +1,16 @@
 <%= render FlatPack::Card::Component.new(style: :elevated) do |card| %>
   <% card.header do %>
     <%= render FlatPack::PageTitle::Component.new(
-      title: title.to_s,
-      subtitle: "Project preview",
+      title: "Project preview",
       variant: :h3,
       class: "mb-0 pb-0"
     ) %>
   <% end %>
   <% card.body do %>
     <div class="mcp-ui-card">
+      <h3 data-mcp-text="title"><%= ERB::Util.html_escape(title.to_s) %></h3>
       <p data-mcp-text="description"><%= ERB::Util.html_escape(description.to_s) %></p>
-      <%= render FlatPack::Badge::Component.new(text: status.to_s, style: :info) %>
+      <p data-mcp-text="status"><%= ERB::Util.html_escape(status.to_s) %></p>
     </div>
   <% end %>
 <% end %>

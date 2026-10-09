@@ -46,7 +46,29 @@ class McpProjectWidgetsTest < ActionDispatch::IntegrationTest
     assert_equal "ui://projects/editor", update.dig("_meta", "ui", "resourceUri")
   end
 
+  test "every registered widget packages with empty data" do
+    widgets = RecordingStudio::MCP_UI.list
+    refute_empty widgets
+
+    widgets.each do |widget|
+      document = RecordingStudio::MCP_UI.package(widget.id, data: {})
+      assert document.html.present?, widget.id
+      assert_includes document.html, "mcp-ui-config"
+    end
+  end
+
   test "resources read returns the packaged widget html" do
+    post "/recording_studio_mcp",
+         params: rpc("resources/read", uri: "ui://projects/preview").to_json,
+         headers: json_headers("Authorization" => "Bearer #{@token}")
+
+    assert_response :success, response.body
+    preview = JSON.parse(response.body)
+    refute preview["error"], preview.inspect
+    preview_html = (preview.dig("result", "contents") || preview.dig("result", "content")).first.fetch("text")
+    assert_includes preview_html, "mcp-ui-config"
+    assert_includes preview_html, "data-mcp-text=\"title\""
+
     post "/recording_studio_mcp",
          params: rpc("resources/read", uri: "ui://projects/editor").to_json,
          headers: json_headers("Authorization" => "Bearer #{@token}")
@@ -59,6 +81,25 @@ class McpProjectWidgetsTest < ActionDispatch::IntegrationTest
     assert_includes html, "mcp-ui-config"
     assert_includes html, "projects.update"
     assert_includes html, "McpApps"
+  end
+
+  test "projects show returns fields at the top of structuredContent" do
+    post "/recording_studio_mcp",
+         params: rpc("tools/call", name: "projects.show", arguments: { id: @project.id }).to_json,
+         headers: json_headers("Authorization" => "Bearer #{@token}")
+
+    assert_response :success, response.body
+    payload = JSON.parse(response.body)
+    refute payload.dig("result", "isError"), payload.inspect
+    body = payload.dig("result", "structuredContent")
+    assert body, payload.inspect
+    refute body.key?("json"), body.inspect
+
+    assert_equal @project.id, body["id"]
+    assert_equal "Widget House", body["title"]
+    assert_equal "A project the widget can edit.", body["description"]
+    assert_equal "active", body["status"]
+    assert_equal @project.revision, body["revision"]
   end
 
   test "calling the real update tool persists the project" do
