@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dummy mounts API, Oauth, MCP, and Users so project widgets can be tried from an MCP Apps client over a tunnel.
 - `mcpUI.execute` talks only to a connected View SDK host. Dummy and JS tests mock that host over `postMessage`.
 - The runtime registers `ontoolresult` before `connect()` and applies `structuredContent` from the host tool-result notification.
+- Boot binds every `[data-mcp-text]` node from `mcpUI.data()` after start and on each `onData`.
 - `Configuration#to_h` uses `RecordingStudio::Hooks#registered_counts`.
 
 ### Removed

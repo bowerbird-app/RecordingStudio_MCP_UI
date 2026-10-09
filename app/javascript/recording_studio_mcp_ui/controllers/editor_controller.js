@@ -58,7 +58,6 @@
 
     setErrors(rootEl, {});
     setStatus(rootEl, "", "");
-    Object.keys(root.mcpUI.data()).forEach(function () {});
     all(rootEl, "[data-mcp-field]").forEach(function (input) {
       bindField(input, root.mcpUI.data());
       input.addEventListener("input", function () {
@@ -75,10 +74,6 @@
       all(rootEl, "[data-mcp-field]").forEach(function (input) {
         if (document.activeElement === input && meta.dirty) return;
         bindField(input, data);
-      });
-      all(rootEl, "[data-mcp-text]").forEach(function (node) {
-        var field = node.getAttribute("data-mcp-text");
-        if (data[field] != null) node.textContent = data[field];
       });
       rootEl.classList.toggle("is-dirty", !!meta.dirty);
     });

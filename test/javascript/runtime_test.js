@@ -7,7 +7,8 @@ const { attachMockHost } = require("./mcp_apps_host_mock");
 
 const ENGINE_JS = path.join(__dirname, "../../app/javascript/recording_studio_mcp_ui");
 
-function fakeDocument(config) {
+function fakeDocument(config, extras) {
+  extras = extras || {};
   const element = {
     style: {},
     getAttribute() { return null; },
@@ -24,14 +25,19 @@ function fakeDocument(config) {
       return null;
     },
     querySelector() { return null; },
-    querySelectorAll() { return []; },
+    querySelectorAll(selector) {
+      if (selector === "[data-mcp-text]") return extras.textNodes || [];
+      if (selector === "[data-controller~='mcp-editor']") return extras.editorRoots || [];
+      return [];
+    },
     addEventListener() {},
     createElement() { return { style: {}, textContent: "" }; },
     head: { appendChild() {} }
   };
 }
 
-function windowStub(config) {
+function windowStub(config, extras) {
+  extras = extras || {};
   const windowLike = {
     innerWidth: 400,
     location: { origin: "https://example.test", pathname: "/", search: "" },
@@ -46,7 +52,7 @@ function windowStub(config) {
       disconnect() {}
     },
     requestAnimationFrame(fn) { fn(); },
-    document: fakeDocument(config),
+    document: fakeDocument(config, extras),
     postMessage() {}
   };
   windowLike.window = windowLike;
@@ -219,6 +225,47 @@ test("ontoolresult applies structuredContent when registered before connect", as
     structuredContent: { title: "Nope" }
   });
   assert.equal(ctx.mcpUI.data().title, "Widget House");
+});
+
+test("preview data-mcp-text binds after a tool-result that arrives before boot finishes", async () => {
+  const title = { textContent: "", getAttribute(name) { return name === "data-mcp-text" ? "title" : null; } };
+  const description = { textContent: "", getAttribute(name) { return name === "data-mcp-text" ? "description" : null; } };
+  const status = { textContent: "", getAttribute(name) { return name === "data-mcp-text" ? "status" : null; } };
+  const windowLike = windowStub(
+    { widgetId: "projects.preview", data: {} },
+    { textNodes: [ title, description, status ] }
+  );
+  windowLike.parent = { postMessage() {} };
+  windowLike.McpApps = {
+    App: function App() {
+      this.callServerTool = function () { return Promise.resolve({}); };
+    },
+    PostMessageTransport: function PostMessageTransport() {}
+  };
+  Object.defineProperty(windowLike.McpApps.App.prototype, "ontoolresult", {
+    configurable: true,
+    get() { return this._ontoolresult; },
+    set(fn) { this._ontoolresult = fn; }
+  });
+  windowLike.McpApps.App.prototype.connect = function connect() {
+    this._ontoolresult({
+      content: [],
+      structuredContent: {
+        title: "Widget House",
+        description: "A coastal recording project.",
+        status: "active"
+      }
+    });
+    return Promise.resolve();
+  };
+
+  loadEngine(windowLike, { sdk: false, boot: true });
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.equal(title.textContent, "Widget House");
+  assert.equal(description.textContent, "A coastal recording project.");
+  assert.equal(status.textContent, "active");
 });
 
 test("execute maps the alias to the real tool name in callServerTool", async () => {
