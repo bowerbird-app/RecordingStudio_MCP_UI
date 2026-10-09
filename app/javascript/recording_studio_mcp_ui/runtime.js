@@ -17,15 +17,15 @@
     }
   }
 
-  function notify() {
+  function notify(dataChanged) {
     listeners.slice().forEach(function (listener) {
-      listener(data, { dirty: dirty });
+      listener(data, { dirty: dirty, dataChanged: !!dataChanged });
     });
   }
 
   function setData(next) {
     data = next && typeof next === "object" ? next : {};
-    notify();
+    notify(true);
   }
 
   function textContent(result) {

@@ -100,7 +100,7 @@ A tool result that opens or updates a widget uses this shape in `structuredConte
 - Record fields at the top level (`id`, `title`, …), or
 - `{ "ok": true, "data": { …record fields }, "contextUpdate": "…" }`
 
-The view unwraps `data` when present and treats `contextUpdate` as the optional model-context string (camelCase, not `context_update`).
+The view unwraps `data` when present and treats `contextUpdate` as the optional model-context string (camelCase, not `context_update`). Editor fields re-bind from that record only when data changes, not when the form is marked dirty.
 
 ### 3. Visibility
 

@@ -71,10 +71,11 @@
     });
 
     root.mcpUI.onData(function (data, meta) {
-      all(rootEl, "[data-mcp-field]").forEach(function (input) {
-        if (document.activeElement === input && meta.dirty) return;
-        bindField(input, data);
-      });
+      if (meta.dataChanged) {
+        all(rootEl, "[data-mcp-field]").forEach(function (input) {
+          bindField(input, data);
+        });
+      }
       rootEl.classList.toggle("is-dirty", !!meta.dirty);
     });
 

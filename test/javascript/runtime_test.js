@@ -269,21 +269,47 @@ test("preview data-mcp-text binds after a tool-result that arrives before boot f
 });
 
 function inputField(name, value) {
+  const listeners = {};
   return {
     type: "text",
     value: value == null ? "" : String(value),
     getAttribute(attr) { return attr === "name" ? name : null; },
-    addEventListener() {},
+    addEventListener(type, fn) {
+      (listeners[type] = listeners[type] || []).push(fn);
+    },
+    dispatch(type) {
+      (listeners[type] || []).forEach((fn) => fn());
+    },
     dataset: {}
   };
 }
 
-function editorRoot(fields) {
+function actionButton(attr, value) {
+  const listeners = {};
+  const attrs = {};
+  attrs[attr] = value;
+  return {
+    disabled: false,
+    getAttribute(name) { return Object.prototype.hasOwnProperty.call(attrs, name) ? attrs[name] : null; },
+    addEventListener(type, fn) {
+      (listeners[type] = listeners[type] || []).push(fn);
+    },
+    dispatch(type) {
+      (listeners[type] || []).forEach((fn) => fn());
+    }
+  };
+}
+
+function editorRoot(fields, extras) {
+  extras = extras || {};
   return {
     classList: { toggle() {}, add() {} },
     querySelector() { return null; },
     querySelectorAll(selector) {
       if (selector === "[data-mcp-field]") return fields;
+      if (selector === "[data-mcp-save]") return extras.saveButtons || [];
+      if (selector === "[data-mcp-reset]") return extras.resetButtons || [];
+      if (selector === "[data-mcp-error]") return extras.errorNodes || [];
       return [];
     }
   };
@@ -388,6 +414,82 @@ test("ChatGPT update tool result opens the editor with Mountain Lodge pre-filled
   assert.equal(statusField.value, "active");
   assert.equal(idField.value, "cabin-9");
   assert.equal(revisionField.value, "2");
+});
+
+test("editor save sends typed values after blur and reset restores opening data", async () => {
+  const opening = {
+    id: "proj-1",
+    title: "warehouse",
+    description: "A coastal recording project.",
+    status: "active",
+    revision: 1
+  };
+  const titleField = inputField("title", "");
+  const descriptionField = inputField("description", "");
+  const statusField = inputField("status", "");
+  const idField = inputField("id", "");
+  const revisionField = inputField("revision", "");
+  const saveButton = actionButton("data-mcp-save", "save");
+  const resetButton = actionButton("data-mcp-reset", "reset");
+  const windowLike = windowStub(
+    { widgetId: "projects.editor", actions: { save: "projects.update" }, data: opening },
+    {
+      editorRoots: [
+        editorRoot(
+          [ titleField, descriptionField, statusField, idField, revisionField ],
+          { saveButtons: [ saveButton ], resetButtons: [ resetButton ] }
+        )
+      ]
+    }
+  );
+  const calls = [];
+  attachMockHost(windowLike, {
+    onToolCall(params) {
+      calls.push(params);
+      return {
+        ok: true,
+        data: {
+          id: "proj-1",
+          title: "Mountain Lodge",
+          description: "A quiet room with a view.",
+          status: "active",
+          revision: 2
+        }
+      };
+    }
+  });
+
+  loadEngine(windowLike, { sdk: true, boot: true });
+  await new Promise(function (resolve) { setTimeout(resolve, 0); });
+  await new Promise(function (resolve) { setTimeout(resolve, 0); });
+
+  assert.equal(titleField.value, "warehouse");
+  assert.equal(descriptionField.value, "A coastal recording project.");
+
+  titleField.value = "Mountain Lodge";
+  titleField.dispatch("change");
+  descriptionField.value = "A quiet room with a view.";
+  descriptionField.dispatch("change");
+
+  assert.equal(titleField.value, "Mountain Lodge");
+  assert.equal(descriptionField.value, "A quiet room with a view.");
+
+  saveButton.dispatch("click");
+  await new Promise(function (resolve) { setTimeout(resolve, 0); });
+  await new Promise(function (resolve) { setTimeout(resolve, 0); });
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].name, "projects.update");
+  assert.equal(calls[0].arguments.title, "Mountain Lodge");
+  assert.equal(calls[0].arguments.description, "A quiet room with a view.");
+  assert.equal(titleField.value, "Mountain Lodge");
+  assert.equal(descriptionField.value, "A quiet room with a view.");
+  assert.equal(revisionField.value, "2");
+
+  resetButton.dispatch("click");
+  assert.equal(titleField.value, "warehouse");
+  assert.equal(descriptionField.value, "A coastal recording project.");
+  assert.equal(revisionField.value, "1");
 });
 
 test("execute fills blank id and revision from widget data", async () => {

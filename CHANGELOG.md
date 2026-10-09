@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The runtime registers `ontoolresult` before `connect()` and applies `structuredContent` from the host tool-result notification.
 - Boot binds every `[data-mcp-text]` node from `mcpUI.data()` after start and on each `onData`.
 - `ontoolresult` and `execute` share one unwrap: `structuredContent`, then `data`. Dummy writes use `contextUpdate`.
+- Editor fields re-bind only when widget data changes (`applyData` / `reset` / tool result). `markDirty` does not overwrite typed values.
 - `Configuration#to_h` uses `RecordingStudio::Hooks#registered_counts`.
 
 ### Removed
