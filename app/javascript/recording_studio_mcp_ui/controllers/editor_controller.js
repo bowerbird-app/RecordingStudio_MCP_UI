@@ -15,7 +15,7 @@
     if (input.type === "checkbox") {
       input.checked = !!data[name];
     } else if (data[name] != null) {
-      input.value = data[name];
+      input.value = String(data[name]);
     }
   }
 

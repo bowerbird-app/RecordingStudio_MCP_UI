@@ -268,6 +268,156 @@ test("preview data-mcp-text binds after a tool-result that arrives before boot f
   assert.equal(status.textContent, "active");
 });
 
+function inputField(name, value) {
+  return {
+    type: "text",
+    value: value == null ? "" : String(value),
+    getAttribute(attr) { return attr === "name" ? name : null; },
+    addEventListener() {},
+    dataset: {}
+  };
+}
+
+function editorRoot(fields) {
+  return {
+    classList: { toggle() {}, add() {} },
+    querySelector() { return null; },
+    querySelectorAll(selector) {
+      if (selector === "[data-mcp-field]") return fields;
+      return [];
+    }
+  };
+}
+
+function attachFakeApp(windowLike, onConnect) {
+  windowLike.parent = { postMessage() {} };
+  windowLike.McpApps = {
+    App: function App() {
+      this.callServerTool = function () { return Promise.resolve({}); };
+    },
+    PostMessageTransport: function PostMessageTransport() {}
+  };
+  Object.defineProperty(windowLike.McpApps.App.prototype, "ontoolresult", {
+    configurable: true,
+    get() { return this._ontoolresult; },
+    set(fn) { this._ontoolresult = fn; }
+  });
+  windowLike.McpApps.App.prototype.connect = function connect() {
+    if (onConnect) onConnect(this._ontoolresult);
+    return Promise.resolve();
+  };
+}
+
+test("update-shaped tool result binds editor id revision and title", async () => {
+  const idField = inputField("id", "");
+  const revisionField = inputField("revision", "");
+  const titleField = inputField("title", "");
+  const windowLike = windowStub(
+    { widgetId: "projects.editor", actions: { save: "projects.update" }, data: {} },
+    { editorRoots: [ editorRoot([ idField, revisionField, titleField ]) ] }
+  );
+  attachFakeApp(windowLike, function (handler) {
+    handler({
+      content: [],
+      structuredContent: {
+        ok: true,
+        data: {
+          id: "proj-1",
+          title: "Widget House",
+          description: "A coastal recording project.",
+          status: "draft",
+          revision: 3
+        },
+        contextUpdate: "The user updated project proj-1."
+      }
+    });
+  });
+
+  const ctx = loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise(function (resolve) { setTimeout(resolve, 0); });
+
+  assert.equal(ctx.mcpUI.data().id, "proj-1");
+  assert.equal(ctx.mcpUI.data().title, "Widget House");
+  assert.equal(ctx.mcpUI.data().revision, 3);
+  assert.equal(idField.value, "proj-1");
+  assert.equal(revisionField.value, "3");
+  assert.equal(titleField.value, "Widget House");
+});
+
+test("ChatGPT update tool result opens the editor with Mountain Lodge pre-filled", async () => {
+  const chatgptCall = { id: "cabin-9", title: "Mountain Lodge" };
+  const titleField = inputField("title", "");
+  const descriptionField = inputField("description", "");
+  const statusField = inputField("status", "");
+  const idField = inputField("id", "");
+  const revisionField = inputField("revision", "");
+  const windowLike = windowStub(
+    { widgetId: "projects.editor", actions: { save: "projects.update" }, data: {} },
+    { editorRoots: [ editorRoot([ titleField, descriptionField, statusField, idField, revisionField ]) ] }
+  );
+  attachFakeApp(windowLike, function (handler) {
+    handler({
+      name: "projects.update",
+      arguments: chatgptCall,
+      content: [],
+      structuredContent: {
+        ok: true,
+        data: {
+          id: chatgptCall.id,
+          title: chatgptCall.title,
+          description: "A quiet room with a view.",
+          status: "active",
+          revision: 2
+        },
+        contextUpdate: "The user updated project cabin-9. The title is now \"Mountain Lodge\"."
+      }
+    });
+  });
+
+  const ctx = loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise(function (resolve) { setTimeout(resolve, 0); });
+
+  assert.deepEqual(chatgptCall, { id: "cabin-9", title: "Mountain Lodge" });
+  assert.equal(ctx.mcpUI.data().title, "Mountain Lodge");
+  assert.equal(ctx.mcpUI.data().description, "A quiet room with a view.");
+  assert.equal(ctx.mcpUI.data().status, "active");
+  assert.equal(ctx.mcpUI.data().id, "cabin-9");
+  assert.equal(ctx.mcpUI.data().revision, 2);
+  assert.equal(titleField.value, "Mountain Lodge");
+  assert.equal(descriptionField.value, "A quiet room with a view.");
+  assert.equal(statusField.value, "active");
+  assert.equal(idField.value, "cabin-9");
+  assert.equal(revisionField.value, "2");
+});
+
+test("execute fills blank id and revision from widget data", async () => {
+  const windowLike = windowStub({
+    widgetId: "projects.editor",
+    actions: { save: "projects.update" },
+    data: {}
+  });
+  const calls = [];
+  attachMockHost(windowLike, {
+    onToolCall(params) {
+      calls.push(params);
+      return { ok: true, data: { id: "proj-1", title: "Test Update", revision: 5 } };
+    }
+  });
+  const ctx = loadEngine(windowLike);
+  await ctx.mcpUI.start();
+  ctx.mcpUI.applyData({ id: "proj-1", revision: 4, title: "Old" });
+  await ctx.mcpUI.execute("save", {
+    title: "Test Update",
+    description: "Lorem Ipsum",
+    status: "draft",
+    id: "",
+    revision: ""
+  });
+  assert.equal(calls[0].arguments.id, "proj-1");
+  assert.equal(calls[0].arguments.revision, 4);
+  assert.equal(ctx.mcpUI.data().title, "Test Update");
+});
+
 test("execute maps the alias to the real tool name in callServerTool", async () => {
   const windowLike = windowStub({
     widgetId: "projects.editor",

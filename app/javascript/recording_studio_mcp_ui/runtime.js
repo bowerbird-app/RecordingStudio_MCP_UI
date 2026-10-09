@@ -48,11 +48,42 @@
     return name;
   }
 
+  function structuredPayload(result) {
+    if (!result || typeof result !== "object") return null;
+    if (result.structuredContent != null && typeof result.structuredContent === "object") {
+      return result.structuredContent;
+    }
+    return result;
+  }
+
+  function widgetDataFromToolResult(result) {
+    var payload = structuredPayload(result);
+    if (!payload) return null;
+    if (payload.data != null && typeof payload.data === "object") return payload.data;
+    return payload;
+  }
+
   function applyHostToolResult(params) {
     if (!params || params.isError === true) return;
-    var payload = params.structuredContent;
-    if (!payload || typeof payload !== "object") return;
-    mcpUI.applyData(payload);
+    applyAcceptedToolResult(params);
+  }
+
+  function applyAcceptedToolResult(result) {
+    var widgetData = widgetDataFromToolResult(result);
+    if (widgetData) mcpUI.applyData(widgetData);
+    var payload = structuredPayload(result);
+    if (payload && payload.contextUpdate) publishContext(payload.contextUpdate);
+    return payload;
+  }
+
+  function argumentsForCall(payload) {
+    var body = Object.assign({}, payload || {});
+    [ "id", "revision" ].forEach(function (key) {
+      if ((body[key] === "" || body[key] == null) && data[key] != null && data[key] !== "") {
+        body[key] = data[key];
+      }
+    });
+    return body;
   }
 
   function connectApp() {
@@ -125,23 +156,17 @@
         return Promise.reject(new Error("No action transport"));
       }
 
-      var body = Object.assign({}, payload || {});
-      if (data.revision) body.revision = data.revision;
+      var body = argumentsForCall(payload);
 
       return app.callServerTool({ name: toolName, arguments: body }).then(function (result) {
         if (result && result.isError === true) {
           return Promise.reject(mcpToolError(result));
         }
-        var payloadResult = result && result.structuredContent ? result.structuredContent : result;
+        var payloadResult = structuredPayload(result);
         if (payloadResult && payloadResult.ok === false) {
           return Promise.reject(payloadResult);
         }
-        if (payloadResult && payloadResult.data) {
-          mcpUI.applyData(payloadResult.data);
-        }
-        if (payloadResult && payloadResult.contextUpdate) {
-          publishContext(payloadResult.contextUpdate);
-        }
+        applyAcceptedToolResult(result);
         return payloadResult;
       });
     },

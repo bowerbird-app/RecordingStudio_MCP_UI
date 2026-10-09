@@ -124,7 +124,33 @@ class McpProjectWidgetsTest < ActionDispatch::IntegrationTest
     data = body["data"] || body
 
     assert_equal "Updated House", data["title"]
-    assert_equal "Updated House", @project.reload.title
+    assert_equal @project.id, data["id"]
+    assert_equal @project.reload.revision, data["revision"]
+    assert_equal "Updated House", @project.title
     assert_equal "draft", @project.status
+    assert body["contextUpdate"].to_s.include?("Updated House")
+  end
+
+  test "stale revision on the update tool returns a conflict" do
+    post "/recording_studio_mcp",
+         params: rpc(
+           "tools/call",
+           name: "projects.update",
+           arguments: {
+             id: @project.id,
+             title: "Stale House",
+             description: @project.description,
+             status: "draft",
+             revision: @project.revision - 1
+           }
+         ).to_json,
+         headers: json_headers("Authorization" => "Bearer #{@token}")
+
+    assert_response :success, response.body
+    payload = JSON.parse(response.body)
+    body = tool_payload(payload)
+    assert_equal false, body["ok"]
+    assert_equal "conflict", body["error"]
+    assert_equal "Widget House", @project.reload.title
   end
 end

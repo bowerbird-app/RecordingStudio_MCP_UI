@@ -95,6 +95,13 @@ MIME type: `text/html;profile=mcp-app`.
 
 The packaged document already includes the widget's alias-to-tool-name map. Widget JS calls `mcpUI.execute("save", payload)`. The runtime looks up `save` and calls `app.callServerTool({ name: "presskits.update", arguments })`. That is an ordinary MCP `tools/call`. The server's normal tool authorization applies. MCP does not resolve action aliases and does not wire `action_executor` or `visibility_checker`.
 
+A tool result that opens or updates a widget uses this shape in `structuredContent`:
+
+- Record fields at the top level (`id`, `title`, …), or
+- `{ "ok": true, "data": { …record fields }, "contextUpdate": "…" }`
+
+The view unwraps `data` when present and treats `contextUpdate` as the optional model-context string (camelCase, not `context_update`).
+
 ### 3. Visibility
 
 ```ruby

@@ -38,7 +38,7 @@ module Demo
       {
         ok: true,
         data: Demo::ProjectPayload.call(project),
-        context_update: %(The user updated project #{project.id}. The title is now "#{project.title}".)
+        contextUpdate: %(The user updated project #{project.id}. The title is now "#{project.title}".)
       }
     end
 

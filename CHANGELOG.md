@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `mcpUI.execute` talks only to a connected View SDK host. Dummy and JS tests mock that host over `postMessage`.
 - The runtime registers `ontoolresult` before `connect()` and applies `structuredContent` from the host tool-result notification.
 - Boot binds every `[data-mcp-text]` node from `mcpUI.data()` after start and on each `onData`.
+- `ontoolresult` and `execute` share one unwrap: `structuredContent`, then `data`. Dummy writes use `contextUpdate`.
 - `Configuration#to_h` uses `RecordingStudio::Hooks#registered_counts`.
 
 ### Removed
