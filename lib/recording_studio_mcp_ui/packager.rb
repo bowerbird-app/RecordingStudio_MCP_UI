@@ -77,9 +77,7 @@ module RecordingStudio
       end
 
       def action_map
-        @widget.actions.keys.each_with_object({}) do |alias_name, memo|
-          memo[alias_name] = @widget.action_for(alias_name)
-        end
+        @widget.actions.keys.to_h { |alias_name| [alias_name, @widget.action_for(alias_name)] }
       end
 
       def sanitize_data(data)
