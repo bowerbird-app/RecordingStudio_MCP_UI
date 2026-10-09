@@ -7,12 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Packaged documents vendor `@modelcontextprotocol/ext-apps` 2.0.3 (`App`, `PostMessageTransport`) instead of a custom JSON-RPC host.
+
 ## [0.1.0] - 2026-10-09
 
 ### Added
 - RecordingStudio MCP UI engine with in-memory widget registration (`register` / `find` / `list`).
 - ViewComponent rendering and MCP Apps HTML packaging (`text/html;profile=mcp-app`).
-- Shared JavaScript runtime (`mcpUI.execute`, dirty/loading/error state) and MCP Apps host bridge.
+- Shared JavaScript runtime (`mcpUI.execute`, dirty/loading/error state) on the official MCP Apps View SDK.
 - Dummy Project preview and editor demos with a test action adapter that persists real updates.
 - Integration spec for the RecordingStudio API and MCP changes this gem cannot ship.
 

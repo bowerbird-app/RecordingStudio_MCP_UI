@@ -8,30 +8,35 @@
   ) %>
 
   <div id="demo-editor">
-    <%= raw @inner_html %>
+    <%= @inner_html %>
   </div>
 
-  <script type="application/json" id="mcp-ui-config"><%= raw JSON.generate(
-    widgetId: "projects.editor",
-    uri: "ui://projects/editor",
-    mode: "edit",
-    version: "1.0.0",
-    actions: ["save"],
-    data: @data
-  ) %></script>
-  <script><%= raw RecordingStudio::MCP_UI::Assets.javascript %></script>
-  <script>
+  <%= tag.script(
+        JSON.generate(
+          widgetId: "projects.editor",
+          uri: "ui://projects/editor",
+          mode: "edit",
+          version: "1.0.0",
+          actions: ["save"],
+          data: @data
+        ),
+        type: "application/json",
+        id: "mcp-ui-config"
+      ) %>
+  <%= javascript_tag RecordingStudio::MCP_UI::Assets.runtime %>
+  <%= javascript_tag <<~JS
     mcpUI.setFallbackExecutor(function (aliasName, payload) {
-      return fetch(<%= raw save_demo_path(@project).to_json %>, {
+      return fetch(#{save_demo_path(@project).to_json}, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-CSRF-Token": document.querySelector("meta[name='csrf-token']").content
         },
-        body: JSON.stringify(Object.assign({}, payload, { id: <%= raw @project.id.to_json %> }))
+        body: JSON.stringify(Object.assign({}, payload, { id: #{@project.id.to_json} }))
       }).then(function (response) { return response.json(); });
     });
-  </script>
+  JS
+  %>
 
   <p class="text-sm">
     <%= link_to "Open packaged MCP document", document_demo_path(@project, widget: "projects.editor") %>

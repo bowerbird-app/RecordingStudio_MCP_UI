@@ -34,6 +34,7 @@ class PackagerTest < Minitest::Test
     assert_includes document.html, "mcp-ui-root"
     assert_includes document.html, "Content-Security-Policy"
     assert_includes document.html, "mcpUI"
+    assert_includes document.html, "McpApps"
     refute_includes document.html, "secret-token"
     refute_includes document.html, "<script>alert(1)</script>"
     assert_includes document.html, "&lt;script&gt;alert(1)&lt;/script&gt;"

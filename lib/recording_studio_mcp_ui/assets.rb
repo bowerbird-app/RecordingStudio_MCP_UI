@@ -3,15 +3,19 @@
 module RecordingStudio
   module McpUi
     class Assets
-      ENGINE_JS = %w[
-        host_bridge.js
+      SDK_JS = "vendor/ext-apps.iife.js"
+      RUNTIME_JS = %w[
         runtime.js
         controllers/editor_controller.js
         boot.js
       ].freeze
 
       def self.javascript
-        ENGINE_JS.map { |relative| read_engine_js(relative) }.join("\n")
+        [read_engine_js(SDK_JS), runtime].join("\n")
+      end
+
+      def self.runtime
+        RUNTIME_JS.map { |relative| read_engine_js(relative) }.join("\n")
       end
 
       def self.css

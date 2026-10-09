@@ -6,7 +6,6 @@ const vm = require("node:vm");
 
 function loadRuntime(windowLike) {
   const files = [
-    "host_bridge.js",
     "runtime.js",
     "controllers/editor_controller.js",
     "boot.js"
@@ -93,4 +92,34 @@ test("dirty tracking resets", async () => {
   ctx.mcpUI.reset();
   assert.equal(ctx.mcpUI.isDirty(), false);
   assert.equal(ctx.mcpUI.data().title, "A");
+});
+
+test("execute uses official App.callServerTool when connected", async () => {
+  const calls = [];
+  const windowLike = windowStub({
+    widgetId: "projects.editor",
+    version: "1.0.0",
+    actions: ["save"],
+    data: { title: "Old", revision: 1 }
+  });
+  windowLike.parent = { distinct: true };
+  windowLike.McpApps = {
+    App: function App() {
+      this.connect = async function () { return this; };
+      this.callServerTool = async function (params) {
+        calls.push(params);
+        return { structuredContent: { ok: true, data: { title: "Saved", revision: 2 } } };
+      };
+      this.updateModelContext = async function () { return {}; };
+    },
+    PostMessageTransport: function PostMessageTransport() {}
+  };
+
+  const ctx = loadRuntime(windowLike);
+  await ctx.mcpUI.start();
+  assert.ok(ctx.mcpUI.app());
+  const result = await ctx.mcpUI.execute("save", { title: "Saved" });
+  assert.equal(calls[0].name, "save");
+  assert.equal(calls[0].arguments.revision, 1);
+  assert.equal(result.data.title, "Saved");
 });

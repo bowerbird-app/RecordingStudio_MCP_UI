@@ -97,7 +97,7 @@ Packaged documents define `window.mcpUI`:
 - `mcpUI.execute(alias, payload)`
 - `mcpUI.setFallbackExecutor(fn)` — dummy/test only
 
-`McpAppsHost` isolates MCP Apps JSON-RPC (`ui/initialize`, `tools/call`). Widget code does not import the official SDK.
+Host communication uses the official MCP Apps View SDK (`App` + `PostMessageTransport` from `@modelcontextprotocol/ext-apps`). The packaged document vendors that SDK and calls `app.connect()` / `app.callServerTool()` / `app.updateModelContext()`. There is no per-client protocol, sniffing, or host-specific metadata. Clients that cannot load the UI keep the structured tool result.
 
 ## How Flatpack CSS and Stimulus get into widget HTML
 
@@ -106,7 +106,7 @@ Packaged documents define `window.mcpUI`:
 1. `app/assets/stylesheets/recording_studio_mcp_ui/widget.css`
 2. FlatPack `variables.css` and `application.css` from `FlatPack::Engine` when that gem is installed
 3. Optional host compiled CSS from `configuration.compiled_css_path` (dummy uses `app/assets/builds/tailwind.css`)
-4. The engine JS files: `host_bridge.js`, `runtime.js`, `controllers/editor_controller.js`, `boot.js`
+4. The official SDK IIFE (`vendor/ext-apps.iife.js`) plus `runtime.js`, `controllers/editor_controller.js`, and `boot.js`
 
 The document is a self-contained HTML page. It does not assume host importmaps or layout assets. The editor controller is Stimulus-shaped (`data-controller="mcp-editor"`) and talks only through `mcpUI`.
 

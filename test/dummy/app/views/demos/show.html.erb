@@ -7,7 +7,7 @@
     variant: :h1
   ) %>
 
-  <%= raw @inner_html %>
+  <%= @inner_html %>
 
   <p class="text-sm">
     <%= link_to "Open packaged MCP document", document_demo_path(@project, widget: "projects.preview") %>

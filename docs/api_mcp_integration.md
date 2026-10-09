@@ -146,7 +146,7 @@ Keep structured tool results. If the client cannot load `ui://` resources, retur
 
 ### 6. Official MCP Apps SDK
 
-Hosts should use the official Apps SDK / `ui/initialize` handshake. This gem's packaged document speaks that JSON-RPC subset through `McpAppsHost` so third-party widgets do not import the SDK.
+Hosts and views use the official MCP Apps SDK (`@modelcontextprotocol/ext-apps`). This gem vendors the published View SDK and uses `App.connect` / `App.callServerTool` / `App.updateModelContext` only. Do not add client sniffing, per-host branches, host-specific `_meta` keys, or protocol workarounds. If a client cannot render `text/html;profile=mcp-app`, return the structured tool result.
 
 ## Circular dependencies
 

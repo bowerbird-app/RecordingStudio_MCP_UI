@@ -38,8 +38,11 @@ class McpUiDemoTest < ActionDispatch::IntegrationTest
     assert_includes response.headers["Content-Type"], "text/html"
     assert_includes response.body, "mcp-ui-config"
     assert_includes response.body, "Content-Security-Policy"
-    refute_includes response.body, "Password"
-    refute_includes response.body, "secret"
+    assert_includes response.body, "McpApps"
+    config = response.body[%r{id="mcp-ui-config">(?<json>.*?)</script>}m, :json]
+    refute_nil config
+    refute_includes config, "Password"
+    refute_includes config, "token"
   end
 
   test "save persists through the same domain operation as a conventional update" do

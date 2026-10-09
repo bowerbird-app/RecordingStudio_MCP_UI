@@ -6,7 +6,7 @@
   var dirty = false;
   var listeners = [];
   var fallbackExecutor = null;
-  var hostReady = false;
+  var app = null;
 
   function readConfig() {
     var node = document.getElementById("mcp-ui-config");
@@ -33,14 +33,57 @@
     return (config.actions || []).indexOf(aliasName) !== -1;
   }
 
-  function executeThroughHost(aliasName, payload) {
-    if (!root.McpAppsHost || !hostReady) return Promise.reject(new Error("MCP host is not connected"));
-    return root.McpAppsHost.callTool(aliasName, payload);
+  function officialSdk() {
+    return root.McpApps;
+  }
+
+  function connectApp() {
+    var Sdk = officialSdk();
+    if (!Sdk || !Sdk.App || !Sdk.PostMessageTransport) return Promise.resolve(null);
+    if (window.parent === window) return Promise.resolve(null);
+
+    var instance = new Sdk.App(
+      { name: config.widgetId || "recording-studio-mcp-ui", version: config.version || "0.1.0" },
+      {}
+    );
+    var transport = new Sdk.PostMessageTransport(window.parent, window.parent);
+    return instance.connect(transport).then(function () {
+      return instance;
+    }).catch(function () {
+      return null;
+    });
+  }
+
+  function executeThroughApp(aliasName, payload) {
+    if (!app || typeof app.callServerTool !== "function") {
+      return Promise.reject(new Error("MCP Apps host is not connected"));
+    }
+    return app.callServerTool({ name: aliasName, arguments: payload });
+  }
+
+  function contextBlocks(update) {
+    if (typeof update === "string") {
+      return { content: [{ type: "text", text: update }] };
+    }
+    if (update && typeof update === "object") {
+      if (update.content || update.structuredContent) return update;
+      return { structuredContent: update };
+    }
+    return null;
+  }
+
+  function publishContext(update) {
+    var params = contextBlocks(update);
+    if (!params || !app || typeof app.updateModelContext !== "function") return;
+    Promise.resolve(app.updateModelContext(params)).catch(function () {
+      return null;
+    });
   }
 
   var mcpUI = {
     config: function () { return config; },
     data: function () { return data; },
+    app: function () { return app; },
     isDirty: function () { return dirty; },
     onData: function (listener) {
       listeners.push(listener);
@@ -70,8 +113,9 @@
       var body = Object.assign({}, payload || {});
       if (data.revision) body.revision = data.revision;
 
-      var runner = hostReady ? executeThroughHost(aliasName, body) : null;
-      var request = runner || (fallbackExecutor ? fallbackExecutor(aliasName, body) : Promise.reject(new Error("No action transport")));
+      var request = app
+        ? executeThroughApp(aliasName, body)
+        : (fallbackExecutor ? fallbackExecutor(aliasName, body) : Promise.reject(new Error("No action transport")));
 
       return Promise.resolve(request).then(function (result) {
         var payloadResult = result && result.structuredContent ? result.structuredContent : result;
@@ -81,8 +125,8 @@
         if (payloadResult && payloadResult.data) {
           mcpUI.applyData(payloadResult.data);
         }
-        if (payloadResult && payloadResult.contextUpdate && root.McpAppsHost && hostReady) {
-          root.McpAppsHost.updateModelContext(payloadResult.contextUpdate);
+        if (payloadResult && payloadResult.contextUpdate) {
+          publishContext(payloadResult.contextUpdate);
         }
         return payloadResult;
       });
@@ -90,17 +134,10 @@
     start: function () {
       config = readConfig();
       setData(config.data || {});
-      if (root.McpAppsHost && window.parent !== window) {
-        return root.McpAppsHost.initialize({ name: config.widgetId, version: config.version }).then(function () {
-          hostReady = true;
-          root.McpAppsHost.onNotification("notifications/tools/list_changed", function () {});
-          return config;
-        }).catch(function () {
-          hostReady = false;
-          return config;
-        });
-      }
-      return Promise.resolve(config);
+      return connectApp().then(function (instance) {
+        app = instance;
+        return config;
+      });
     }
   };
 
