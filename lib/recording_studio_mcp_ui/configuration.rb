@@ -19,7 +19,7 @@ module RecordingStudio
           action_executor: !action_executor.nil?,
           visibility_checker: !visibility_checker.nil?,
           compiled_css_path: compiled_css_path,
-          hooks_registered: hooks.instance_variable_get(:@registry).transform_values(&:size)
+          hooks_registered: hooks.registered_counts
         }
       end
 

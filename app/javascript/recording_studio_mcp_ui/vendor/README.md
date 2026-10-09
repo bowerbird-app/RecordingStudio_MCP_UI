@@ -1,15 +1,17 @@
 # Vendored official MCP Apps SDK
 
-This directory contains the official `@modelcontextprotocol/ext-apps` View SDK
-(`App`, `PostMessageTransport`) bundled as an IIFE from the published
-`app-with-deps` entry. Version: **2.0.3**.
+`ext-apps.iife.js` is `@modelcontextprotocol/ext-apps` **2.0.3** `app-with-deps`,
+bundled without source edits so a classic `<script>` can expose `App` and
+`PostMessageTransport` as `window.McpApps`.
 
-It is not a host-specific adapter. Rebuild:
+Regenerate (do not hand-edit the IIFE):
 
 ```bash
-npm install --prefix /tmp/mcp-apps-sdk @modelcontextprotocol/ext-apps@2.0.3 esbuild
-# wrap.mjs: export { App, PostMessageTransport } from "@modelcontextprotocol/ext-apps/app-with-deps"
-npx --prefix /tmp/mcp-apps-sdk esbuild wrap.mjs --bundle --format=iife --global-name=McpApps --outfile=ext-apps.iife.js
+npm run vendor:ext-apps
 ```
 
-License: see `LICENSE.ext-apps` (Apache-2.0 / MIT as published by the MCP project).
+That runs `script/vendor_ext_apps.mjs`, which installs
+`@modelcontextprotocol/ext-apps@2.0.3` and `esbuild@0.25.12` in a temp
+directory and writes this file.
+
+License: `LICENSE.ext-apps` as published by the MCP project.

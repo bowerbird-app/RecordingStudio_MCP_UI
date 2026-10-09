@@ -5,7 +5,6 @@
   var data = {};
   var dirty = false;
   var listeners = [];
-  var fallbackExecutor = null;
   var app = null;
 
   function readConfig() {
@@ -33,12 +32,8 @@
     return (config.actions || []).indexOf(aliasName) !== -1;
   }
 
-  function officialSdk() {
-    return root.McpApps;
-  }
-
   function connectApp() {
-    var Sdk = officialSdk();
+    var Sdk = root.McpApps;
     if (!Sdk || !Sdk.App || !Sdk.PostMessageTransport) return Promise.resolve(null);
     if (window.parent === window) return Promise.resolve(null);
 
@@ -52,13 +47,6 @@
     }).catch(function () {
       return null;
     });
-  }
-
-  function executeThroughApp(aliasName, payload) {
-    if (!app || typeof app.callServerTool !== "function") {
-      return Promise.reject(new Error("MCP Apps host is not connected"));
-    }
-    return app.callServerTool({ name: aliasName, arguments: payload });
   }
 
   function contextBlocks(update) {
@@ -83,7 +71,6 @@
   var mcpUI = {
     config: function () { return config; },
     data: function () { return data; },
-    app: function () { return app; },
     isDirty: function () { return dirty; },
     onData: function (listener) {
       listeners.push(listener);
@@ -103,21 +90,18 @@
       dirty = false;
       setData(config.data || {});
     },
-    setFallbackExecutor: function (executor) {
-      fallbackExecutor = executor;
-    },
     execute: function (aliasName, payload) {
       if (!allowedAction(aliasName)) {
         return Promise.reject({ error: "unauthorized_action", message: "Action is not registered for this widget" });
       }
+      if (!app || typeof app.callServerTool !== "function") {
+        return Promise.reject(new Error("No action transport"));
+      }
+
       var body = Object.assign({}, payload || {});
       if (data.revision) body.revision = data.revision;
 
-      var request = app
-        ? executeThroughApp(aliasName, body)
-        : (fallbackExecutor ? fallbackExecutor(aliasName, body) : Promise.reject(new Error("No action transport")));
-
-      return Promise.resolve(request).then(function (result) {
+      return app.callServerTool({ name: aliasName, arguments: body }).then(function (result) {
         var payloadResult = result && result.structuredContent ? result.structuredContent : result;
         if (payloadResult && payloadResult.ok === false) {
           return Promise.reject(payloadResult);

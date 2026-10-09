@@ -2,6 +2,7 @@
   "name": "recording-studio-mcp-ui",
   "private": true,
   "scripts": {
-    "test": "node --test test/javascript/*_test.js"
+    "test": "node --test test/javascript/*_test.js",
+    "vendor:ext-apps": "node script/vendor_ext_apps.mjs"
   }
 }

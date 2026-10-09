@@ -94,8 +94,7 @@ Packaged documents define `window.mcpUI`:
 - `mcpUI.data()` / `mcpUI.applyData(data)` / `mcpUI.reset()`
 - `mcpUI.markDirty()` / `mcpUI.isDirty()`
 - `mcpUI.onData(listener)`
-- `mcpUI.execute(alias, payload)`
-- `mcpUI.setFallbackExecutor(fn)` — dummy/test only
+- `mcpUI.execute(alias, payload)` — `tools/call` through the official View SDK, or rejects with `No action transport` when no host is connected
 
 Host communication uses the official MCP Apps View SDK (`App` + `PostMessageTransport` from `@modelcontextprotocol/ext-apps`). The packaged document vendors that SDK and calls `app.connect()` / `app.callServerTool()` / `app.updateModelContext()`. There is no per-client protocol, sniffing, or host-specific metadata. Clients that cannot load the UI keep the structured tool result.
 

@@ -30,8 +30,8 @@ class McpUiDemoTest < ActionDispatch::IntegrationTest
   test "editor widget renders fields and packaged document includes runtime" do
     get edit_demo_path(@project)
     assert_response :success
-    assert_includes response.body, 'data-controller="mcp-editor"'
-    assert_includes response.body, "mcpUI"
+    assert_includes response.body, "mcp-ui-frame"
+    assert_includes response.body, document_demo_path(@project, widget: "projects.editor")
 
     get document_demo_path(@project, widget: "projects.editor")
     assert_response :success

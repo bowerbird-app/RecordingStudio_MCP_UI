@@ -17,9 +17,9 @@ var McpApps = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // wrap.mjs
-  var wrap_exports = {};
-  __export(wrap_exports, {
+  // entry.mjs
+  var entry_exports = {};
+  __export(entry_exports, {
     App: () => OO,
     PostMessageTransport: () => l1
   });
@@ -85,7 +85,7 @@ var McpApps = (() => {
       return N?._zod?.traits?.has($7);
     } }), Object.defineProperty(U, "name", { value: $7 }), U;
   }
-  var h1 = /* @__PURE__ */ Symbol("zod_brand");
+  var h1 = Symbol("zod_brand");
   var y$ = class extends Error {
     constructor() {
       super("Encountered Promise during synchronous parse. Use .parseAsync() instead.");
@@ -153,7 +153,7 @@ var McpApps = (() => {
     let I = _ > v ? _ : v, U = Number.parseInt($7.toFixed(I).replace(".", "")), N = Number.parseInt(g.toFixed(I).replace(".", ""));
     return U % N / 10 ** I;
   }
-  var Bw = /* @__PURE__ */ Symbol("evaluating");
+  var Bw = Symbol("evaluating");
   function f($7, g, _) {
     let D = void 0;
     Object.defineProperty($7, g, { get() {
@@ -4560,8 +4560,8 @@ var McpApps = (() => {
     return { localeError: S2() };
   }
   var sw;
-  var sJ = /* @__PURE__ */ Symbol("ZodOutput");
-  var $z = /* @__PURE__ */ Symbol("ZodInput");
+  var sJ = Symbol("ZodOutput");
+  var $z = Symbol("ZodInput");
   var vz = class {
     constructor() {
       this._map = /* @__PURE__ */ new WeakMap(), this._idmap = /* @__PURE__ */ new Map();
@@ -6575,7 +6575,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
   var gD = $D.merge(vD);
   var L1 = w({ error: b(), error_description: b().optional() }).strip();
   var R1 = w({ token: b(), token_type_hint: b().optional() }).strip();
-  var xW = /* @__PURE__ */ Symbol.for("mcp.sdk.errorBrands");
+  var xW = Symbol.for("mcp.sdk.errorBrands");
   function K4($7, g) {
     let _ = /* @__PURE__ */ new Set(), D = g;
     while (typeof D === "function") {
@@ -6826,7 +6826,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
   function MY($7) {
     return TY.includes($7);
   }
-  var nW = /* @__PURE__ */ Symbol("modelcontextprotocol.resultCacheHintFallback");
+  var nW = Symbol("modelcontextprotocol.resultCacheHintFallback");
   function LY($7) {
     return $7[nW];
   }
@@ -8387,5 +8387,5 @@ container holding the app. Specify either width or maxWidth, and either height o
       }
     }
   };
-  return __toCommonJS(wrap_exports);
+  return __toCommonJS(entry_exports);
 })();
