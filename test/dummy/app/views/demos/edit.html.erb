@@ -1,0 +1,24 @@
+<% dummy_page_nav(title: "Project editor", back_url: demo_path(@project)) %>
+
+<div class="flex w-full flex-col gap-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Demo B — project editor",
+    subtitle: "Dirty state, validation, authorization, conflicts, and a real persisted save.",
+    variant: :h1
+  ) %>
+
+  <iframe
+    id="mcp-ui-frame"
+    class="min-h-96 w-full rounded-lg border border-current"
+    src="<%= document_demo_path(@project, widget: "projects.editor") %>"
+    data-save-url="<%= save_demo_path(@project) %>"
+    data-project-id="<%= @project.id %>"
+    sandbox="allow-scripts allow-same-origin"
+    title="Project editor"
+  ></iframe>
+  <%= javascript_tag Rails.root.join("app/javascript/mcp_apps_demo_host.js").read %>
+
+  <p class="text-sm">
+    <%= link_to "Open packaged MCP document", document_demo_path(@project, widget: "projects.editor") %>
+  </p>
+</div>

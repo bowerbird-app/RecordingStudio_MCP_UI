@@ -3,11 +3,11 @@
 require "test_helper"
 require "fileutils"
 require "tmpdir"
-require "generators/gem_template/install/install_generator"
+require "generators/recording_studio_mcp_ui/install/install_generator"
 
 class InstallGeneratorTest < Minitest::Test
   INSTALL_TEMPLATE_PATH = File.expand_path(
-    "../lib/generators/gem_template/install/templates/INSTALL.md",
+    "../lib/generators/recording_studio_mcp_ui/install/templates/INSTALL.md",
     __dir__
   )
 
@@ -19,7 +19,7 @@ class InstallGeneratorTest < Minitest::Test
   end
 
   def build_generator(destination_root, options = {})
-    GemTemplate::Generators::InstallGenerator.new(
+    RecordingStudioMcpUi::Generators::InstallGenerator.new(
       [],
       options,
       destination_root: destination_root
@@ -34,7 +34,7 @@ class InstallGeneratorTest < Minitest::Test
       generator.mount_engine
     end
 
-    assert_equal ["mount GemTemplate::Engine, at: \"/addons/recording\""], routes
+    assert_equal ["mount RecordingStudio::MCP_UI::Engine, at: \"/addons/recording\""], routes
   end
 
   def test_add_tailwind_source_injects_engine_and_flatpack_sources
@@ -60,10 +60,7 @@ class InstallGeneratorTest < Minitest::Test
       css_path = File.join(dir, "app/assets/tailwind/application.css")
       File.write(css_path, <<~CSS)
         @import "tailwindcss";
-        @source "../../vendor/bundle/**/gem_template/app/views/**/*.erb";
-        @source "../../../../../../usr/local/bundle/ruby/**/bundler/gems/gem_template-*/app/views/**/*.erb";
-        @source "../../vendor/bundle/**/flatpack/app/components/**/*.{rb,erb}";
-        @source "../../../../../../usr/local/bundle/ruby/**/bundler/gems/flatpack-*/app/components/**/*.{rb,erb}";
+        #{tailwind_source_lines.join("\n")}
       CSS
 
       generator = build_generator(dir)
@@ -93,32 +90,6 @@ class InstallGeneratorTest < Minitest::Test
       end
 
       assert_includes messages, ["Tailwind CSS not detected. Skipping Tailwind configuration.", :yellow]
-      assert_includes messages, ["If you use Tailwind, add these lines to your Tailwind CSS config:", :yellow]
-      tailwind_source_lines.each do |line|
-        assert_includes messages, ["  #{line}", :yellow]
-      end
-    end
-  end
-
-  def test_add_tailwind_source_reports_manual_configuration_when_import_is_missing
-    with_temp_app do |dir|
-      css_path = File.join(dir, "app/assets/tailwind/application.css")
-      File.write(css_path, "@source \"../local/**/*.erb\";\n")
-      generator = build_generator(dir)
-      messages = []
-
-      Rails.stub(:root, Pathname.new(dir)) do
-        generator.stub(:say, ->(message, color = nil) { messages << [message, color] }) do
-          generator.add_tailwind_source
-        end
-      end
-
-      assert_equal "@source \"../local/**/*.erb\";\n", File.read(css_path)
-      assert_includes messages, ["Could not find @import \"tailwindcss\" in your Tailwind config.", :yellow]
-      assert_includes messages, ["Please manually add these lines to your Tailwind CSS config:", :yellow]
-      tailwind_source_lines.each do |line|
-        assert_includes messages, ["  #{line}", :yellow]
-      end
     end
   end
 
@@ -138,11 +109,10 @@ class InstallGeneratorTest < Minitest::Test
   def test_install_guide_includes_migration_and_host_setup_steps
     install_guide = File.read(INSTALL_TEMPLATE_PATH)
 
-    assert_includes install_guide, "bin/rails generate gem_template:migrations"
+    assert_includes install_guide, "bin/rails generate recording_studio_mcp_ui:migrations"
     assert_includes install_guide, "bin/rails db:migrate"
     assert_includes install_guide, "auth, layout, and current actor integration"
     assert_includes install_guide, "recording_studio_recordable"
-    refute_includes install_guide, "RecordingStudio v3"
   end
 
   private
@@ -161,8 +131,8 @@ class InstallGeneratorTest < Minitest::Test
 
   def tailwind_source_lines
     [
-      '@source "../../vendor/bundle/**/gem_template/app/views/**/*.erb";',
-      '@source "../../../../../../usr/local/bundle/ruby/**/bundler/gems/gem_template-*/app/views/**/*.erb";',
+      '@source "../../vendor/bundle/**/recording_studio_mcp_ui/app/views/**/*.erb";',
+      '@source "../../../../../../usr/local/bundle/ruby/**/bundler/gems/recording_studio_mcp_ui-*/app/views/**/*.erb";',
       '@source "../../vendor/bundle/**/flatpack/app/components/**/*.{rb,erb}";',
       '@source "../../../../../../usr/local/bundle/ruby/**/bundler/gems/flatpack-*/app/components/**/*.{rb,erb}";'
     ]

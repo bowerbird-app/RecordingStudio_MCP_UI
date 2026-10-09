@@ -12,5 +12,6 @@
 @source "../../../vendor/engines/flat_pack/app/components";
 @source "../../../vendor/engines/recording_studio/app/views";
 
-/* Include the engine's views in the Tailwind build */
+/* Include the engine's views and dummy widget components in the Tailwind build */
 @source "../../../../../app/views/**/*.erb";
+@source "../../components/**/*.{rb,erb}";

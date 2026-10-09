@@ -1,0 +1,17 @@
+<% dummy_page_nav(title: "Project preview", back_url: root_path) %>
+
+<div class="flex w-full flex-col gap-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Demo A — read-only card",
+    subtitle: "Registration, lookup, ViewComponent rendering, and MCP Apps HTML packaging.",
+    variant: :h1
+  ) %>
+
+  <%= @inner_html %>
+
+  <p class="text-sm">
+    <%= link_to "Open packaged MCP document", document_demo_path(@project, widget: "projects.preview") %>
+    ·
+    <%= link_to "Edit this project", edit_demo_path(@project) %>
+  </p>
+</div>

@@ -1,0 +1,38 @@
+<div data-controller="mcp-editor" class="mcp-ui-form">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Edit project",
+    subtitle: "Changes save through the registered projects.update action.",
+    variant: :h3
+  ) %>
+
+  <div class="mcp-ui-field">
+    <label for="project_title">Title</label>
+    <input id="project_title" type="text" name="title" data-mcp-field value="<%= ERB::Util.html_escape(data['title'].to_s) %>">
+    <p data-mcp-error="title" class="mcp-ui-error" hidden></p>
+  </div>
+
+  <div class="mcp-ui-field">
+    <label for="project_description">Description</label>
+    <textarea id="project_description" name="description" data-mcp-field rows="4"><%= ERB::Util.html_escape(data['description'].to_s) %></textarea>
+    <p data-mcp-error="description" class="mcp-ui-error" hidden></p>
+  </div>
+
+  <div class="mcp-ui-field">
+    <label for="project_status">Status</label>
+    <select id="project_status" name="status" data-mcp-field>
+      <% Project::STATUSES.each do |status| %>
+        <option value="<%= status %>" <%= "selected" if data['status'] == status %>><%= status %></option>
+      <% end %>
+    </select>
+    <p data-mcp-error="status" class="mcp-ui-error" hidden></p>
+  </div>
+
+  <input type="hidden" name="id" data-mcp-field value="<%= ERB::Util.html_escape(data['id'].to_s) %>">
+  <input type="hidden" name="revision" data-mcp-field value="<%= ERB::Util.html_escape(data['revision'].to_s) %>">
+
+  <div class="mcp-ui-actions">
+    <button type="button" data-mcp-save="save">Save</button>
+    <button type="button" data-mcp-reset>Cancel</button>
+  </div>
+  <p data-mcp-status class="mcp-ui-status" hidden></p>
+</div>

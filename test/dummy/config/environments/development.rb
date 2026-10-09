@@ -73,6 +73,10 @@ Rails.application.configure do
   # Raise error when a before_action's only/except options reference missing actions.
   config.action_controller.raise_on_missing_callback_actions = true
 
+  ENV.fetch("DUMMY_ALLOWED_HOST", "").split(",").map(&:strip).reject(&:blank?).each do |host|
+    config.hosts << host
+  end
+
   # Codespaces environment configuration
   if ENV["CODESPACES"] == "true"
     # Relax CSRF origin check

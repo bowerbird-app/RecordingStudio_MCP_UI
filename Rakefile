@@ -76,8 +76,13 @@ namespace :test do
     end
   end
 
+  desc "Run JavaScript runtime tests"
+  task :js do
+    run_command!({}, "node", "--test", *Dir["test/javascript/*_test.js"])
+  end
+
   desc "Run gem and dummy app tests"
-  task all: %i[test dummy]
+  task all: %i[test js dummy]
 end
 
 namespace :app do
