@@ -50,3 +50,9 @@ puts "Seeded: Workspace '#{workspace.name}' with root recording ##{root_recordin
 puts "Seeded: Workspace '#{accessible_workspace.name}' with root recording ##{accessible_root_recording.id}"
 puts "Seeded: Workspace '#{private_workspace.name}' with root recording ##{private_root_recording.id}"
 puts "Seeded: Folder '#{folder.name}' and page '#{page.title}'"
+
+project = Project.find_or_create_by!(title: "Beach House") do |record|
+  record.description = "A coastal recording project."
+  record.status = "active"
+end
+puts "Seeded: Project '#{project.title}'"

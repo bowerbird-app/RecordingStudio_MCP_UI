@@ -1,0 +1,7 @@
+{
+  "name": "recording-studio-mcp-ui",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/javascript/*_test.js"
+  }
+}

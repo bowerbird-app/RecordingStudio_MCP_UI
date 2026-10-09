@@ -1,0 +1,42 @@
+.mcp-ui-body {
+  margin: 0;
+  padding: 1rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  background: var(--surface-color, #f8f8f5);
+  color: var(--surface-content-color, #1f1f1f);
+}
+
+.mcp-ui-card,
+.mcp-ui-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mcp-ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.mcp-ui-field input,
+.mcp-ui-field textarea,
+.mcp-ui-field select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #c8c8c2;
+  border-radius: 0.5rem;
+  font: inherit;
+}
+
+.mcp-ui-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.mcp-ui-status[data-kind="error"] { color: #9b1c1c; }
+.mcp-ui-status[data-kind="success"] { color: #146c2e; }
+.mcp-ui-status[data-kind="loading"] { color: #5b5b55; }
+.mcp-ui-error { color: #9b1c1c; font-size: 0.85rem; }
+
+.is-saving { opacity: 0.75; }
+.is-dirty [data-mcp-save] { box-shadow: 0 0 0 2px #c9a227; }

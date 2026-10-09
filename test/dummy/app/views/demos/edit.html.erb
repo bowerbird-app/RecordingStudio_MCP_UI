@@ -1,0 +1,39 @@
+<% dummy_page_nav(title: "Project editor", back_url: demo_path(@project)) %>
+
+<div class="flex w-full flex-col gap-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Demo B — project editor",
+    subtitle: "Dirty state, validation, authorization, conflicts, and a real persisted save.",
+    variant: :h1
+  ) %>
+
+  <div id="demo-editor">
+    <%= raw @inner_html %>
+  </div>
+
+  <script type="application/json" id="mcp-ui-config"><%= raw JSON.generate(
+    widgetId: "projects.editor",
+    uri: "ui://projects/editor",
+    mode: "edit",
+    version: "1.0.0",
+    actions: ["save"],
+    data: @data
+  ) %></script>
+  <script><%= raw RecordingStudio::MCP_UI::Assets.javascript %></script>
+  <script>
+    mcpUI.setFallbackExecutor(function (aliasName, payload) {
+      return fetch(<%= raw demo_save_path(@project).to_json %>, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": document.querySelector("meta[name='csrf-token']").content
+        },
+        body: JSON.stringify(Object.assign({}, payload, { id: <%= raw @project.id.to_json %> }))
+      }).then(function (response) { return response.json(); });
+    });
+  </script>
+
+  <p class="text-sm">
+    <%= link_to "Open packaged MCP document", demo_document_path(@project, widget: "projects.editor") %>
+  </p>
+</div>

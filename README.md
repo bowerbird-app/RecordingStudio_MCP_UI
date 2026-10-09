@@ -1,172 +1,143 @@
-# GemTemplate
+# RecordingStudio MCP UI
 
-Internal template for building Rails engine addons on top of Recording Studio 4.x.
+Reusable Rails engine that lets Recording Studio gems register interactive MCP Apps widgets. MCP UI owns the interface. RecordingStudio API owns the actions. RecordingStudio MCP exposes those actions and their interfaces to AI clients.
 
-## What's Included
-
-- **Recording Studio** 4.x gem pinned and configured
-- **Devise** authentication with a pre-seeded admin user
-- **Workspace**, **Folder**, and **Page** recordables seeded into the dummy host app
-- **FlatPack** UI component library for all views
-- **Dummy app** (`test/dummy/`) with a FlatPack sign-in screen, a home page on Recording Studio's default layout, mounted Recording Studio routes, and FlatPack's built-in rounded theme
-
-Authenticated dummy pages use Recording Studio's shared default layout (`RecordingStudio::UsesDefaultLayout`) plus FlatPack CSS and JS. Devise keeps its own sign-in layout. Dummy `/docs/*` pages stay in the dummy app as a host-app sandbox; they are not the product README.
-
-## Quick Start
-
-### Cursor Cloud Agent (Recommended)
-
-A Cloud Agent boots this repo into a ready-to-use dev environment with no manual steps. The setup lives in `.cursor/`:
-
-- `install.sh` provisions Ruby (pinned by `.ruby-version`), PostgreSQL 16, all gems, the seeded dummy database, and compiled CSS at build time, then fetches Recording Studio skills.
-- `start.sh` starts PostgreSQL on every boot.
-- `environment.json` runs the `rails-server` and `tailwind-watch` terminals and exposes port 3000.
-
-Open port 3000 and sign in at `/users/sign_in`. No environment variables are required — the dummy app's `database.yml` defaults match the provisioned PostgreSQL cluster.
-
-### GitHub Codespaces
-
-1. Click **Code** → **Codespaces** → **Create codespace**
-2. Wait for setup to complete
-3. Run:
-   ```bash
-   cd test/dummy
-   bin/rails db:setup
-   bin/dev
-   ```
-4. Open port 3000 — you'll land on the dummy app home page and can sign in at `/users/sign_in`
-
-The dummy app is intended as a host-app validation surface for authentication, FlatPack rendering, Tailwind source scanning, and Recording Studio route wiring.
-
-Dummy credentials (`test/dummy/config/credentials.yml.enc`) are encrypted with the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY` or put that key in `test/dummy/config/master.key` (gitignored). Keep the encrypted file; do not generate a per-repo dummy key.
-
-### Login Credentials
-
-| Field    | Value             |
-|----------|-------------------|
-| Email    | admin@admin.com   |
-| Password | Password          |
-
-The login form is prefilled with these credentials for fast access.
-
-### Useful Routes
-
-- `/` — dummy app home page
-- `/users/sign_in` — Devise sign-in page
-- `/recording_studio` — redirect to `/` while the mounted Recording Studio engine remains data/API-focused
-- `/docs/install`, `/docs/config`, `/docs/recordable_types`, `/docs/recordings_tree`, `/docs/gem_views`, `/docs/methods` — dummy-only starter pages
-
-The home page in `test/dummy/app/views/home/index.html.erb` is a starting point for a minimal demo of the gem's primary behavior. Keep deeper explanations on the dummy docs pages, not in this README.
+This gem does not add a second CRUD system, API registry, authorization stack, or MCP server.
 
 ## Architecture
 
-### Root Recording Pattern
+```
+Third-party gem
+  → RecordingStudio::MCP_UI.register(...)   # widget definition
+  → RecordingStudioApi.register_* (... ui:) # action + widget id  (API gem, not this repo)
 
-This template follows Recording Studio's root recording pattern:
-
-- **Workspace** is the top-level recordable
-- **Folder** and **Page** demonstrate nested recordables under the workspace root
-- Each configured recordable declares `recording_studio_recordable(...)`; strict declaration validation stays enabled
-- A root `RecordingStudio::Recording` wraps the Workspace
-- `Current.actor` is set from `current_user` (Devise) in `ApplicationController`
-
-### Extending Recording Studio
-
-To add new recordable types:
-
-1. Create your model (e.g., `Page`, `Comment`)
-2. Register it in `config/initializers/recording_studio.rb`:
-   ```ruby
-   RecordingStudio.configure do |config|
-     config.recordable_types = ["Workspace", "YourNewType"]
-   end
-   ```
-3. Declare whether the model can be a root and which parents may contain it:
-   ```ruby
-   class YourNewType < ApplicationRecord
-     recording_studio_recordable label: "Your new type",
-                                 root: false,
-                                 allowed_parent_types: ["Workspace", "Folder"]
-   end
-   ```
-4. Validate declarations and create recordings under the root:
-   ```ruby
-   RecordingStudio.validate_recordable_declarations!
-   root_recording = RecordingStudio.root_recording_for(workspace)
-   root_recording.record(YourNewType) do |record|
-     record.title = "Example"
-   end
-   ```
-
-### Recordable Declarations
-
-Every configured ActiveRecord recordable type must declare its hierarchy rules. Declarations are required; they are not version-specific.
-
-- `Workspace` declares `root: true`
-- `Folder` and `Page` declare `root: false, allowed_parent_types: ["Workspace", "Folder"]`
-- `config.require_recordable_declarations = true` remains enabled in the dummy app initializer
-
-Useful console checks:
-
-```ruby
-RecordingStudio.validate_recordable_declarations!
-RecordingStudio.root_recordable_types
-RecordingStudio.allowed_parent_types_for("Page")
+RecordingStudio MCP
+  → finds the widget id on the API operation
+  → RecordingStudio::MCP_UI.package(...)    # HTML resource, in-process
+  → tools/call → existing API handler
 ```
 
-### Capabilities
+See [docs/api_mcp_integration.md](docs/api_mcp_integration.md) for the exact API and MCP additions still required in those repositories.
 
-Capability mixins are opt-in. Installing this gem does not enable mixins on host types.
-
-The dummy Workspace enables Accessible because that addon is bundled:
+## Installation
 
 ```ruby
-RecordingStudio.enable_capability(:accessible, on: Workspace)
+gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.1.0"
 ```
 
-The template also ships one example mixin that uses core 4.2.0's `include_for` factory:
+```bash
+bundle install
+bin/rails generate recording_studio_mcp_ui:install
+```
+
+The engine keeps Recording Studio conventions: `RecordingStudio::Hooks`, default layout in host apps, and strict recordable declarations. Pins: dummy GitHub tag `v4.3.0`, dummy GitHub tag `v0.10.1`, dummy GitHub tag `v0.5.1`, dummy GitHub tag `v0.1.196`.
+
+## Public Ruby API
 
 ```ruby
-include RecordingStudio::Capabilities::Example.to(label: "dummy workspace")
+RecordingStudio::MCP_UI.register(
+  "presskits.preview",
+  component: Presskits::PreviewComponent,
+  description: "Displays a press kit",
+  mode: :read,
+  version: "1.0.0"
+)
+
+RecordingStudio::MCP_UI.register(
+  "presskits.editor",
+  component: Presskits::EditorComponent,
+  description: "Edit a press kit",
+  mode: :edit,
+  version: "1.0.0",
+  actions: { save: "presskits.update" },
+  available_if: ->(access_grant:, **) { access_grant.present? }
+)
+
+RecordingStudio::MCP_UI.find("presskits.editor")
+RecordingStudio::MCP_UI.list(mode: :edit, prefix: "presskits.")
+RecordingStudio::MCP_UI.render("presskits.preview", data: payload)
+document = RecordingStudio::MCP_UI.package("presskits.preview", data: payload)
+document.to_mcp_resource
+RecordingStudio::MCP_UI.execute("presskits.editor", "save", arguments: payload, access_grant: grant)
+RecordingStudio::MCP_UI.available?("presskits.editor", access_grant: grant, api: :public)
 ```
 
-`.to` wraps `RecordingStudio::Capabilities.include_for`. It does not add a fourth verb and it does not call `enable_capability` / `set_capability_options` itself. Folder and Page stay without the example mixin.
+`register` / `find` / `list` never instantiate the component. The registry is in-memory. Duplicate ids fail unless the contract is identical (reload-safe). Lookup metadata never includes record data. Registering a widget does not grant API access.
 
-Use core `RecordingStudio::Hooks` and `RecordingStudio::Services::BaseService`. Do not copy those classes into a new addon.
+## First read-only widget
 
-### FlatPack UI Components
+1. Create a ViewComponent that accepts `data:`.
+2. Register it from your engine's `to_prepare`.
+3. Ask MCP (once integrated) for `RecordingStudio::MCP_UI.package("your.preview", data: authorized_payload)`.
 
-All views use FlatPack ViewComponents. Available components include:
+```ruby
+class Projects::PreviewComponent < ViewComponent::Base
+  def initialize(data:)
+    @data = data
+  end
+end
+```
 
-- `FlatPack::Button::Component` — Buttons (`:primary`, `:secondary`, `:ghost`)
-- `FlatPack::Card::Component` — Cards (`:default`, `:elevated`, `:outlined`)
-- `FlatPack::Alert::Component` — Alerts (`:success`, `:error`, `:warning`, `:info`)
-- `FlatPack::Badge::Component` — Status badges
-- `FlatPack::Table::Component` — Data tables
-- `FlatPack::TextInput::Component`, `EmailInput`, `PasswordInput` — Form inputs
-- `FlatPack::PageNav::Component` — Default-layout page navigation
-- `FlatPack::PageTitle::Component` — Page titles
+## First editable widget
 
-Use the live FlatPack demo app at [flatpack.bowerbird.io](https://flatpack.bowerbird.io/) as the approved UI reference for current shared patterns. Its component table is the fastest way to discover available FlatPack components before introducing new custom UI.
+1. Register `mode: :edit` and `actions: { save: "your.api_action" }`.
+2. Render fields with `data-mcp-field` and a `data-mcp-save="save"` button inside `data-controller="mcp-editor"`.
+3. Call `await mcpUI.execute("save", payload)` from widget JS. Never send raw MCP tool names.
 
-See the [FlatPack README](https://github.com/bowerbird-app/flatpack) for full documentation.
+The alias is resolved on the server against the widget definition. The MCP adapter must re-authorize the mapped API action.
 
-## Tech Stack
+## JavaScript API
 
-| Component       | Version |
-|-----------------|---------|
-| Ruby            | 3.3+    |
-| Rails           | 8.1+    |
-| PostgreSQL      | 16      |
-| TailwindCSS     | 4       |
-| RecordingStudio | 4.x (`~> 4.2` in the gemspec; dummy GitHub tag `v4.3.0`) |
-| Accessible      | dummy GitHub tag `v0.10.1` |
-| Root Switchable | dummy GitHub tag `v0.5.1` |
-| FlatPack        | dummy GitHub tag `v0.1.196` |
-| Devise          | latest  |
+Packaged documents define `window.mcpUI`:
 
-The dummy Gemfile keeps `github:` sources so Bundler can fetch those gems. The gemspec still pins `recording_studio` to `~> 4.2` so copied addons declare the core dependency even when GitHub is the fetch source.
+- `mcpUI.start()`
+- `mcpUI.data()` / `mcpUI.applyData(data)` / `mcpUI.reset()`
+- `mcpUI.markDirty()` / `mcpUI.isDirty()`
+- `mcpUI.onData(listener)`
+- `mcpUI.execute(alias, payload)`
+- `mcpUI.setFallbackExecutor(fn)` — dummy/test only
 
-## Documentation
+`McpAppsHost` isolates MCP Apps JSON-RPC (`ui/initialize`, `tools/call`). Widget code does not import the official SDK.
 
-The original gem template documentation is preserved in `docs/gem_template/` as architectural reference material. Use it as background on the engine conventions; this README and the dummy app are the source of truth for the Recording Studio addon workflow.
+## How Flatpack CSS and Stimulus get into widget HTML
+
+`RecordingStudio::MCP_UI::Packager` inlines:
+
+1. `app/assets/stylesheets/recording_studio_mcp_ui/widget.css`
+2. FlatPack `variables.css` and `application.css` from `FlatPack::Engine` when that gem is installed
+3. Optional host compiled CSS from `configuration.compiled_css_path` (dummy uses `app/assets/builds/tailwind.css`)
+4. The engine JS files: `host_bridge.js`, `runtime.js`, `controllers/editor_controller.js`, `boot.js`
+
+The document is a self-contained HTML page. It does not assume host importmaps or layout assets. The editor controller is Stimulus-shaped (`data-controller="mcp-editor"`) and talks only through `mcpUI`.
+
+## Data, editing, and security
+
+- One widget definition is reused for many records.
+- Local form state is temporary. Recording Studio remains the source of truth.
+- Validation and authorization failures return structured errors. Successful saves replace widget data.
+- If the API supplies a revision, a stale save returns a conflict instead of overwriting.
+- Packaged HTML strips keys matching token/secret/password/authorization/api_key/credential.
+- CSP defaults to no network, no frames, inline script/style only.
+- Treat tool-result data as untrusted; escape it in components.
+
+## Dummy app
+
+Sign in at `/users/sign_in` with `admin@admin.com` / `Password`.
+
+- Demo A: `/demos/:id` — read-only Project card
+- Demo B: `/demos/:id/edit` — editor that POSTs to `Demo::ProjectUpdate` through `Demo::ActionAdapter`
+- Packaged document: `/demos/:id/document?widget=projects.preview`
+
+The adapter is a test stand-in. It never reports a successful save unless the Project row was updated.
+
+## Testing
+
+```bash
+bundle exec rake test
+bundle exec rake test:dummy
+node --test test/javascript/*_test.js
+```
+
+## Required external work
+
+Documented in [docs/api_mcp_integration.md](docs/api_mcp_integration.md): `ui:` on API registrations, MCP `resources/read` for `ui://`, alias-to-API dispatch, and visibility through access grants.
