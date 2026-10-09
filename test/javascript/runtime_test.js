@@ -119,6 +119,52 @@ test("dirty tracking resets", async () => {
   assert.equal(ctx.mcpUI.data().title, "A");
 });
 
+test("execute rejects MCP isError results", async () => {
+  const windowLike = windowStub({
+    widgetId: "projects.editor",
+    actions: { save: "projects.update" },
+    data: { title: "Beach House" }
+  });
+  const ctx = loadEngine(windowLike);
+  attachMockHost(windowLike, {
+    onToolCall() {
+      return {
+        isError: true,
+        content: [{ type: "text", text: "Title can't be blank" }],
+        structuredContent: { error: "validation_failed", errors: { title: "can't be blank" } }
+      };
+    }
+  });
+  await ctx.mcpUI.start();
+  await assert.rejects(() => ctx.mcpUI.execute("save", { title: "" }), (error) => {
+    assert.equal(error.error, "validation_failed");
+    assert.equal(error.errors.title, "can't be blank");
+    return true;
+  });
+});
+
+test("execute rejects isError text when structuredContent is missing", async () => {
+  const windowLike = windowStub({
+    widgetId: "projects.editor",
+    actions: { save: "projects.update" },
+    data: { title: "Beach House" }
+  });
+  attachMockHost(windowLike, {
+    onToolCall() {
+      return {
+        isError: true,
+        content: [{ type: "text", text: "unauthorized" }]
+      };
+    }
+  });
+  const ctx = loadEngine(windowLike);
+  await ctx.mcpUI.start();
+  await assert.rejects(() => ctx.mcpUI.execute("save", {}), (error) => {
+    assert.equal(error.message, "unauthorized");
+    return true;
+  });
+});
+
 test("execute maps the alias to the real tool name in callServerTool", async () => {
   const windowLike = windowStub({
     widgetId: "projects.editor",

@@ -20,10 +20,13 @@ function attachMockHost(windowLike, { onToolCall } = {}) {
           reply = { jsonrpc: "2.0", id: message.id, result: initializeResult(message.params) };
         } else if (message.method === "tools/call") {
           const payload = onToolCall ? onToolCall(message.params) : { ok: true, data: {} };
+          const result = payload && payload.isError === true
+            ? payload
+            : { content: [], structuredContent: payload };
           reply = {
             jsonrpc: "2.0",
             id: message.id,
-            result: { content: [], structuredContent: payload }
+            result: result
           };
         } else if (message.method === "ui/update-model-context") {
           reply = { jsonrpc: "2.0", id: message.id, result: {} };

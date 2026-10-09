@@ -3,7 +3,7 @@
 <div class="flex w-full flex-col gap-6">
   <%= render FlatPack::PageTitle::Component.new(
     title: "MCP UI Demo",
-    subtitle: "Two complete dummy widgets: a read-only project card and an editor that persists through the test adapter.",
+    subtitle: "Two complete dummy widgets: a read-only project card and an editor that saves through projects.update.",
     variant: :h1
   ) %>
 
@@ -39,7 +39,7 @@
         ) %>
       <% end %>
       <% card.body do %>
-        <p class="text-sm leading-6">Edits invoke the registered <code>projects.update</code> action through the dummy test adapter.</p>
+        <p class="text-sm leading-6">Edits call the registered <code>projects.update</code> tool.</p>
       <% end %>
       <% card.footer do %>
         <% if @project %>

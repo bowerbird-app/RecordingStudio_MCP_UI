@@ -12,7 +12,7 @@ class RecordingStudioTemplateTest < ActiveSupport::TestCase
 
   test "dummy app validates recordable declarations" do
     assert RecordingStudio.validate_recordable_declarations!
-    assert_equal [ "Workspace" ], RecordingStudio.root_recordable_types
+    assert_equal %w[AdminRoot RecordingStudioUser::People Workspace], RecordingStudio.root_recordable_types.sort
     assert_equal [ "Workspace", "Folder" ], RecordingStudio.allowed_parent_types_for("Page")
   end
 
@@ -31,25 +31,26 @@ class RecordingStudioTemplateTest < ActiveSupport::TestCase
     load Rails.root.join("db/seeds.rb").to_s
 
     workspace = Workspace.find_by!(name: "Studio Workspace")
-    accessible_workspace = Workspace.find_by!(name: "Client Workspace")
-    private_workspace = Workspace.find_by!(name: "Private Workspace")
+    docs_workspace = Workspace.find_by!(name: "Docs Workspace")
     folder = Folder.find_by!(name: "Product Docs")
     page = Page.find_by!(title: "Getting Started")
+    beach = Project.find_by!(title: "Beach House")
+    cabin = Project.find_by!(title: "Mountain Cabin")
     root_recording = RecordingStudio::Recording.find_by!(recordable: workspace)
-    accessible_root_recording = RecordingStudio::Recording.find_by!(recordable: accessible_workspace)
-    private_root_recording = RecordingStudio::Recording.find_by!(recordable: private_workspace)
+    docs_root_recording = RecordingStudio::Recording.find_by!(recordable: docs_workspace)
     folder_recording = RecordingStudio::Recording.find_by!(recordable: folder)
     page_recording = RecordingStudio::Recording.find_by!(recordable: page)
 
     assert_nil Current.actor
     assert_nil root_recording.parent_recording_id
-    assert_nil accessible_root_recording.parent_recording_id
-    assert_nil private_root_recording.parent_recording_id
+    assert_nil docs_root_recording.parent_recording_id
     assert_equal root_recording, folder_recording.parent_recording
     assert_equal root_recording, folder_recording.root_recording
     assert_equal folder_recording, page_recording.parent_recording
     assert_equal root_recording, page_recording.root_recording
-    assert_equal 3, Workspace.count
+    assert_equal 2, Workspace.count
+    assert beach.present?
+    assert cabin.present?
 
     assert_no_difference -> { User.count } do
       assert_no_difference -> { RecordingStudio::Recording.count } do

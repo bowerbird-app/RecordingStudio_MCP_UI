@@ -5,8 +5,24 @@ Rails.application.routes.draw do
   # Keep legacy links working by redirecting the base path to the app home.
   get "/recording_studio", to: redirect("/"), as: nil
   mount RecordingStudio::Engine, at: "/recording_studio"
+  mount RecordingStudioAccessible::Engine, at: "/recording_studio_accessible"
+  mount RecordingStudioAccessible::Engine, at: "/admin/access", as: :recording_studio_admin_access
+  mount RecordingStudioApi::Engine, at: "/recording_studio_api"
+  mount RecordingStudioOauth::Engine, at: "/recording_studio_oauth"
+  mount RecordingStudioMcp::Engine, at: "/recording_studio_mcp"
+  mount RecordingStudioAttachable::Engine, at: "/recording_studio_attachable"
+  mount RecordingStudioSiteSettings::Engine, at: "/recording_studio_site_settings"
   mount RecordingStudioRootSwitchable::Engine, at: "/recording_studio_root_switchable"
   mount RecordingStudio::MCP_UI::Engine, at: "/recording_studio_mcp_ui"
+  mount RecordingStudioUser::Engine, at: "/account", as: :recording_studio_users
+
+  get "/.well-known/oauth-authorization-server",
+      to: "recording_studio_oauth/oauth_discoveries#authorization_server",
+      defaults: { api_key: "public" }
+  RecordingStudioMcp.draw_named_api_well_known(self)
+  RecordingStudioOauth::ProtectedResourceRegistry.draw_origin_well_known(self)
+
+  recording_studio_admin_for :admin, at: "/admin", root_section: :root
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 

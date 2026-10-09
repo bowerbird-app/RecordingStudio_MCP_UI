@@ -46,9 +46,13 @@ class RecordingStudioMcpUiTest < Minitest::Test
     gemfile = File.read(File.expand_path("dummy/Gemfile", __dir__))
 
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v4.3.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.10.1"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.5.1"'
-    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.196"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.11.1"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.5.3"'
+    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.207"'
+    assert_includes gemfile, 'branch: "cursor/mcp-ui-api-metadata-ae0b"'
+    assert_includes gemfile, 'branch: "cursor/mcp-ui-integration-c00f"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_Oauth", tag: "v0.7.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_users", tag: "v0.17.0"'
     refute_includes gemfile, "recording_studio/v3.0.0"
   end
 
@@ -98,7 +102,9 @@ class RecordingStudioMcpUiTest < Minitest::Test
     initializer_source = File.read(File.expand_path("dummy/config/initializers/recording_studio.rb", __dir__))
 
     assert_includes initializer_source, "config.require_recordable_declarations = true"
-    assert_includes initializer_source, "config.recordable_types = [ \"Workspace\", \"Folder\", \"Page\" ]"
+    assert_includes initializer_source, '"Workspace"'
+    assert_includes initializer_source, '"AdminRoot"'
+    assert_includes initializer_source, '"RecordingStudioUser::People"'
   end
 
   def test_product_readme_is_the_mcp_ui_guide
@@ -106,7 +112,7 @@ class RecordingStudioMcpUiTest < Minitest::Test
 
     assert_includes readme, "RecordingStudio::MCP_UI"
     assert_includes readme, "dummy GitHub tag `v4.3.0`"
-    assert_includes readme, "dummy GitHub tag `v0.1.196`"
+    assert_includes readme, "dummy GitHub tag `v0.1.207`"
     refute_includes readme, "ExampleService"
     refute_includes readme, "RecordingStudio v3"
   end

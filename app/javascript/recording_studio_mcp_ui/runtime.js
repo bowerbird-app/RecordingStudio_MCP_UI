@@ -28,6 +28,17 @@
     notify();
   }
 
+  function textContent(result) {
+    var first = result && result.content && result.content[0];
+    return first && typeof first.text === "string" ? first.text : "";
+  }
+
+  function mcpToolError(result) {
+    if (result.structuredContent) return result.structuredContent;
+    var text = textContent(result);
+    return new Error(text || "Tool call failed");
+  }
+
   function toolNameFor(aliasName) {
     var actions = config.actions;
     if (!actions || typeof actions !== "object" || Array.isArray(actions)) return undefined;
@@ -108,6 +119,9 @@
       if (data.revision) body.revision = data.revision;
 
       return app.callServerTool({ name: toolName, arguments: body }).then(function (result) {
+        if (result && result.isError === true) {
+          return Promise.reject(mcpToolError(result));
+        }
         var payloadResult = result && result.structuredContent ? result.structuredContent : result;
         if (payloadResult && payloadResult.ok === false) {
           return Promise.reject(payloadResult);
