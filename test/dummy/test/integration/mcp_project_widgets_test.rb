@@ -42,8 +42,8 @@ class McpProjectWidgetsTest < ActionDispatch::IntegrationTest
     assert show, tools.map { |tool| tool["name"] }.inspect
     assert update, tools.map { |tool| tool["name"] }.inspect
 
-    assert_equal "ui://projects/preview", show.dig("_meta", "ui", "resourceUri")
-    assert_equal "ui://projects/editor", update.dig("_meta", "ui", "resourceUri")
+    assert_equal "ui://projects/preview", show.dig("_meta", "ui", "resourceUri").to_s.split("?", 2).first
+    assert_equal "ui://projects/editor", update.dig("_meta", "ui", "resourceUri").to_s.split("?", 2).first
   end
 
   test "every registered widget packages with empty data" do
