@@ -9,6 +9,8 @@ RecordingStudio.configure do |config|
     "AdminRoot",
     "RecordingStudioSiteSettings::SiteSetting",
     "RecordingStudioAttachable::Attachment",
+    "RecordingStudioAttachable::Library",
+    "RecordingStudioAttachable::Placement",
     "RecordingStudioUser::People",
     "RecordingStudioUser::Profile"
   ]
