@@ -48,6 +48,13 @@
     return name;
   }
 
+  function applyHostToolResult(params) {
+    if (!params || params.isError === true) return;
+    var payload = params.structuredContent;
+    if (!payload || typeof payload !== "object") return;
+    mcpUI.applyData(payload);
+  }
+
   function connectApp() {
     var Sdk = root.McpApps;
     if (!Sdk || !Sdk.App || !Sdk.PostMessageTransport) return Promise.resolve(null);
@@ -57,6 +64,9 @@
       { name: config.widgetId || "recording-studio-mcp-ui", version: config.version || "0.1.0" },
       {}
     );
+    instance.ontoolresult = function (params) {
+      applyHostToolResult(params);
+    };
     var transport = new Sdk.PostMessageTransport(window.parent, window.parent);
     return instance.connect(transport).then(function () {
       return instance;

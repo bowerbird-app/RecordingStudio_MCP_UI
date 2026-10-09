@@ -57,10 +57,11 @@ function windowStub(config) {
   return windowLike;
 }
 
-function loadEngine(windowLike, { sdk = true } = {}) {
+function loadEngine(windowLike, { sdk = true, boot = true } = {}) {
   const files = [];
   if (sdk) files.push("vendor/ext-apps.iife.js");
-  files.push("runtime.js", "controllers/editor_controller.js", "boot.js");
+  files.push("runtime.js");
+  if (boot) files.push("controllers/editor_controller.js", "boot.js");
   const context = vm.createContext(windowLike);
   files.forEach((file) => {
     vm.runInContext(
@@ -163,6 +164,61 @@ test("execute rejects isError text when structuredContent is missing", async () 
     assert.equal(error.message, "unauthorized");
     return true;
   });
+});
+
+test("ontoolresult applies structuredContent when registered before connect", async () => {
+  const windowLike = windowStub({ widgetId: "projects.preview", data: {} });
+  const order = [];
+  let lastHandler;
+  windowLike.parent = { postMessage() {} };
+  windowLike.McpApps = {
+    App: function App() {
+      this.callServerTool = function () { return Promise.resolve({}); };
+    },
+    PostMessageTransport: function PostMessageTransport() {}
+  };
+  Object.defineProperty(windowLike.McpApps.App.prototype, "ontoolresult", {
+    configurable: true,
+    get() { return this._ontoolresult; },
+    set(fn) {
+      order.push("handler");
+      lastHandler = fn;
+      this._ontoolresult = fn;
+    }
+  });
+  windowLike.McpApps.App.prototype.connect = function connect() {
+    order.push("connect");
+    return Promise.resolve();
+  };
+
+  const ctx = loadEngine(windowLike, { sdk: false, boot: false });
+  const seen = [];
+  ctx.mcpUI.onData(function (next) { seen.push(next); });
+  await ctx.mcpUI.start();
+
+  assert.deepEqual(order, [ "handler", "connect" ]);
+  assert.equal(typeof lastHandler, "function");
+
+  lastHandler({
+    content: [],
+    structuredContent: {
+      id: "proj-1",
+      title: "Widget House",
+      description: "A coastal recording project.",
+      status: "active",
+      revision: 1
+    }
+  });
+  assert.equal(ctx.mcpUI.data().title, "Widget House");
+  assert.equal(ctx.mcpUI.data().description, "A coastal recording project.");
+  assert.equal(ctx.mcpUI.data().status, "active");
+  assert.equal(seen.some(function (row) { return row.title === "Widget House"; }), true);
+
+  lastHandler({
+    isError: true,
+    structuredContent: { title: "Nope" }
+  });
+  assert.equal(ctx.mcpUI.data().title, "Widget House");
 });
 
 test("execute maps the alias to the real tool name in callServerTool", async () => {
