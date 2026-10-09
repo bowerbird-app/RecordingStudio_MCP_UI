@@ -10,7 +10,7 @@
   <%= raw @inner_html %>
 
   <p class="text-sm">
-    <%= link_to "Open packaged MCP document", demo_document_path(@project, widget: "projects.preview") %>
+    <%= link_to "Open packaged MCP document", document_demo_path(@project, widget: "projects.preview") %>
     ·
     <%= link_to "Edit this project", edit_demo_path(@project) %>
   </p>

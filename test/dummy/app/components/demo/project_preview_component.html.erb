@@ -10,7 +10,7 @@
   <% card.body do %>
     <div class="mcp-ui-card">
       <p data-mcp-text="description"><%= ERB::Util.html_escape(description.to_s) %></p>
-      <%= render FlatPack::Badge::Component.new(text: status.to_s, style: :neutral) %>
+      <%= render FlatPack::Badge::Component.new(text: status.to_s, style: :info) %>
     </div>
   <% end %>
 <% end %>

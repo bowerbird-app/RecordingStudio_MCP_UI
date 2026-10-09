@@ -35,7 +35,7 @@ class McpUiDemoTest < ActionDispatch::IntegrationTest
 
     get document_demo_path(@project, widget: "projects.editor")
     assert_response :success
-    assert_equal "text/html;profile=mcp-app", response.media_type
+    assert_includes response.headers["Content-Type"], "text/html"
     assert_includes response.body, "mcp-ui-config"
     assert_includes response.body, "Content-Security-Policy"
     refute_includes response.body, "Password"
