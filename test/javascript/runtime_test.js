@@ -72,24 +72,32 @@ function loadEngine(windowLike, { sdk = true } = {}) {
   return context;
 }
 
-test("execute rejects unregistered action aliases", async () => {
+test("execute rejects unregistered action aliases without calling the host", async () => {
   const windowLike = windowStub({
     widgetId: "projects.editor",
-    actions: ["save"],
+    actions: { save: "projects.update" },
     data: { title: "Beach House" }
   });
-  const ctx = loadEngine(windowLike, { sdk: false });
+  const calls = [];
+  attachMockHost(windowLike, {
+    onToolCall(params) {
+      calls.push(params);
+      return { ok: true, data: {} };
+    }
+  });
+  const ctx = loadEngine(windowLike);
   await ctx.mcpUI.start();
   await assert.rejects(() => ctx.mcpUI.execute("destroy", {}), (error) => {
-    assert.equal(error.error, "unauthorized_action");
+    assert.equal(error.message, "Unknown action alias: destroy");
     return true;
   });
+  assert.equal(calls.length, 0);
 });
 
 test("execute rejects when no host is connected", async () => {
   const windowLike = windowStub({
     widgetId: "projects.editor",
-    actions: ["save"],
+    actions: { save: "projects.update" },
     data: { title: "Old" }
   });
   const ctx = loadEngine(windowLike, { sdk: false });
@@ -101,7 +109,7 @@ test("execute rejects when no host is connected", async () => {
 });
 
 test("dirty tracking resets", async () => {
-  const windowLike = windowStub({ actions: ["save"], data: { title: "A" } });
+  const windowLike = windowStub({ actions: { save: "projects.update" }, data: { title: "A" } });
   const ctx = loadEngine(windowLike, { sdk: false });
   await ctx.mcpUI.start();
   ctx.mcpUI.markDirty();
@@ -111,11 +119,11 @@ test("dirty tracking resets", async () => {
   assert.equal(ctx.mcpUI.data().title, "A");
 });
 
-test("execute uses official App.callServerTool over a mock PostMessage host", async () => {
+test("execute maps the alias to the real tool name in callServerTool", async () => {
   const windowLike = windowStub({
     widgetId: "projects.editor",
     version: "1.0.0",
-    actions: ["save"],
+    actions: { save: "projects.update" },
     data: { title: "Old", revision: 1 }
   });
   const calls = [];
@@ -129,7 +137,7 @@ test("execute uses official App.callServerTool over a mock PostMessage host", as
   const ctx = loadEngine(windowLike);
   await ctx.mcpUI.start();
   const result = await ctx.mcpUI.execute("save", { title: "Saved" });
-  assert.equal(calls[0].name, "save");
+  assert.equal(calls[0].name, "projects.update");
   assert.equal(calls[0].arguments.revision, 1);
   assert.equal(result.data.title, "Saved");
   assert.equal(ctx.mcpUI.data().title, "Saved");

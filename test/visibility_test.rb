@@ -9,15 +9,13 @@ class VisibilityTest < Minitest::Test
 
   def setup
     RecordingStudio::MCP_UI.reset_registry!
-    RecordingStudio::MCP_UI.configuration.visibility_checker = nil
   end
 
   def teardown
     RecordingStudio::MCP_UI.reset_registry!
-    RecordingStudio::MCP_UI.configuration.visibility_checker = nil
   end
 
-  def test_available_if_and_visibility_checker
+  def test_available_if
     RecordingStudio::MCP_UI.register(
       "projects.preview",
       component: Card,
@@ -26,9 +24,6 @@ class VisibilityTest < Minitest::Test
 
     refute RecordingStudio::MCP_UI.available?("projects.preview", access_grant: :denied)
     assert RecordingStudio::MCP_UI.available?("projects.preview", access_grant: :allowed)
-
-    RecordingStudio::MCP_UI.configuration.visibility_checker = ->(**) { false }
-    refute RecordingStudio::MCP_UI.available?("projects.preview", access_grant: :allowed)
   end
 
   def test_registration_does_not_grant_operations

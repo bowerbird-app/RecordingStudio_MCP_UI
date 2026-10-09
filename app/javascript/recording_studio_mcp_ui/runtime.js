@@ -28,8 +28,13 @@
     notify();
   }
 
-  function allowedAction(aliasName) {
-    return (config.actions || []).indexOf(aliasName) !== -1;
+  function toolNameFor(aliasName) {
+    var actions = config.actions;
+    if (!actions || typeof actions !== "object" || Array.isArray(actions)) return undefined;
+    if (!Object.prototype.hasOwnProperty.call(actions, aliasName)) return undefined;
+    var name = actions[aliasName];
+    if (typeof name !== "string" || !name) return undefined;
+    return name;
   }
 
   function connectApp() {
@@ -91,8 +96,9 @@
       setData(config.data || {});
     },
     execute: function (aliasName, payload) {
-      if (!allowedAction(aliasName)) {
-        return Promise.reject({ error: "unauthorized_action", message: "Action is not registered for this widget" });
+      var toolName = toolNameFor(aliasName);
+      if (!toolName) {
+        return Promise.reject(new Error("Unknown action alias: " + aliasName));
       }
       if (!app || typeof app.callServerTool !== "function") {
         return Promise.reject(new Error("No action transport"));
@@ -101,7 +107,7 @@
       var body = Object.assign({}, payload || {});
       if (data.revision) body.revision = data.revision;
 
-      return app.callServerTool({ name: aliasName, arguments: body }).then(function (result) {
+      return app.callServerTool({ name: toolName, arguments: body }).then(function (result) {
         var payloadResult = result && result.structuredContent ? result.structuredContent : result;
         if (payloadResult && payloadResult.ok === false) {
           return Promise.reject(payloadResult);

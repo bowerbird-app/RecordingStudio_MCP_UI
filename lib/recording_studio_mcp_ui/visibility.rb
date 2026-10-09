@@ -8,12 +8,7 @@ module RecordingStudio
       end
 
       def available?(access_grant: nil, api: :public, version: nil)
-        return false unless widget_allows?(access_grant: access_grant, api: api, version: version)
-
-        checker = RecordingStudio::MCP_UI.configuration.visibility_checker
-        return true unless checker
-
-        checker.call(widget: @widget, access_grant: access_grant, api: api, version: version) == true
+        widget_allows?(access_grant: access_grant, api: api, version: version)
       end
 
       private

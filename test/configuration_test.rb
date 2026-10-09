@@ -36,7 +36,8 @@ class ConfigurationTest < Minitest::Test
 
     assert_equal 2, result.fetch(:hooks_registered).fetch(:before_initialize)
     assert_equal 1, result.fetch(:hooks_registered).fetch(:after_service)
-    assert_equal false, result.fetch(:action_executor)
+    refute result.key?(:action_executor)
+    refute result.key?(:visibility_checker)
   end
 
   def test_configure_without_block_is_safe

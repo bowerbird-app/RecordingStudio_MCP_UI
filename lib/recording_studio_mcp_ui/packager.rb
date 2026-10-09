@@ -71,9 +71,15 @@ module RecordingStudio
           uri: @widget.resource_uri,
           mode: @widget.mode,
           version: @widget.version,
-          actions: @widget.actions.keys,
+          actions: action_map,
           data: data
         }
+      end
+
+      def action_map
+        @widget.actions.keys.each_with_object({}) do |alias_name, memo|
+          memo[alias_name] = @widget.action_for(alias_name)
+        end
       end
 
       def sanitize_data(data)

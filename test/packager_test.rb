@@ -41,6 +41,21 @@ class PackagerTest < Minitest::Test
     assert_equal "text/html;profile=mcp-app", document.to_mcp_resource[:mimeType]
   end
 
+  def test_package_includes_alias_to_tool_name_map
+    RecordingStudio::MCP_UI.register(
+      "projects.editor",
+      component: UnsafeComponent,
+      mode: :edit,
+      actions: { save: "projects.update" }
+    )
+
+    document = RecordingStudio::MCP_UI.package("projects.editor", data: { title: "Beach House" })
+    config = JSON.parse(document.html[%r{id="mcp-ui-config">(?<json>.*?)</script>}m, :json])
+
+    assert_equal "projects.update", config.fetch("actions").fetch("save")
+    assert_equal "projects.editor", config.fetch("widgetId")
+  end
+
   def test_missing_identifier_raises
     assert_raises(RecordingStudio::MCP_UI::UnknownWidgetError) do
       RecordingStudio::MCP_UI.package("missing.widget", data: {})

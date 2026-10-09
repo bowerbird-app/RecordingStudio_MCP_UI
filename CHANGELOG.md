@@ -9,8 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Packaged documents vendor `@modelcontextprotocol/ext-apps` 2.0.3 (`App`, `PostMessageTransport`) instead of a custom JSON-RPC host.
+- Packaged widget config includes the alias-to-tool-name map. `mcpUI.execute` calls `app.callServerTool` with the real tool name.
 - `mcpUI.execute` talks only to a connected View SDK host. Dummy and JS tests mock that host over `postMessage`.
 - `Configuration#to_h` uses `RecordingStudio::Hooks#registered_counts`.
+
+### Removed
+- Ruby `action_executor`, `visibility_checker`, and `RecordingStudio::MCP_UI.execute`. Widget writes are ordinary MCP tool calls.
 
 ## [0.1.0] - 2026-10-09
 

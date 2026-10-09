@@ -41,6 +41,8 @@ class McpUiDemoTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "McpApps"
     config = response.body[%r{id="mcp-ui-config">(?<json>.*?)</script>}m, :json]
     refute_nil config
+    parsed = JSON.parse(config)
+    assert_equal "projects.update", parsed.fetch("actions").fetch("save")
     refute_includes config, "Password"
     refute_includes config, "token"
   end

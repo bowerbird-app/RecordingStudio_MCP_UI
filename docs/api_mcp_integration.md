@@ -1,6 +1,6 @@
 # RecordingStudio API and MCP integration spec
 
-This gem does not modify RecordingStudio API or RecordingStudio MCP. Those gems need the following additions so MCP Apps can discover widgets and dispatch registered actions.
+This gem does not modify RecordingStudio API or RecordingStudio MCP. Those gems need the following additions so MCP Apps can discover widgets.
 
 ## Ownership
 
@@ -60,7 +60,7 @@ RecordingStudio::MCP_UI.register(
 )
 ```
 
-The API string (`presskits.update`) is an API action name, not an MCP tool name.
+The API string (`presskits.update`) is the MCP tool name the widget runtime sends to `app.callServerTool`.
 
 ## RecordingStudio MCP additions
 
@@ -82,7 +82,7 @@ Do not invent a second association table.
 
 ### 2. Serve UI resources
 
-Implement `resources/read` for `ui://` URIs by calling:
+Implement `resources/list` and `resources/read` for `ui://` URIs. Read by calling:
 
 ```ruby
 document = RecordingStudio::MCP_UI.package(widget_id, data: structured_tool_result)
@@ -93,33 +93,9 @@ MCP obtains the HTML from MCP UI in-process. Do not HTTP-proxy through Recording
 
 MIME type: `text/html;profile=mcp-app`.
 
-### 3. Action dispatch from the widget
+The packaged document already includes the widget's alias-to-tool-name map. Widget JS calls `mcpUI.execute("save", payload)`. The runtime looks up `save` and calls `app.callServerTool({ name: "presskits.update", arguments })`. That is an ordinary MCP `tools/call`. The server's normal tool authorization applies. MCP does not resolve action aliases and does not wire `action_executor` or `visibility_checker`.
 
-Widget JS calls `mcpUI.execute("save", payload)`. The host/SDK sends `tools/call` with the **action alias**. MCP must:
-
-1. Resolve the widget from the current UI resource / tool association.
-2. Call `widget.action_for("save")` → `"presskits.update"`.
-3. Reject aliases that are not on the widget definition (ignore client-supplied tool names).
-4. Authorize with the existing access grant, named API, version, and Accessible permissions.
-5. Execute the existing API handler.
-6. Return structured content the widget can apply (`ok`, `data`, `errors`, optional `contextUpdate`).
-
-Suggested MCP helper:
-
-```ruby
-RecordingStudioMcp.dispatch_widget_action(
-  widget_id:,
-  alias_name:,
-  arguments:,
-  access_grant:,
-  api:,
-  version:
-)
-```
-
-Wire `RecordingStudio::MCP_UI.configuration.action_executor` to that helper in the host. This gem's dummy app uses `Demo::ActionAdapter` until that exists.
-
-### 4. Visibility
+### 3. Visibility
 
 ```ruby
 RecordingStudio::MCP_UI.available?(
@@ -130,21 +106,13 @@ RecordingStudio::MCP_UI.available?(
 )
 ```
 
-MCP should also assign:
+`available?` honors the widget's `available_if` hook. A registered widget is not globally visible. Displaying a field is not write permission. Writes go through the mapped tool and the server's existing access grant, named API, version, and Accessible checks.
 
-```ruby
-RecordingStudio::MCP_UI.configuration.visibility_checker = ->(widget:, access_grant:, api:, version:) {
-  # true only when the associated API operation is permitted for this grant
-}
-```
-
-A registered widget is not globally visible. Displaying a field is not write permission.
-
-### 5. Clients without MCP Apps
+### 4. Clients without MCP Apps
 
 Keep structured tool results. If the client cannot load `ui://` resources, return the existing text/structured result. Do not fail the tool because UI packaging is unavailable.
 
-### 6. Official MCP Apps SDK
+### 5. Official MCP Apps SDK
 
 Hosts and views use the official MCP Apps SDK (`@modelcontextprotocol/ext-apps`). This gem vendors the published View SDK and uses `App.connect` / `App.callServerTool` / `App.updateModelContext` only. Do not add client sniffing, per-host branches, host-specific `_meta` keys, or protocol workarounds. If a client cannot render `text/html;profile=mcp-app`, return the structured tool result.
 
@@ -156,4 +124,4 @@ Hosts and views use the official MCP Apps SDK (`@modelcontextprotocol/ext-apps`)
 
 ## Dummy stand-in
 
-`Demo::ActionAdapter` and `POST /demos/:id/save` exist only in `test/dummy`. They call `Demo::ProjectUpdate`, the same persistence path a conventional request would use. They are not a second API registry.
+`POST /demos/:id/save` exists only in `test/dummy`. It calls `Demo::ProjectUpdate`, the same persistence path a conventional request would use. It is not a second API registry.

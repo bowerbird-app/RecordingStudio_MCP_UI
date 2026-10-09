@@ -11,7 +11,6 @@ require "recording_studio_mcp_ui/renderer"
 require "recording_studio_mcp_ui/assets"
 require "recording_studio_mcp_ui/document"
 require "recording_studio_mcp_ui/packager"
-require "recording_studio_mcp_ui/action_bridge"
 require "recording_studio_mcp_ui/visibility"
 require "recording_studio_mcp_ui/engine"
 require "recording_studio_mcp_ui/capabilities/example"
@@ -46,15 +45,6 @@ module RecordingStudio
 
       def package(id, data: {}, **component_options)
         Packager.new(find(id)).package(data: data, **component_options)
-      end
-
-      def execute(id, alias_name, arguments: {}, access_grant: nil, revision: nil)
-        ActionBridge.new(find(id)).execute(
-          alias_name,
-          arguments: arguments,
-          access_grant: access_grant,
-          revision: revision
-        )
       end
 
       def available?(id, access_grant: nil, api: :public, version: nil)

@@ -21,7 +21,6 @@ Rails.application.config.to_prepare do
   )
 
   RecordingStudio::MCP_UI.configure do |config|
-    config.action_executor = Demo::ActionAdapter
     config.compiled_css_path = Rails.root.join("app/assets/builds/tailwind.css")
   end
 end

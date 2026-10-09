@@ -58,7 +58,6 @@ RecordingStudio::MCP_UI.list(mode: :edit, prefix: "presskits.")
 RecordingStudio::MCP_UI.render("presskits.preview", data: payload)
 document = RecordingStudio::MCP_UI.package("presskits.preview", data: payload)
 document.to_mcp_resource
-RecordingStudio::MCP_UI.execute("presskits.editor", "save", arguments: payload, access_grant: grant)
 RecordingStudio::MCP_UI.available?("presskits.editor", access_grant: grant, api: :public)
 ```
 
@@ -82,9 +81,9 @@ end
 
 1. Register `mode: :edit` and `actions: { save: "your.api_action" }`.
 2. Render fields with `data-mcp-field` and a `data-mcp-save="save"` button inside `data-controller="mcp-editor"`.
-3. Call `await mcpUI.execute("save", payload)` from widget JS. Never send raw MCP tool names.
+3. Call `await mcpUI.execute("save", payload)` from widget JS. The runtime maps `save` to the registered tool name and calls `app.callServerTool({ name, arguments })`.
 
-The alias is resolved on the server against the widget definition. The MCP adapter must re-authorize the mapped API action.
+The packaged document carries that alias-to-tool-name map. MCP treats the call as an ordinary tool invocation and applies the server's normal authorization.
 
 ## JavaScript API
 
@@ -94,7 +93,7 @@ Packaged documents define `window.mcpUI`:
 - `mcpUI.data()` / `mcpUI.applyData(data)` / `mcpUI.reset()`
 - `mcpUI.markDirty()` / `mcpUI.isDirty()`
 - `mcpUI.onData(listener)`
-- `mcpUI.execute(alias, payload)` — `tools/call` through the official View SDK, or rejects with `No action transport` when no host is connected
+- `mcpUI.execute(alias, payload)` — looks up the real tool name and calls `app.callServerTool`; rejects unknown aliases without sending; rejects with `No action transport` when no host is connected
 
 Host communication uses the official MCP Apps View SDK (`App` + `PostMessageTransport` from `@modelcontextprotocol/ext-apps`). The packaged document vendors that SDK and calls `app.connect()` / `app.callServerTool()` / `app.updateModelContext()`. There is no per-client protocol, sniffing, or host-specific metadata. Clients that cannot load the UI keep the structured tool result.
 
@@ -124,10 +123,10 @@ The document is a self-contained HTML page. It does not assume host importmaps o
 Sign in at `/users/sign_in` with `admin@admin.com` / `Password`.
 
 - Demo A: `/demos/:id` — read-only Project card
-- Demo B: `/demos/:id/edit` — editor that POSTs to `Demo::ProjectUpdate` through `Demo::ActionAdapter`
+- Demo B: `/demos/:id/edit` — editor that POSTs to `Demo::ProjectUpdate`
 - Packaged document: `/demos/:id/document?widget=projects.preview`
 
-The adapter is a test stand-in. It never reports a successful save unless the Project row was updated.
+The demo save path is a test stand-in. It never reports a successful save unless the Project row was updated.
 
 ## Testing
 
@@ -139,4 +138,4 @@ node --test test/javascript/*_test.js
 
 ## Required external work
 
-Documented in [docs/api_mcp_integration.md](docs/api_mcp_integration.md): `ui:` on API registrations, MCP `resources/read` for `ui://`, alias-to-API dispatch, and visibility through access grants.
+Documented in [docs/api_mcp_integration.md](docs/api_mcp_integration.md): `ui:` on API registrations, MCP `resources/list` and `resources/read` for `ui://`, and ordinary tool authorization for widget calls.
