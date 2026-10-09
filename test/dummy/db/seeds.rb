@@ -55,7 +55,7 @@ page = Page.find_or_create_by!(title: "Getting Started")
 admin_root = AdminRoot.find_or_create_by!(name: "Admin")
 
 oauth_client = RecordingStudioOauth::OauthClient.find_or_initialize_by(name: "Seed MCP App")
-oauth_client.redirect_uris = ["http://127.0.0.1:3000/callback"]
+oauth_client.redirect_uris = [ "http://127.0.0.1:3000/callback" ]
 oauth_client.confidential = false
 oauth_client.api_key = "public"
 oauth_client.save!

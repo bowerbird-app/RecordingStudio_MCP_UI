@@ -46,17 +46,17 @@ module OauthDummyHelpers
       role: role
     )
 
-    [root_recording, access_recording]
+    [ root_recording, access_recording ]
   end
 
-  def create_oauth_client(name: "Demo App", redirect_uris: ["http://127.0.0.1/callback"], api: "public")
+  def create_oauth_client(name: "Demo App", redirect_uris: [ "http://127.0.0.1/callback" ], api: "public")
     client = RecordingStudioOauth::OauthClient.create!(
       name: name,
       confidential: false,
       redirect_uris: redirect_uris,
       api_key: api.to_s
     )
-    [client, nil]
+    [ client, nil ]
   end
 
   def pkce_pair
