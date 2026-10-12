@@ -1,7 +1,7 @@
 (function (root) {
   "use strict";
 
-  var ROW_SELECTOR = "[data-mcp-row], [data-collection-editor-row], tr, li";
+  var ROW_SELECTOR = "[data-mcp-row]";
 
   function q(rootEl, selector) {
     return rootEl.querySelector(selector);
@@ -62,6 +62,18 @@
     return input.value;
   }
 
+  function blankObject() {
+    return Object.create(null);
+  }
+
+  function own(object, key) {
+    return !!object && Object.prototype.hasOwnProperty.call(object, key);
+  }
+
+  function forbiddenKey(key) {
+    return key === "__proto__" || key === "constructor" || key === "prototype";
+  }
+
   function isHash(value) {
     return !!value && typeof value === "object" && !Array.isArray(value);
   }
@@ -96,98 +108,101 @@
     for (var i = 0; i < parts.length; i++) {
       var part = parts[i];
       if (!part) continue;
-      if (!isHash(current) || !Object.prototype.hasOwnProperty.call(current, part)) return false;
+      if (forbiddenKey(part) || !isHash(current) || !own(current, part)) return false;
       current = current[part];
     }
     return true;
   }
 
-  function normalize(params, name, value, depth) {
-    if (depth > 32) return params;
-    var parts = splitName(name, depth);
-    var key = parts.key;
-    var after = parts.after;
-    if (!key) return params;
-    if (after === "") {
-      if (key === "[]" && depth !== 0) return [value];
-      params[key] = value;
+  function readOwn(object, key) {
+    return own(object, key) ? object[key] : undefined;
+  }
+
+  function ensureHash(params, key) {
+    if (forbiddenKey(key)) return null;
+    var current = readOwn(params, key);
+    if (!isHash(current)) {
+      current = blankObject();
+      params[key] = current;
+    }
+    return current;
+  }
+
+  function ensureArray(params, key) {
+    if (forbiddenKey(key)) return null;
+    var current = readOwn(params, key);
+    if (!Array.isArray(current)) {
+      current = [];
+      params[key] = current;
+    }
+    return current;
+  }
+
+  function writeLeaf(params, key, payload, depth, trail, mode) {
+    if (forbiddenKey(key)) return params;
+    if (mode === "path") {
+      payload.path = trail.concat(key === "[]" && depth !== 0 ? 0 : key);
+      params[key] = payload;
       return params;
     }
-    if (after === "[") {
-      params[name] = value;
-      return params;
-    }
-    if (after === "[]") {
-      if (!Array.isArray(params[key])) params[key] = [];
-      params[key].push(value);
-      return params;
-    }
-    if (after.indexOf("[]") === 0) return nestArray(params, key, after, value, depth);
-    if (!isHash(params[key])) params[key] = {};
-    normalize(params[key], after, value, depth + 1);
+    if (key === "[]" && depth !== 0) return [payload];
+    params[key] = payload;
     return params;
   }
 
-  function nestArray(params, key, after, value, depth) {
+  function pushLeaf(params, key, payload, trail, mode) {
+    var list = ensureArray(params, key);
+    if (!list) return params;
+    if (mode === "path") payload.path = trail.concat(key, list.length);
+    list.push(payload);
+    return params;
+  }
+
+  function placeArray(params, key, after, payload, depth, trail, mode) {
     var childKey = childKeyFor(after);
-    if (!Array.isArray(params[key])) params[key] = [];
-    var list = params[key];
+    if (!childKey || forbiddenKey(childKey)) return params;
+    var list = ensureArray(params, key);
+    if (!list) return params;
     var last = list[list.length - 1];
-    if (isHash(last) && !hashHasKey(last, childKey)) {
-      normalize(last, childKey, value, depth + 1);
-    } else {
-      list.push(normalize({}, childKey, value, depth + 1));
+    var index = list.length - 1;
+    if (!(isHash(last) && !hashHasKey(last, childKey))) {
+      last = blankObject();
+      index = list.length;
+      list.push(last);
     }
+    var written = place(last, childKey, payload, depth + 1, trail.concat(key, index), mode);
+    if (written !== last) list[index] = written;
+    return params;
+  }
+
+  function place(params, name, payload, depth, trail, mode) {
+    if (!params || depth > 32) return params;
+    var parts = splitName(name, depth);
+    var key = parts.key;
+    var after = parts.after;
+    if (!key || forbiddenKey(key)) return params;
+    if (after === "" || after === "[") {
+      return writeLeaf(params, after === "[" ? name : key, payload, depth, trail, mode);
+    }
+    if (after === "[]") return pushLeaf(params, key, payload, trail, mode);
+    if (after.indexOf("[]") === 0) return placeArray(params, key, after, payload, depth, trail, mode);
+    var child = ensureHash(params, key);
+    if (!child) return params;
+    place(child, after, payload, depth + 1, trail.concat(key), mode);
     return params;
   }
 
   function assignParam(params, name, value) {
-    normalize(params, name, value, 0);
-  }
-
-  function assignTracking(params, name, token, depth, trail) {
-    var parts = splitName(name, depth);
-    var key = parts.key;
-    var after = parts.after;
-    if (!key) return;
-    if (after === "") {
-      token.path = trail.concat(key === "[]" && depth !== 0 ? 0 : key);
-      params[key] = token;
-      return;
-    }
-    if (after === "[]") {
-      if (!Array.isArray(params[key])) params[key] = [];
-      token.path = trail.concat(key, params[key].length);
-      params[key].push(token);
-      return;
-    }
-    if (after.indexOf("[]") === 0) {
-      trackArray(params, key, after, token, depth, trail);
-      return;
-    }
-    if (!isHash(params[key])) params[key] = {};
-    assignTracking(params[key], after, token, depth + 1, trail.concat(key));
-  }
-
-  function trackArray(params, key, after, token, depth, trail) {
-    var childKey = childKeyFor(after);
-    if (!Array.isArray(params[key])) params[key] = [];
-    var list = params[key];
-    var last = list[list.length - 1];
-    if (!(isHash(last) && !hashHasKey(last, childKey))) {
-      last = {};
-      list.push(last);
-    }
-    assignTracking(last, childKey, token, depth + 1, trail.concat(key, list.length - 1));
+    place(params, name, value, 0, [], "value");
   }
 
   function trackPaths(fields) {
-    var params = {};
+    var params = blankObject();
     return fields.map(function (input) {
       var name = fieldName(input);
       if (!name || name.indexOf("[") === -1) return null;
       var token = { path: null };
-      assignTracking(params, name, token, 0, []);
+      place(params, name, token, 0, [], "path");
       return token.path;
     });
   }
@@ -196,8 +211,9 @@
     var current = data;
     if (!path) return undefined;
     for (var i = 0; i < path.length; i++) {
-      if (current == null) return undefined;
-      current = current[path[i]];
+      var key = path[i];
+      if (current == null || (typeof key === "string" && (forbiddenKey(key) || !own(current, key)))) return undefined;
+      current = current[key];
     }
     return current;
   }
@@ -236,10 +252,10 @@
   }
 
   function collect(rootEl) {
-    var payload = {};
+    var payload = blankObject();
     all(rootEl, "[data-mcp-field]").forEach(function (input) {
       var name = fieldName(input);
-      if (!name || !collectable(input)) return;
+      if (!name || !collectable(input) || forbiddenKey(name)) return;
       var value = fieldValue(input);
       if (name.indexOf("[") === -1) payload[name] = value;
       else assignParam(payload, name, value);
@@ -319,8 +335,8 @@
     });
   }
 
-  function sameRecord(data) {
-    return data === root.mcpUI.config().data;
+  function restoresRowOrder(rootEl) {
+    return !!(rootEl.getAttribute && rootEl.getAttribute("data-mcp-restore-order") != null);
   }
 
   function connect(rootEl) {
@@ -341,7 +357,7 @@
 
     root.mcpUI.onData(function (data, meta) {
       if (meta.dataChanged) {
-        if (sameRecord(data)) restoreOrder(orderGroups);
+        if (restoresRowOrder(rootEl)) restoreOrder(orderGroups);
         bindFields(rootEl, data);
       }
       rootEl.classList.toggle("is-dirty", !!meta.dirty);

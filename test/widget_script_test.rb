@@ -37,9 +37,39 @@ class WidgetScriptTest < Minitest::Test
 
   def test_missing_widget_script_is_skipped
     @configuration.widget_script_path = "/tmp/missing-mcp-ui-widgets.js"
-    html = package_html
+    warnings = []
+    logger = Object.new
+    logger.define_singleton_method(:warn) { |message| warnings << message }
+
+    html = Rails.stub(:logger, logger) { package_html }
 
     refute_includes html, "WIDGET_BUNDLE"
+    assert_includes warnings, "Recording Studio MCP UI widget script is missing: /tmp/missing-mcp-ui-widgets.js"
+  end
+
+  def test_nil_widget_script_path_does_not_warn
+    @configuration.widget_script_path = nil
+    warnings = []
+    logger = Object.new
+    logger.define_singleton_method(:warn) { |message| warnings << message }
+
+    Rails.stub(:logger, logger) { package_html }
+
+    assert_empty warnings
+  end
+
+  def test_widget_script_escapes_script_close_and_comment_open
+    Dir.mktmpdir do |dir|
+      script = File.join(dir, "mcp_ui_widgets.js")
+      File.write(script, "var marker = '</script>';\nvar note = '<!--';\n")
+      @configuration.widget_script_path = script
+      html = package_html
+
+      assert_includes html, "var marker = '<\\/script>';"
+      refute_includes html, "var marker = '</script>';"
+      assert_includes html, "var note = '<\\!--';"
+      refute_includes html, "var note = '<!--';"
+    end
   end
 
   def test_widget_script_is_copied_before_the_editor_runtime

@@ -573,14 +573,15 @@ function listParent(rows) {
   return parent;
 }
 
-function sectionRow(title, body) {
+function sectionRow(title, body, selector) {
+  const match = selector || "[data-mcp-row]";
   const row = {
     parentNode: null,
-    closest() { return this; }
+    closest(asked) { return asked === match ? this : null; }
   };
   row.fields = [
-    inputField("sections[][title]", title, { closest: () => row }),
-    inputField("sections[][body]", body, { closest: () => row })
+    inputField("sections[][title]", title, { closest: (selector) => row.closest(selector) }),
+    inputField("sections[][body]", body, { closest: (selector) => row.closest(selector) })
   ];
   return row;
 }
@@ -588,6 +589,10 @@ function sectionRow(title, body) {
 function sectionRoot(parent, extras) {
   extras = extras || {};
   const root = editorRoot([], extras);
+  root.getAttribute = function (name) {
+    if (name === "data-mcp-restore-order") return extras.restoreOrder ? "" : null;
+    return null;
+  };
   root.querySelectorAll = function (selector) {
     if (selector === "[data-mcp-field]") {
       return parent.childNodes.filter((node) => node.fields).flatMap((node) => node.fields);
@@ -613,7 +618,7 @@ test("editor save collects repeated section fields in DOM order", async () => {
   const resetButton = actionButton("data-mcp-reset", "reset");
   const windowLike = windowStub(
     { widgetId: "pages.editor", actions: { save: "pages.update" }, data: opening },
-    { editorRoots: [sectionRoot(parent, { saveButtons: [saveButton], resetButtons: [resetButton] })] }
+    { editorRoots: [sectionRoot(parent, { saveButtons: [saveButton], resetButtons: [resetButton], restoreOrder: true })] }
   );
   const calls = [];
   attachMockHost(windowLike, {
@@ -705,4 +710,92 @@ test("editor save keeps string fields and reads json array checkbox and radio va
   assert.equal(JSON.stringify(calls[0].arguments.meta), JSON.stringify({ note: "hi" }));
   assert.equal(calls[0].arguments.raw, "{");
   assert.equal(JSON.stringify(calls[0].arguments.sections), JSON.stringify({ 10: { heading: "Stable" } }));
+});
+
+test("editor save ignores prototype keys", async () => {
+  const proto = inputField("user[__proto__][polluted]", "yes");
+  const viaConstructor = inputField("constructor[prototype][polluted]", "yes");
+  const name = inputField("user[name]", "Ada");
+  const saveButton = actionButton("data-mcp-save", "save");
+  const windowLike = windowStub(
+    { widgetId: "pages.editor", actions: { save: "pages.update" }, data: { user: { name: "" } } },
+    { editorRoots: [editorRoot([proto, viaConstructor, name], { saveButtons: [saveButton] })] }
+  );
+  const calls = [];
+  attachMockHost(windowLike, {
+    onToolCall(params) {
+      calls.push(params);
+      return { ok: true, data: { user: { name: "Ada" } } };
+    }
+  });
+
+  try {
+    loadEngine(windowLike, { sdk: true, boot: true });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    name.value = "Ada";
+    saveButton.dispatch("click");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assert.equal({}.polluted, undefined);
+    assert.equal(Object.prototype.polluted, undefined);
+    assert.equal(calls[0].arguments.user.name, "Ada");
+    assert.equal(calls[0].arguments.user.polluted, undefined);
+  } finally {
+    delete Object.prototype.polluted;
+  }
+});
+
+test("editor reset restores only rows that opt in", async () => {
+  const opening = {
+    sections: [
+      { title: "Intro", body: "Hello" },
+      { title: "Close", body: "Goodbye" }
+    ]
+  };
+  const plain = sectionRow("", "", "tr");
+  const marked = sectionRow("", "", "li");
+  const parent = listParent([plain, marked]);
+  const resetButton = actionButton("data-mcp-reset", "reset");
+  const windowLike = windowStub(
+    { widgetId: "pages.editor", actions: { save: "pages.update" }, data: opening },
+    { editorRoots: [sectionRoot(parent, { resetButtons: [resetButton], restoreOrder: true })] }
+  );
+  attachMockHost(windowLike, { onToolCall() { return { ok: true, data: opening }; } });
+
+  loadEngine(windowLike, { sdk: true, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  parent.insertBefore(marked, plain);
+  resetButton.dispatch("click");
+  assert.deepEqual(parent.childNodes.filter((node) => node.fields), [marked, plain]);
+});
+
+test("editor reset leaves opted-in rows in place without data-mcp-restore-order", async () => {
+  const opening = {
+    sections: [
+      { title: "Intro", body: "Hello" },
+      { title: "Close", body: "Goodbye" }
+    ]
+  };
+  const first = sectionRow("", "");
+  const second = sectionRow("", "");
+  const parent = listParent([first, second]);
+  const resetButton = actionButton("data-mcp-reset", "reset");
+  const windowLike = windowStub(
+    { widgetId: "pages.editor", actions: { save: "pages.update" }, data: opening },
+    { editorRoots: [sectionRoot(parent, { resetButtons: [resetButton] })] }
+  );
+  attachMockHost(windowLike, { onToolCall() { return { ok: true, data: opening }; } });
+
+  loadEngine(windowLike, { sdk: true, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  parent.insertBefore(second, first);
+  resetButton.dispatch("click");
+  assert.deepEqual(parent.childNodes.filter((node) => node.fields), [second, first]);
 });

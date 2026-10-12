@@ -108,7 +108,7 @@ Host communication uses the official MCP Apps View SDK (`App` + `PostMessageTran
 5. The host's prebuilt widget script from `configuration.widget_script_path`, when that file exists
 6. `runtime.js`, `controllers/editor_controller.js`, and `boot.js`
 
-Host CSS and the widget script are read from disk at package time. Missing paths are skipped. Do not pass URLs; CSP allows only inline style and script.
+Host CSS and the widget script are read from disk at package time. A missing CSS path is skipped. A configured `widget_script_path` that is not a file logs a warning and is skipped. `nil` leaves the script out and stays quiet. Do not pass URLs; CSP allows only inline style and script.
 
 The document is a self-contained HTML page. It does not fetch host importmaps or layout assets at view time. The editor controller is Stimulus-shaped (`data-controller="mcp-editor"`) and talks only through `mcpUI`.
 
@@ -134,7 +134,7 @@ import * as esbuild from "esbuild"
 import { execSync } from "node:child_process"
 import path from "node:path"
 
-const flatPack = execSync("bundle show flat_pack", { encoding: "utf8" }).trim()
+const flatPack = execSync("bundle info --path flat_pack", { encoding: "utf8" }).trim()
 const javascript = path.join(flatPack, "app/javascript/flat_pack")
 
 await esbuild.build({
@@ -168,7 +168,9 @@ Save reads `[data-mcp-field]` elements only.
 - `data-mcp-type="json"`, `"array"`, or `"object"` JSON-parses the value. Empty input becomes `null`, `[]`, or `{}`. A parse failure keeps the raw string.
 - Disabled fields, file inputs, and buttons are skipped.
 
-Hidden FlatPack inputs such as `id` and `_destroy` are collected only when they also have `data-mcp-field`. Reset restores the row order captured when the editor connected, then writes values back by position, when the data object is the same one the widget opened with. A tool result is a new object and does not reorder the DOM.
+Hidden FlatPack inputs such as `id` and `_destroy` are collected only when they also have `data-mcp-field`. Names `__proto__`, `constructor`, and `prototype` are ignored.
+
+A repeatable row opts in with `data-mcp-row` on the element that should move as a unit. `tr` and `li` are ordinary markup. Put `data-mcp-restore-order` on the editor (`data-controller="mcp-editor"`) when a data refresh should move those rows back to the order from connect, then write values by that position. Without the attribute, rows stay where they are and values bind in the current DOM order.
 
 ### Widget CSS tokens
 

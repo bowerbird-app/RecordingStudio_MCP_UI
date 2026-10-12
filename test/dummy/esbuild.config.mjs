@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url"
 import * as esbuild from "esbuild"
 
 const root = path.dirname(fileURLToPath(import.meta.url))
-const flatPack = execSync("bundle show flat_pack", { cwd: root, encoding: "utf8" }).trim()
+const flatPack = execSync("bundle info --path flat_pack", { cwd: root, encoding: "utf8" }).trim()
 const javascript = path.join(flatPack, "app/javascript/flat_pack")
 
 mkdirSync(path.join(root, "app/assets/builds"), { recursive: true })

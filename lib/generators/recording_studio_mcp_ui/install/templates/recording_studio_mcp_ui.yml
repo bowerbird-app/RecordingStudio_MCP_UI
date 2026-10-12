@@ -3,5 +3,5 @@ shared:
   # Missing files are skipped. Do not use URLs.
   compiled_css_path:
   # Prebuilt widget script inlined before the editor runtime.
-  # Omit the key to leave Stimulus out. A missing file is skipped. Never a URL.
+  # Omit the key to leave Stimulus out. A missing file logs a warning and is skipped. Never a URL.
   # widget_script_path:

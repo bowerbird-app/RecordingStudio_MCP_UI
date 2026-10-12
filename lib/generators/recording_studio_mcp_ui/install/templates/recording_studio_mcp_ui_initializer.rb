@@ -18,7 +18,7 @@ RecordingStudio::MCP_UI.configure do |config|
   #
   # Prebuilt widget script, inlined before the editor runtime. Build it with
   # esbuild (Stimulus + the controllers this host wants). nil leaves Stimulus out.
-  # A missing file is skipped. Never a URL.
+  # A missing file logs a warning and is skipped. Never a URL.
   #
   # config.widget_script_path = Rails.root.join("app/assets/builds/mcp_ui_widgets.js")
 end
