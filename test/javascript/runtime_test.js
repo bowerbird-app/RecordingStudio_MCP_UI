@@ -861,6 +861,24 @@ class ListElement extends ListNode {
     this.nodeType = 1;
     this.tagName = String(tag).toUpperCase();
     this.attrs = Object.assign({}, attrs);
+    this.classList = { toggle() {}, add() {}, remove() {}, contains() { return false; } };
+    this._listeners = {};
+  }
+
+  get value() {
+    return Object.prototype.hasOwnProperty.call(this, "_value") ? this._value : (this.getAttribute("value") || "");
+  }
+
+  set value(next) {
+    this._value = next == null ? "" : String(next);
+  }
+
+  addEventListener(type, fn) {
+    (this._listeners[type] = this._listeners[type] || []).push(fn);
+  }
+
+  dispatchEvent(event) {
+    (this._listeners[event.type] || []).forEach((fn) => fn(event));
   }
 
   getAttribute(name) {
@@ -887,7 +905,11 @@ class ListElement extends ListNode {
     if (selector.indexOf("template[") === 0 && selector.endsWith("]")) {
       return this.tagName === "TEMPLATE" && this.hasAttribute(selector.slice("template[".length, -1));
     }
-    if (selector.indexOf("[") === 0 && selector.endsWith("]") && selector.indexOf("~=") === -1) {
+    const token = /^\[([^\]~]+)~=["']([^"']+)["']\]$/.exec(selector);
+    if (token) {
+      return (this.getAttribute(token[1]) || "").split(/\s+/).indexOf(token[2]) !== -1;
+    }
+    if (selector.indexOf("[") === 0 && selector.endsWith("]") && selector.indexOf("~=") === -1 && selector.indexOf("=") === -1) {
       return this.hasAttribute(selector.slice(1, -1));
     }
     return false;
@@ -1058,6 +1080,179 @@ test("list binder fills object fields and leaves them alone when the form is dir
   const live = list.querySelectorAll("[data-mcp-list-entry]");
   assert.equal(live.length, 1);
   assert.equal(slotText(live[0], "heading"), "Open");
+});
+
+test("list binder fills fields and attributes on each clone and keeps input names", async () => {
+  const row = listElement("tr", {
+    "data-mcp-row": "",
+    "data-mcp-attr-data-id": "id"
+  });
+  const id = listElement("input", { type: "hidden", name: "links[][id]", "data-mcp-field": "true", value: "" });
+  const label = listElement("input", { type: "text", name: "links[][label]", "data-mcp-field": "true", value: "" });
+  const url = listElement("input", { type: "text", name: "links[][url]", "data-mcp-field": "true", value: "" });
+  const destroy = listElement("input", { type: "hidden", name: "links[][_destroy]", "data-mcp-field": "true", value: "0" });
+  const picked = listElement("input", { type: "checkbox", name: "links[][picked]", "data-mcp-field": "true" });
+  const trigger = listElement("button", {
+    type: "button",
+    "data-mcp-attr-id": "note-$index-trigger",
+    "data-mcp-attr-aria-controls": "note-$index-content"
+  });
+  const panel = listElement("div", {
+    "data-mcp-attr-id": "note-$index-content",
+    "data-mcp-attr-aria-labelledby": "id"
+  });
+  const visible = listElement("span", { "data-mcp-text": "label" });
+  row.appendChild(id);
+  row.appendChild(label);
+  row.appendChild(url);
+  row.appendChild(destroy);
+  row.appendChild(picked);
+  row.appendChild(trigger);
+  row.appendChild(panel);
+  row.appendChild(visible);
+  const template = listElement("template", { "data-mcp-list-item": "" });
+  template.content = new ListFragment([ row ]);
+  const empty = listElement("p", { "data-mcp-list-empty": "" });
+  const list = listElement("div", { "data-mcp-list": "links" }, [ template, empty ]);
+  const added = listElement("tr", { "data-mcp-row": "" });
+  const windowLike = windowStub({ widgetId: "pages.links", data: {} });
+  windowLike.document = listDocument({ widgetId: "pages.links", data: {} }, listElement("div", {}, [ list ]));
+  let handler;
+  attachFakeApp(windowLike, function (next) { handler = next; });
+
+  loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  handler({
+    content: [],
+    structuredContent: {
+      links: [
+        { id: "notes", label: "Notes", url: "https://example.com/notes", picked: true },
+        { id: "press", label: "Press <kit>", url: "https://example.com/press", picked: false }
+      ]
+    }
+  });
+
+  const entries = list.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(entries.length, 2);
+  assert.equal(entries[0].getAttribute("data-mcp-row"), "");
+  assert.equal(entries[0].getAttribute("data-id"), "notes");
+  assert.equal(entries[1].getAttribute("data-id"), "press");
+  const firstLabel = entries[0].querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][label]");
+  const secondLabel = entries[1].querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][label]");
+  assert.equal(firstLabel.value, "Notes");
+  assert.equal(firstLabel.getAttribute("name"), "links[][label]");
+  assert.equal(secondLabel.value, "Press <kit>");
+  assert.equal(elementWithTag(list, "IMG"), null);
+  assert.equal(entries[0].querySelectorAll("[data-mcp-text]")[0].textContent, "Notes");
+  const firstUrl = entries[0].querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][url]");
+  const firstDestroy = entries[0].querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][_destroy]");
+  const firstPicked = entries[0].querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][picked]");
+  assert.equal(firstUrl.value, "https://example.com/notes");
+  assert.equal(firstDestroy.value, "0");
+  assert.equal(firstPicked.checked, true);
+  assert.equal(elementWithTag(entries[0], "BUTTON").getAttribute("id"), "note-0-trigger");
+  assert.equal(elementWithTag(entries[0], "BUTTON").getAttribute("aria-controls"), "note-0-content");
+  assert.equal(elementWithTag(entries[1], "BUTTON").getAttribute("id"), "note-1-trigger");
+  assert.equal(elementWithTag(entries[1], "DIV").getAttribute("id"), "note-1-content");
+  assert.equal(elementWithTag(entries[0], "DIV").getAttribute("aria-labelledby"), "notes");
+
+  list.appendChild(added);
+  handler({ content: [], structuredContent: { links: [] } });
+  assert.equal(list.querySelectorAll("[data-mcp-list-entry]").length, 0);
+  assert.equal(list.querySelectorAll("[data-mcp-row]").length, 0);
+  assert.equal(empty.hasAttribute("hidden"), false);
+});
+
+test("cloned rows save in DOM order and reset restores the opening tool result", async () => {
+  const id = listElement("input", { type: "hidden", name: "links[][id]", "data-mcp-field": "true" });
+  const label = listElement("input", { type: "text", name: "links[][label]", "data-mcp-field": "true" });
+  const row = listElement("tr", { "data-mcp-row": "" }, [ id, label ]);
+  const template = listElement("template", { "data-mcp-list-item": "" });
+  template.content = new ListFragment([ row ]);
+  const list = listElement("tbody", { "data-mcp-list": "links" }, [ template ]);
+  const title = listElement("input", { name: "title", "data-mcp-field": "true" });
+  const save = listElement("button", { type: "button", "data-mcp-save": "save" });
+  const reset = listElement("button", { type: "button", "data-mcp-reset": "reset" });
+  const editor = listElement("div", { "data-controller": "mcp-editor", "data-mcp-restore-order": "" }, [ title, list, save, reset ]);
+  const windowLike = windowStub({ widgetId: "pages.links", actions: { save: "pages.update" }, data: {} });
+  windowLike.document = listDocument(
+    { widgetId: "pages.links", actions: { save: "pages.update" }, data: {} },
+    listElement("div", {}, [ editor ])
+  );
+  const calls = [];
+  let toolResult;
+  windowLike.parent = { postMessage() {} };
+  windowLike.McpApps = {
+    App: function App() {
+      this.callServerTool = function (params) {
+        calls.push(params);
+        return Promise.resolve({
+          content: [],
+          structuredContent: {
+            ok: true,
+            data: {
+              title: "Launch notes",
+              links: [
+                { id: "press", label: "Press desk" },
+                { id: "notes", label: "Notes" }
+              ]
+            }
+          }
+        });
+      };
+    },
+    PostMessageTransport: function PostMessageTransport() {}
+  };
+  Object.defineProperty(windowLike.McpApps.App.prototype, "ontoolresult", {
+    configurable: true,
+    get() { return this._ontoolresult; },
+    set(fn) { this._ontoolresult = fn; toolResult = fn; }
+  });
+  windowLike.McpApps.App.prototype.connect = function connect() {
+    return Promise.resolve();
+  };
+
+  loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  toolResult({
+    content: [],
+    structuredContent: {
+      title: "Launch notes",
+      links: [
+        { id: "notes", label: "Notes" },
+        { id: "press", label: "Press" }
+      ]
+    }
+  });
+
+  let rows = list.querySelectorAll("[data-mcp-row]");
+  assert.equal(rows.length, 2);
+  assert.equal(title.value, "Launch notes");
+  const first = rows[0];
+  const second = rows[1];
+  const labelOf = (entry) => entry.querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][label]");
+  labelOf(second).value = "Press desk";
+  list.insertBefore(second, first);
+  save.dispatchEvent({ type: "click" });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.equal(JSON.stringify(calls[0].arguments.links), JSON.stringify([
+    { id: "press", label: "Press desk" },
+    { id: "notes", label: "Notes" }
+  ]));
+
+  rows = list.querySelectorAll("[data-mcp-row]");
+  assert.equal(labelOf(rows[0]).value, "Press desk");
+  reset.dispatchEvent({ type: "click" });
+  rows = list.querySelectorAll("[data-mcp-row]");
+  assert.equal(rows.length, 2);
+  assert.equal(labelOf(rows[0]).value, "Notes");
+  assert.equal(labelOf(rows[1]).value, "Press");
+  assert.equal(title.value, "Launch notes");
 });
 
 function elementWithTag(root, tag) {

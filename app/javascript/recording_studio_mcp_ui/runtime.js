@@ -3,6 +3,7 @@
 
   var config = {};
   var data = {};
+  var openedRecord = null;
   var dirty = false;
   var listeners = [];
   var app = null;
@@ -23,8 +24,13 @@
     });
   }
 
+  function blankRecord(value) {
+    return !value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length === 0;
+  }
+
   function setData(next) {
     data = next && typeof next === "object" ? next : {};
+    if (openedRecord == null && !blankRecord(data)) openedRecord = data;
     notify(true);
   }
 
@@ -145,7 +151,7 @@
     },
     reset: function () {
       dirty = false;
-      setData(config.data || {});
+      setData(openedRecord || config.data || {});
     },
     execute: function (aliasName, payload) {
       var toolName = toolNameFor(aliasName);

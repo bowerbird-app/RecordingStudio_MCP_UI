@@ -90,7 +90,7 @@ The packaged document carries that alias-to-tool-name map. MCP treats the call a
 Packaged documents define `window.mcpUI`:
 
 - `mcpUI.start()`
-- `mcpUI.data()` / `mcpUI.applyData(data)` / `mcpUI.reset()`
+- `mcpUI.data()` / `mcpUI.applyData(data)` / `mcpUI.reset()` — reset restores the first non-blank record. That is the packaged `data` when `resources/read` sent some, or the first tool result when the package was empty.
 - `mcpUI.markDirty()` / `mcpUI.isDirty()`
 - `mcpUI.onData(listener)` — listener receives `(data, { dirty, dataChanged })`. `dataChanged` is true for `applyData`, `reset`, start, and accepted tool results. `markDirty` only flips `dirty`.
 - `mcpUI.execute(alias, payload)` — looks up the real tool name and calls `app.callServerTool`; rejects unknown aliases without sending; rejects with `No action transport` when no host is connected
@@ -99,7 +99,7 @@ Host communication uses the official MCP Apps View SDK (`App` + `PostMessageTran
 
 ### Lists
 
-`resources/read` packages the widget with empty data. A Ruby loop has already taken the empty branch by the time `ui/notifications/tool-result` arrives. Repeating display content is a template the runtime clones. Editor rows are a different mechanism: `data-mcp-row` opts a server-rendered row into save and restore order. Do not use the list template for those rows.
+`resources/read` packages the widget with empty data. A Ruby loop has already taken the empty branch by the time `ui/notifications/tool-result` arrives. Repeating content, including editable rows, is a template the runtime clones. Put `data-mcp-row` and `data-mcp-field` on that template when Save should collect the row. The editor keeps each input's `name`, so `links[][label]` still becomes an array in DOM order.
 
 ```html
 <div data-mcp-list="topics">
@@ -108,6 +108,15 @@ Host communication uses the official MCP Apps View SDK (`App` + `PostMessageTran
   </template>
   <p data-mcp-list-empty>No topics yet.</p>
 </div>
+
+<tbody data-mcp-list="links">
+  <template data-mcp-list-item>
+    <tr data-mcp-row data-mcp-attr-data-id="id">
+      <td><input name="links[][label]" data-mcp-field></td>
+    </tr>
+  </template>
+  <tr data-mcp-list-empty><td>No data available</td></tr>
+</tbody>
 ```
 
 | Attribute | Where | Meaning |
@@ -116,8 +125,11 @@ Host communication uses the official MCP Apps View SDK (`App` + `PostMessageTran
 | `data-mcp-list-item` | `<template>` | One item. Cloned for each entry |
 | `data-mcp-list-empty` | element | Shown when the array is missing or empty. Hidden when it has entries |
 | `data-mcp-text` | inside the item | Field name on an object. Leave it empty for a scalar such as a topic string |
+| `data-mcp-field` | input inside the item | Value is set from the item. The name stays. `links[][label]` reads the item's `label`. A missing key keeps the template value |
+| `data-mcp-row` | row inside the item | Opts the clone into save order. A later result removes these rows from the list, including rows added outside the template |
+| `data-mcp-attr-<name>` | element inside the item | Sets that HTML attribute. The value is a field name, or a string containing `$index` (`note-$index-content`). Written with `setAttribute` |
 
-Each result replaces the previous clones. Boot builds the list before the editor rebinds fields, on the same data change. The runtime sets slot text with `textContent` and toggles `hidden` on the empty state. It does not use `innerHTML`. `data-mcp-list-entry` marks each clone and is removed on the next result; do not author it. `markDirty` does not rebuild the list. Preview text and `data-mcp-field` values outside the list are unchanged.
+Each result replaces the previous clones. Boot builds the list before the editor rebinds fields, on the same data change. The runtime sets slot text with `textContent`, input values with the `value` property, and attributes with `setAttribute`. It toggles `hidden` on the empty state. It does not use `innerHTML`. `data-mcp-list-entry` marks each clone and is removed on the next result; do not author it. `markDirty` does not rebuild the list. Preview text and `data-mcp-field` values outside the list are unchanged. Clones are ordinary DOM nodes, so Stimulus connects targets that appear inside a controller that is already on the page. `data-mcp-restore-order` moves only rows that are still in their parent; a list rebuild has already replaced those rows from the record.
 
 ## How Flatpack CSS and Stimulus get into widget HTML
 

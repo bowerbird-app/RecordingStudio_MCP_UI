@@ -10,12 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.0] - 2026-10-12
 
 ### Added
-- Display lists in the packaged runtime. A container uses `data-mcp-list`, one FlatPack item lives in `<template data-mcp-list-item>`, and the empty state uses `data-mcp-list-empty`. Each tool result replaces the clones, writes slots with `textContent`, and toggles the empty state. An empty `data-mcp-text` fills a scalar. A named `data-mcp-text` fills that field on an object.
+- Display lists in the packaged runtime. A container uses `data-mcp-list`, one item lives in `<template data-mcp-list-item>`, and the empty state uses `data-mcp-list-empty`. Each tool result replaces the clones. An empty `data-mcp-text` fills a scalar. A named `data-mcp-text` fills that field on an object.
+- The same clone fills `[data-mcp-field]` from the item and keeps the input `name`, so a template row can save `links[][label]` in DOM order. `[data-mcp-row]` marks that row. `data-mcp-attr-<name>` sets one HTML attribute from a field or from `$index` (`note-$index-content`).
+
+### Changed
+- `mcpUI.reset()` restores the first non-blank record. An empty `resources/read` package resets to the tool result that opened the widget. A package that already had data still resets to that data.
+- `data-mcp-restore-order` moves only rows that are still in their parent. A list rebuild replaces cloned rows from the record before that restore runs.
 
 ### Upgrade notes
-- This does not change editor rows. Repeatable save rows stay `data-mcp-row` plus `data-mcp-field`, collected by the editor name parser. `data-mcp-restore-order` still restores those rows. A display list is a separate template and is replaced on each result.
-- A Ruby loop over the packaged record stays empty, because `resources/read` packages with no data. Move repeating display markup onto the list template. Preview text outside a list, and editor fields, are unchanged.
-- The runtime writes text with `textContent` and the `hidden` attribute. It does not assign `innerHTML`.
+- Put repeating rows in the list template. `resources/read` packages with no data, so a Ruby loop cannot show the tool result. Keep `data-mcp-field` names such as `sections[][heading]` and mark the row `data-mcp-row`.
+- A later tool result removes `[data-mcp-list-entry]` clones and any `[data-mcp-row]` already in that list, then clones the template again. Rows added by a collection editor are replaced by the result.
+- The runtime writes text with `textContent`, input values with the `value` property, and attributes with `setAttribute`. It does not assign `innerHTML`. `$index` in a `data-mcp-attr-*` value is the zero-based clone index.
+- Stimulus sees the inserted nodes. Controllers that only read targets during `connect` do not run again; targets added later are still live for actions.
 
 ## [0.3.0] - 2026-10-12
 

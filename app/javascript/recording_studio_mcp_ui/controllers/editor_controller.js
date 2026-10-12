@@ -330,6 +330,7 @@
       var marker = group.marker;
       if (!parent || !parent.insertBefore || !marker || marker.parentNode !== parent) return;
       group.rows.forEach(function (row) {
+        if (!row || row.parentNode !== parent) return;
         parent.insertBefore(row, marker);
       });
     });
