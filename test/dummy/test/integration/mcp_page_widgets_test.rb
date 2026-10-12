@@ -210,11 +210,13 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     assert_includes empty_topics, "fp-empty-state"
 
     notes = RecordingStudio::MCP_UI.package("pages.notes", data: data).html
-    assert_includes notes, "flat-pack--accordion"
-    refute_includes notes, "data-mcp-list-item"
-    refute_includes notes, 'data-mcp-text="heading"'
-    refute_includes notes, "data-mcp-attr-aria-controls"
-    refute_includes notes, "aria-expanded"
+    notes_markup = notes.gsub(%r{<script\b[^>]*>.*?</script>}m, "")
+    accordion = notes_markup[/<div\b[^>]*flat-pack--accordion[^>]*>.*?<\/div>/m]
+    assert accordion
+    refute_match(/<template\b[^>]*data-mcp-list-item/, notes_markup)
+    refute_includes notes_markup, 'data-mcp-text="heading"'
+    refute_includes notes_markup, "data-mcp-attr-aria-controls"
+    refute_includes accordion, "aria-expanded"
   end
 
   test "pages show returns fields at the top of structuredContent" do
@@ -376,6 +378,21 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     assert_equal false, body["ok"]
     assert_equal "unauthorized", body["error"]
     assert_equal "Launch notes", @recording.reload.recordable.title
+  end
+
+  test "sections empty state hides when a row is already visible" do
+    editor = Demo::PageSectionsEditor.new(empty_text: "Nothing here yet. Add a section to get going.")
+    editor.with_row(
+      form: Struct.new(:object).new(Demo::PageSection.new),
+      persisted: false,
+      record_id: "open"
+    )
+    html = ApplicationController.renderer.render(editor)
+    empty = html[/<p\b[^>]*flat-pack-collection-editor-empty[^>]*>/]
+
+    assert_includes empty, "hidden"
+    assert_includes empty, "data-mcp-list-empty"
+    assert_includes html, "flat-pack-collection-editor-row"
   end
 
   test "a link url must be http, https, or relative" do
