@@ -61,6 +61,8 @@ class McpUiDemoTest < ActionDispatch::IntegrationTest
     assert_includes response.body, ".fp-button"
     assert_includes response.body, 'px-\[var\(--button-padding-x-md\)\]'
     assert_includes response.body, 'px-\[var\(--form-control-padding\)\]'
+    assert_includes response.body, 'class="mcp-ui-form p-6"'
+    assert_includes response.body, ".p-6{padding:calc(var(--spacing) * 6)}"
     refute_includes config, "Password"
     refute_includes config, "token"
   end
