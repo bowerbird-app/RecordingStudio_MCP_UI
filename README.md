@@ -112,12 +112,17 @@ The document is a self-contained HTML page. It does not assume host importmaps o
 
 ### Widget CSS tokens
 
-The packaged page is transparent by default so it sits on whatever surface the host already has. Override tokens (or any widget rule) in the host stylesheet:
+The packaged page (`html` / `body`) is transparent so the host shows through. The widget root (`#mcp-ui-root`, `.mcp-ui-card`, `.mcp-ui-form`) is a light card by default: white surface, dark text. A component that sets its own background still wins on that element.
+
+The widget document declares `color-scheme: light dark` (and a matching `meta name="color-scheme"`) so a dark host does not get an opaque light canvas behind the iframe. It does not follow the host theme from `hostContext`.
+
+Override tokens (or any widget rule) in the host stylesheet:
 
 ```css
 :root {
-  --mcp-ui-background: transparent; /* default */
-  --mcp-ui-color: CanvasText;       /* follows the host color scheme */
+  --mcp-ui-background: transparent; /* page, default */
+  --mcp-ui-surface: #fff;           /* card, default */
+  --mcp-ui-surface-color: #1f1f1f;  /* card text, default */
   --mcp-ui-padding: 1rem;
   --mcp-ui-font-family: ui-sans-serif, system-ui, sans-serif;
 }

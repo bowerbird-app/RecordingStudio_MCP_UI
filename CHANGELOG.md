@@ -10,15 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.0] - 2026-10-12
 
 ### Added
-- Widget CSS custom properties (`--mcp-ui-background`, `--mcp-ui-color`, and related tokens) so hosts can theme packaged documents without forking the gem.
+- Widget CSS custom properties (`--mcp-ui-background`, `--mcp-ui-surface`, `--mcp-ui-surface-color`, and related tokens) so hosts can theme packaged documents without forking the gem.
 - `configuration.compiled_css_path` accepts one local path or an array of local paths. Files are inlined in order after the gem (and Flatpack) CSS.
 
 ### Changed
-- Packaged widget page background defaults to transparent. Text defaults to `CanvasText`.
+- Packaged widget page (`html` / `body`) background defaults to transparent. The widget root is a light card (`--mcp-ui-surface: #fff`, `--mcp-ui-surface-color: #1f1f1f`).
+- Widget documents declare `color-scheme: light dark` so a dark host does not paint an opaque light iframe canvas.
 - Installer comments and README document host CSS overrides.
 
 ### Upgrade notes
-- Widgets no longer paint an off-white page (`#f8f8f5`). If you want a solid surface, set `--mcp-ui-background` (and `--mcp-ui-color` if needed) in a local stylesheet and point `compiled_css_path` at it.
+- Widgets no longer paint an off-white page (`#f8f8f5`). The page is transparent; the card stays white with dark text. Override `--mcp-ui-surface` and `--mcp-ui-surface-color` in a local stylesheet and point `compiled_css_path` at it.
 - `compiled_css_path` still accepts a single path. Pass an array when you already inline compiled CSS and need a second file that wins.
 
 ## [0.1.0] - 2026-10-09

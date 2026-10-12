@@ -5,8 +5,9 @@ RecordingStudio::MCP_UI.configure do |config|
   # Flatpack is installed). Later files win. Missing paths are skipped. Never a URL.
   #
   # Widget tokens (override in host CSS):
-  #   --mcp-ui-background  (default: transparent)
-  #   --mcp-ui-color       (default: CanvasText)
+  #   --mcp-ui-background      (page, default: transparent)
+  #   --mcp-ui-surface         (card, default: #fff)
+  #   --mcp-ui-surface-color   (card text, default: #1f1f1f)
   #
   # config.compiled_css_path = Rails.root.join("app/assets/stylesheets/mcp_ui_widget.css")
   # config.compiled_css_path = [

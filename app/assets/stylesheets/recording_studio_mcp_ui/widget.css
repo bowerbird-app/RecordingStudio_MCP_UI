@@ -1,17 +1,24 @@
 :root {
   --mcp-ui-background: transparent;
-  --mcp-ui-color: CanvasText;
+  --mcp-ui-surface: #fff;
+  --mcp-ui-surface-color: #1f1f1f;
   --mcp-ui-font-family: ui-sans-serif, system-ui, sans-serif;
   --mcp-ui-padding: 1rem;
   --mcp-ui-gap: 0.75rem;
   --mcp-ui-field-gap: 0.25rem;
   --mcp-ui-field-padding: 0.5rem 0.75rem;
-  --mcp-ui-field-border-color: color-mix(in srgb, CanvasText 22%, transparent);
+  --mcp-ui-field-border-color: color-mix(in srgb, var(--mcp-ui-surface-color) 22%, var(--mcp-ui-surface));
   --mcp-ui-field-radius: 0.5rem;
   --mcp-ui-status-error-color: #9b1c1c;
   --mcp-ui-status-success-color: #146c2e;
-  --mcp-ui-status-loading-color: color-mix(in srgb, CanvasText 45%, transparent);
+  --mcp-ui-status-loading-color: color-mix(in srgb, var(--mcp-ui-surface-color) 45%, var(--mcp-ui-surface));
   --mcp-ui-save-accent-color: #c9a227;
+}
+
+/* Beat Flatpack `:root, [data-theme] { color-scheme: light }` so a dark host
+   does not get an opaque light canvas behind a transparent iframe. */
+:root[data-theme] {
+  color-scheme: light dark;
 }
 
 html {
@@ -23,7 +30,14 @@ html {
   padding: var(--mcp-ui-padding);
   font-family: var(--mcp-ui-font-family);
   background: var(--mcp-ui-background);
-  color: var(--mcp-ui-color);
+  color: var(--mcp-ui-surface-color);
+}
+
+#mcp-ui-root,
+.mcp-ui-card,
+.mcp-ui-form {
+  background: var(--mcp-ui-surface);
+  color: var(--mcp-ui-surface-color);
 }
 
 .mcp-ui-card,
@@ -45,6 +59,8 @@ html {
   padding: var(--mcp-ui-field-padding);
   border: 1px solid var(--mcp-ui-field-border-color);
   border-radius: var(--mcp-ui-field-radius);
+  background: var(--mcp-ui-surface);
+  color: var(--mcp-ui-surface-color);
   font: inherit;
 }
 

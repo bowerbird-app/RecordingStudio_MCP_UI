@@ -78,8 +78,28 @@ class PackagerTest < Minitest::Test
     document = RecordingStudio::MCP_UI.package("projects.preview", data: { title: "Beach House" })
 
     assert_includes document.html, "--mcp-ui-background: transparent"
-    assert_includes document.html, "--mcp-ui-color: CanvasText"
+    assert_includes document.html, "--mcp-ui-surface: #fff"
+    assert_includes document.html, "--mcp-ui-surface-color: #1f1f1f"
+    assert_includes document.html, "color-scheme: light dark"
+    assert_includes document.html, '<meta name="color-scheme" content="light dark">'
+    refute_includes document.html, "CanvasText"
     refute_includes document.html, "background: var(--surface-color, #f8f8f5)"
+  end
+
+  def test_package_host_css_can_override_card_surface
+    Dir.mktmpdir do |dir|
+      host_css = File.join(dir, "mcp_ui_widget.css")
+      File.write(host_css, ":root { --mcp-ui-surface: #c5e0ff; --mcp-ui-surface-color: #0b1f33; }")
+      RecordingStudio::MCP_UI.configuration.compiled_css_path = host_css
+
+      document = RecordingStudio::MCP_UI.package("projects.preview", data: { title: "Beach House" })
+      gem_index = document.html.index("--mcp-ui-surface: #fff")
+      host_index = document.html.index("--mcp-ui-surface: #c5e0ff")
+
+      refute_nil gem_index
+      refute_nil host_index
+      assert gem_index < host_index
+    end
   end
 
   def test_package_inlines_host_css_after_gem_widget_css
