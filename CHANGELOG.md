@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Display lists in the packaged runtime. A container uses `data-mcp-list`, one item lives in `<template data-mcp-list-item>`, and the empty state uses `data-mcp-list-empty`. Each tool result replaces the clones. An empty `data-mcp-text` fills a scalar. A named `data-mcp-text` fills that field on an object.
 - The same clone fills `[data-mcp-field]` from the item and keeps the input `name`, so a template row can save `links[][label]` in DOM order. `[data-mcp-row]` marks that row. `data-mcp-attr-<name>` sets one HTML attribute from a field or from `$index` (`note-$index-content`).
+- `data-mcp-reconnect` on a controller element. After a list inside it fills, the runtime calls that controller's `connect()` so new `rowTargets` bind the same way rows present at connect do.
 
 ### Changed
 - `mcpUI.reset()` restores the first non-blank record. An empty `resources/read` package resets to the tool result that opened the widget. A package that already had data still resets to that data.
@@ -21,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Put repeating rows in the list template. `resources/read` packages with no data, so a Ruby loop cannot show the tool result. Keep `data-mcp-field` names such as `sections[][heading]` and mark the row `data-mcp-row`.
 - A later tool result removes `[data-mcp-list-entry]` clones and any `[data-mcp-row]` already in that list, then clones the template again. Rows added by a collection editor are replaced by the result.
 - The runtime writes text with `textContent`, input values with the `value` property, and attributes with `setAttribute`. It does not assign `innerHTML`. `$index` in a `data-mcp-attr-*` value is the zero-based clone index.
-- Stimulus sees the inserted nodes. Controllers that only read targets during `connect` do not run again; targets added later are still live for actions.
+- Stimulus sees the inserted nodes. Actions on those nodes work. A controller that only binds `rowTargets` during `connect` does not see rows added later. Put `data-mcp-reconnect="controller-name"` on that controller's element. After the list fills, the runtime calls `connect()` again. Rows that are already `draggable` are left alone, so listeners are not added twice.
 
 ## [0.3.0] - 2026-10-12
 

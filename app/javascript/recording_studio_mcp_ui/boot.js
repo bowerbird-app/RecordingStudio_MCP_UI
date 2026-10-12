@@ -198,10 +198,64 @@
     toggleEmpty(list, items.length === 0);
   }
 
+  function reconnectNames(element) {
+    return (element.getAttribute("data-mcp-reconnect") || "").split(/\s+/).filter(function (name) {
+      return name;
+    });
+  }
+
+  function rowsNeedConnect(rows) {
+    if (!rows || typeof rows.length !== "number" || rows.length === 0) return false;
+    for (var i = 0; i < rows.length; i++) {
+      if (!rows[i] || rows[i].mcpReconnectBound) return false;
+      if (typeof rows[i].getAttribute === "function" && rows[i].getAttribute("draggable") === "true") return false;
+    }
+    return true;
+  }
+
+  function reconnectController(element) {
+    var application = root.Stimulus;
+    if (!application || typeof application.getControllerForElementAndIdentifier !== "function") return;
+    reconnectNames(element).forEach(function (identifier) {
+      var controller = application.getControllerForElementAndIdentifier(element, identifier);
+      if (!controller || typeof controller.connect !== "function") return;
+      var rows = controller.rowTargets;
+      if (!rowsNeedConnect(rows)) return;
+      controller.connect();
+      for (var i = 0; i < rows.length; i++) {
+        if (rows[i]) rows[i].mcpReconnectBound = true;
+      }
+    });
+  }
+
+  function watchReconnect(element) {
+    if (element.mcpReconnectObserver || typeof MutationObserver !== "function") return;
+    var observer = new MutationObserver(function () {
+      reconnectController(element);
+    });
+    observer.observe(element, { childList: true, subtree: true });
+    element.mcpReconnectObserver = observer;
+  }
+
+  function reconnectLists() {
+    Array.prototype.forEach.call(document.querySelectorAll("[data-mcp-reconnect]"), function (element) {
+      watchReconnect(element);
+      reconnectController(element);
+    });
+  }
+
+  function scheduleReconnect() {
+    var schedule = typeof root.queueMicrotask === "function" ? root.queueMicrotask : function (fn) {
+      setTimeout(fn, 0);
+    };
+    schedule(reconnectLists);
+  }
+
   function bindLists(data) {
     Array.prototype.forEach.call(document.querySelectorAll("[data-mcp-list]"), function (list) {
       bindList(list, data);
     });
+    scheduleReconnect();
   }
 
   function bindWidget(data) {

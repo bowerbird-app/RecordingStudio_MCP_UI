@@ -1255,6 +1255,95 @@ test("cloned rows save in DOM order and reset restores the opening tool result",
   assert.equal(title.value, "Launch notes");
 });
 
+test("list binder reconnects a row controller after clones land and does not bind twice", async () => {
+  const row = listElement("tr", {
+    "data-mcp-row": "",
+    "data-mcp-attr-data-id": "id",
+    "data-flat-pack--table-sortable-target": "row"
+  });
+  const label = listElement("input", { type: "text", name: "links[][label]", "data-mcp-field": "true" });
+  row.appendChild(label);
+  const template = listElement("template", { "data-mcp-list-item": "" });
+  template.content = new ListFragment([ row ]);
+  const list = listElement("tbody", { "data-mcp-list": "links" }, [ template ]);
+  const shell = listElement("div", {
+    "data-controller": "flat-pack--table-sortable",
+    "data-mcp-reconnect": "flat-pack--table-sortable"
+  }, [ list ]);
+  const windowLike = windowStub({ widgetId: "pages.links", data: {} });
+  windowLike.document = listDocument({ widgetId: "pages.links", data: {} }, listElement("div", {}, [ shell ]));
+  const binds = [];
+  const controller = {
+    get rowTargets() {
+      const found = [];
+      function walk(node) {
+        if (!node || node.nodeType !== 1 || node.tagName === "TEMPLATE") return;
+        if (node.getAttribute("data-flat-pack--table-sortable-target") === "row") found.push(node);
+        (node.childNodes || []).forEach(walk);
+      }
+      walk(shell);
+      return found;
+    },
+    connect() {
+      this.rowTargets.forEach((entry) => {
+        entry._binds = (entry._binds || 0) + 1;
+        entry.setAttribute("draggable", "true");
+        binds.push(entry.getAttribute("data-id") || entry._binds);
+      });
+    }
+  };
+  windowLike.Stimulus = {
+    getControllerForElementAndIdentifier(element, identifier) {
+      if (element === shell && identifier === "flat-pack--table-sortable") return controller;
+      return null;
+    }
+  };
+  let handler;
+  attachFakeApp(windowLike, function (next) { handler = next; });
+
+  loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(binds.length, 0);
+
+  handler({
+    content: [],
+    structuredContent: {
+      links: [
+        { id: "notes", label: "Notes" },
+        { id: "press", label: "Press" },
+        { id: "site", label: "Site" }
+      ]
+    }
+  });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  let entries = list.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(entries.length, 3);
+  assert.deepEqual(entries.map((entry) => entry.getAttribute("draggable")), [ "true", "true", "true" ]);
+  assert.deepEqual(entries.map((entry) => entry._binds), [ 1, 1, 1 ]);
+
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.deepEqual(entries.map((entry) => entry._binds), [ 1, 1, 1 ]);
+
+  handler({
+    content: [],
+    structuredContent: {
+      links: [
+        { id: "site", label: "Site" },
+        { id: "notes", label: "Notes" }
+      ]
+    }
+  });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  entries = list.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(entries.length, 2);
+  assert.deepEqual(entries.map((entry) => entry.getAttribute("data-id")), [ "site", "notes" ]);
+  assert.deepEqual(entries.map((entry) => entry._binds), [ 1, 1 ]);
+});
+
 function elementWithTag(root, tag) {
   if (root.tagName === tag) return root;
   const children = root.childNodes || [];
