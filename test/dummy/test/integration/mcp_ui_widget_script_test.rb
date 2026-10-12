@@ -3,7 +3,7 @@
 require "test_helper"
 require "open3"
 
-class McpUiStimulusBundleTest < ActiveSupport::TestCase
+class McpUiWidgetScriptTest < ActiveSupport::TestCase
   CONTROLLERS = %w[
     flat-pack--collection-editor
     flat-pack--list-orderable
@@ -16,34 +16,36 @@ class McpUiStimulusBundleTest < ActiveSupport::TestCase
     flat-pack--modal
     flat-pack--drawer
     flat-pack--picker
-    flat-pack--chart
   ].freeze
 
-  teardown do
-    RecordingStudio::MCP_UI.configuration.stimulus_controllers = nil
+  setup do
+    @original_script = RecordingStudio::MCP_UI.configuration.widget_script_path
   end
 
-  test "packaged widget inlines host flatpack stimulus controllers" do
+  teardown do
+    RecordingStudio::MCP_UI.configuration.widget_script_path = @original_script
+  end
+
+  test "packaged widget inlines the esbuild bundle before the editor runtime" do
     html = RecordingStudio::MCP_UI.package("projects.preview", data: {}).html
+    script = widget_script(html)
 
     CONTROLLERS.each do |identifier|
-      assert_includes html, %{application.register("#{identifier}",}
+      assert_includes script, identifier
     end
-    refute_includes html, 'application.register("flat-pack--tiptap"'
-    assert_includes html,
-                    'skipped controllers/flat_pack/tiptap_controller: import "@tiptap/core" is a remote URL'
-    assert_includes html, 'import("apexcharts")'
-    bundle_at = html.index('application.register("flat-pack--tabs"')
-    boot_at = html.index("data-controller~='mcp-editor'")
-    assert bundle_at < boot_at
-    assert_javascript(widget_script(html))
+    refute_includes script, "@tiptap/core"
+    refute_includes script, "apexcharts"
+    bundle_at = html.index("flat-pack--tabs")
+    runtime_at = html.index("data-controller~='mcp-editor'")
+    assert_operator bundle_at, :<, runtime_at
+    assert_javascript(script)
   end
 
-  test "stimulus_controllers false omits the bundle" do
-    RecordingStudio::MCP_UI.configuration.stimulus_controllers = false
+  test "a blank widget script path leaves the editor runtime in place" do
+    RecordingStudio::MCP_UI.configuration.widget_script_path = nil
     html = RecordingStudio::MCP_UI.package("projects.preview", data: {}).html
 
-    refute_includes html, 'application.register("flat-pack--tabs"'
+    refute_includes html, "flat-pack--tabs"
     assert_includes html, "data-controller~='mcp-editor'"
   end
 

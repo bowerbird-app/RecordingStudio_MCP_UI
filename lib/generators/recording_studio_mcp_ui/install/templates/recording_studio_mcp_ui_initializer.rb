@@ -16,10 +16,9 @@ RecordingStudio::MCP_UI.configure do |config|
   #   Rails.root.join("app/assets/stylesheets/mcp_ui_widget.css")
   # ]
   #
-  # Stimulus controllers inlined into packaged widgets. nil (default) uses every
-  # local controllers/*_controller pin from the host import map. false opts out.
-  # A list of identifiers or module names limits the bundle.
+  # Prebuilt widget script, inlined before the editor runtime. Build it with
+  # esbuild (Stimulus + the controllers this host wants). nil leaves Stimulus out.
+  # A missing file is skipped. Never a URL.
   #
-  # config.stimulus_controllers = false
-  # config.stimulus_controllers = %w[flat-pack--tabs flat-pack--collection-editor]
+  # config.widget_script_path = Rails.root.join("app/assets/builds/mcp_ui_widgets.js")
 end

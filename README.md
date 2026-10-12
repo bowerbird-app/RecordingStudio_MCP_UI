@@ -104,22 +104,60 @@ Host communication uses the official MCP Apps View SDK (`App` + `PostMessageTran
 1. `app/assets/stylesheets/recording_studio_mcp_ui/widget.css`
 2. FlatPack `variables.css` and `application.css` from `FlatPack::Engine` when that gem is installed
 3. Optional host CSS from `configuration.compiled_css_path` — one local path or an array of local paths, in order (dummy uses Tailwind then `app/assets/stylesheets/mcp_ui_widget.css`)
-4. The official SDK IIFE (`vendor/ext-apps.iife.js`) plus `runtime.js`, `controllers/editor_controller.js`, and `boot.js`
-5. Stimulus and the host's local Stimulus controllers, inlined from the host import map before `boot.js`
+4. The official SDK IIFE (`vendor/ext-apps.iife.js`)
+5. The host's prebuilt widget script from `configuration.widget_script_path`, when that file exists
+6. `runtime.js`, `controllers/editor_controller.js`, and `boot.js`
 
-Host CSS is read from disk at package time. Missing paths are skipped. Do not pass URLs; CSP allows only inline style.
+Host CSS and the widget script are read from disk at package time. Missing paths are skipped. Do not pass URLs; CSP allows only inline style and script.
 
 The document is a self-contained HTML page. It does not fetch host importmaps or layout assets at view time. The editor controller is Stimulus-shaped (`data-controller="mcp-editor"`) and talks only through `mcpUI`.
 
 ### Stimulus in the widget
 
-`configuration.stimulus_controllers` controls what gets inlined:
+The gem does not bundle Stimulus. The host builds one classic script with esbuild (or another bundler) and points `widget_script_path` at it. `nil` leaves Stimulus out of the widget. The file is copied in before the editor runtime.
 
-- `nil` (the default) inlines `@hotwired/stimulus` and every local `controllers/**/*_controller` pin, including FlatPack controllers the host import map already points at.
-- `false` opts out. The document keeps the editor runtime and does not start Stimulus.
-- A string or array limits the bundle to those Stimulus identifiers (`flat-pack--tabs`) or module names (`controllers/flat_pack/tabs_controller`).
+```javascript
+// app/javascript/mcp_ui_widgets.js
+import { Application } from "@hotwired/stimulus"
+import TabsController from "flat_pack/controllers/tabs_controller"
+import CollectionEditorController from "flat_pack/controllers/collection_editor_controller"
 
-Resolution uses the host import map (package pins and `pin_all_from` directories) and Propshaft's load path. Nothing is vendored from FlatPack, and there is no hardcoded component list. Controllers whose static import graph includes a remote URL or a module that is not in the import map are left out, with a comment in the script. Dynamic `import()` stays in the source and fails at runtime: the sandbox CSP has `connect-src 'none'` and no network. That covers TipTap (`@tiptap/core`), ApexCharts, the Google Charts loader, remote search, and any controller `fetch()`. Drag-reorder that only needs the DOM still runs; a PATCH to `orderable_url` or `reorder_url` does not. Send the new order on Save.
+const application = Application.start()
+application.register("flat-pack--tabs", TabsController)
+application.register("flat-pack--collection-editor", CollectionEditorController)
+window.Stimulus = application
+```
+
+```javascript
+// esbuild.config.mjs
+import * as esbuild from "esbuild"
+import { execSync } from "node:child_process"
+import path from "node:path"
+
+const flatPack = execSync("bundle show flat_pack", { encoding: "utf8" }).trim()
+const javascript = path.join(flatPack, "app/javascript/flat_pack")
+
+await esbuild.build({
+  entryPoints: ["app/javascript/mcp_ui_widgets.js"],
+  bundle: true,
+  format: "iife",
+  platform: "browser",
+  outfile: "app/assets/builds/mcp_ui_widgets.js",
+  nodePaths: [path.resolve("node_modules")],
+  alias: {
+    flat_pack: javascript,
+    "controllers/flat_pack": path.join(javascript, "controllers")
+  }
+})
+```
+
+`flat_pack/controllers/...` and `controllers/flat_pack/...` are the specifiers FlatPack controllers already use. The alias points them at the installed gem. Install `@hotwired/stimulus` and `esbuild` in the host, then run `node esbuild.config.mjs`.
+
+```ruby
+config.widget_script_path = Rails.root.join("app/assets/builds/mcp_ui_widgets.js")
+```
+
+Include only controllers whose imports esbuild can bundle from disk. TipTap (`@tiptap/core`), ApexCharts, the Google Charts loader, remote search, and any controller `fetch()` still cannot run: the sandbox CSP has `connect-src 'none'`. Drag-reorder that only changes the DOM still runs. A PATCH to `orderable_url` or `reorder_url` does not. Send the new order on Save.
 
 ### Structured save fields
 
@@ -154,8 +192,7 @@ Override tokens (or any widget rule) in the host stylesheet:
 ```ruby
 RecordingStudio::MCP_UI.configure do |config|
   config.compiled_css_path = Rails.root.join("app/assets/stylesheets/mcp_ui_widget.css")
-  # config.stimulus_controllers = false
-  # config.stimulus_controllers = %w[flat-pack--tabs flat-pack--collection-editor]
+  config.widget_script_path = Rails.root.join("app/assets/builds/mcp_ui_widgets.js")
 end
 ```
 

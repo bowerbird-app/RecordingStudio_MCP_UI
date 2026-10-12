@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "pathname"
-require "recording_studio_mcp_ui/stimulus_bundle"
 
 module RecordingStudio
   module McpUi
@@ -14,16 +13,22 @@ module RecordingStudio
       ].freeze
 
       def self.javascript
-        escape_script([read_engine_js(SDK_JS), runtime_source].join("\n"))
+        escape_script([read_engine_js(SDK_JS), widget_script, runtime].join("\n"))
       end
 
       def self.runtime
         RUNTIME_JS.map { |relative| read_engine_js(relative) }.join("\n")
       end
 
-      def self.runtime_source
-        head = RUNTIME_JS[0..-2].map { |relative| read_engine_js(relative) }
-        (head + [StimulusBundle.javascript, read_engine_js(RUNTIME_JS.last)]).join("\n")
+      def self.widget_script
+        read_host_script(RecordingStudio::MCP_UI.configuration.widget_script_path)
+      end
+
+      def self.read_host_script(path)
+        return "" if path.blank?
+
+        file = Pathname.new(path)
+        file.file? ? file.read : ""
       end
 
       def self.escape_script(source)

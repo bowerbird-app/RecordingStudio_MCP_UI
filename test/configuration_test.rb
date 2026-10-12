@@ -33,20 +33,15 @@ class ConfigurationTest < Minitest::Test
     assert_equal original[:compiled_css_path], @configuration.compiled_css_path if original[:compiled_css_path]
   end
 
-  def test_stimulus_controllers_defaults_to_every_local_controller
-    assert_nil @configuration.stimulus_controllers
-    assert_nil @configuration.to_h.fetch(:stimulus_controllers)
+  def test_widget_script_path_defaults_to_nil
+    assert_nil @configuration.widget_script_path
+    assert_nil @configuration.to_h.fetch(:widget_script_path)
   end
 
-  def test_stimulus_controllers_accepts_false_and_a_list
-    @configuration.stimulus_controllers = false
-    assert_equal false, @configuration.stimulus_controllers
+  def test_merge_sets_widget_script_path
+    @configuration.merge!(widget_script_path: "/tmp/mcp_ui_widgets.js")
 
-    @configuration.merge!(stimulus_controllers: :tabs)
-    assert_equal ["tabs"], @configuration.stimulus_controllers
-
-    @configuration.stimulus_controllers = ["flat-pack--tabs", :other]
-    assert_equal %w[flat-pack--tabs other], @configuration.to_h.fetch(:stimulus_controllers)
+    assert_equal "/tmp/mcp_ui_widgets.js", @configuration.to_h.fetch(:widget_script_path)
   end
 
   def test_to_h_reports_registered_hook_counts

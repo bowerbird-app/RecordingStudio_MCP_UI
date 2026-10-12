@@ -25,5 +25,6 @@ Rails.application.config.to_prepare do
       Rails.root.join("app/assets/builds/tailwind.css"),
       Rails.root.join("app/assets/stylesheets/mcp_ui_widget.css")
     ]
+    config.widget_script_path = Rails.root.join("app/assets/builds/mcp_ui_widgets.js")
   end
 end

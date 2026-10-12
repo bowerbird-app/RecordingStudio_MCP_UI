@@ -52,6 +52,16 @@ Rake::TestTask.new(:test) do |t|
   t.verbose = false
 end
 
+def run_dummy_suite(env)
+  run_command!(env, "npm", "ci")
+  run_command!(env, "npm", "run", "build:widgets")
+  run_command!(env, "bundle", "exec", "bin/rails", "db:prepare")
+  run_command!(env, "bundle", "exec", "bin/rails", "test")
+  DUMMY_TEST_FILES.each do |test_file|
+    run_command!(env, "bundle", "exec", "ruby", "-I#{TEST_ROOT}", test_file)
+  end
+end
+
 namespace :test do
   desc "Run rename verification tests to validate gem naming consistency"
   task :rename_verification do
@@ -65,15 +75,7 @@ namespace :test do
 
   desc "Run dummy app integration tests under the dummy app bundle"
   task :dummy do
-    Dir.chdir(DUMMY_APP_ROOT) do
-      env = dummy_bundle_env
-
-      run_command!(env, "bundle", "exec", "bin/rails", "db:prepare")
-      run_command!(env, "bundle", "exec", "bin/rails", "test")
-      DUMMY_TEST_FILES.each do |test_file|
-        run_command!(env, "bundle", "exec", "ruby", "-I#{TEST_ROOT}", test_file)
-      end
-    end
+    Dir.chdir(DUMMY_APP_ROOT) { run_dummy_suite(dummy_bundle_env) }
   end
 
   desc "Run JavaScript runtime tests"

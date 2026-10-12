@@ -10,22 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0] - 2026-10-12
 
 ### Added
-- Packaged widget HTML inlines Stimulus and the host's local Stimulus controllers from the host import map, before `boot.js`. The sandbox CSP has no network, so the script is a single classic file.
-- `configuration.stimulus_controllers`: `nil` inlines every local controller, `false` opts out, and a string or array limits the bundle to those identifiers or module names.
-- Controllers whose static imports are remote URLs or missing from the import map are omitted, with a comment naming the import. Dynamic `import()` is left unchanged.
+- `configuration.widget_script_path` inlines one host-built JavaScript file before the editor runtime. `nil`, or a missing file, leaves it out. The gem does not parse or rewrite that file.
 - The editor collects repeated and nested `[data-mcp-field]` names (`sections[][title]`, `tags[]`, `user[name]`) into arrays and objects in DOM order, and reads `data-mcp-type` of `json`, `array`, or `object`.
-
-### Fixed
-- Regular expressions with an escaped character in a class (`/[^\s]+/g`) stay inside the regex. Stimulus can be inlined without leaving an `export` in the widget script.
-- Backslashes in inlined modules stay in the widget script. Stimulus action patterns keep `\+`, so `click->` still listens for click.
 
 ### Changed
 - Unchecked radios are omitted from the save payload. A checked radio still sends its value. Checkboxes stay booleans, including inside nested names.
 - Reset puts dragged rows back in the order captured at connect when widget data is still the opening record, then binds by position.
 
 ### Upgrade notes
-- Documents are larger. Set `config.stimulus_controllers = false` to keep the 0.2.0 script, or pass a list of identifiers when you do not want every host controller (heroicons included).
-- TipTap, charts, remote search, and any `fetch()` inside a controller still cannot run: `connect-src` is `none`. Do not point `orderable_url` or `reorder_url` at the widget. Capture reorder in the DOM and send it on Save with `sections[][field]` names.
+- Build Stimulus and the controllers you want with esbuild (see the README). Set `config.widget_script_path` to that file, for example `app/assets/builds/mcp_ui_widgets.js`. Leave it unset to keep the 0.2.0 script.
+- TipTap, charts, remote search, and any `fetch()` inside a controller still cannot run: `connect-src` is `none`. Do not point `orderable_url` or `reorder_url` at the widget. Capture reorder in the DOM and send it on Save with `sections[][field]` names. Do not put those controllers in the bundle unless their imports are on disk.
 - `sections[id][heading]` stays a hash keyed by id. Use empty brackets (`sections[][heading]`) when Save should receive an array in DOM order. Mark each value you want saved with `data-mcp-field`; unmarked hidden inputs are ignored.
 - A name that previously relied on the last radio input winning, even when unchecked, now sends only the checked radio.
 
