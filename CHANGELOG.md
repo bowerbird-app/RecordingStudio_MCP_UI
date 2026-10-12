@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- Dummy section rows, including the add-row template, opt in with `data-mcp-row`. The sections editor sets `data-mcp-restore-order` so Cancel restores that order before values bind. Link rows opt in with `data-mcp-row` on each body `<tr>`. The links editor leaves order alone on refresh, because Save returns the new DOM order and the visible label is not a field.
+- Dummy section rows, including the add-row template, opt in with `data-mcp-row`. The sections editor sets `data-mcp-restore-order` so Cancel restores that order before values bind. Link rows opt in with `data-mcp-row` on each body `<tr>`. The links editor leaves order alone on refresh, because Save returns the new DOM order and the visible label is not a field. The links document sorts that array into the header order before packaging, so the visible label and its fields stay on the same row.
 
 ## [0.4.0] - 2026-10-12
 

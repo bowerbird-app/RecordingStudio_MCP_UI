@@ -6,7 +6,7 @@ module Demo
 
     def table
       component = PageLinksTable.new(
-        data: sorted_links,
+        data: links,
         sort: sort_key,
         direction: sort_direction,
         base_url: sort_base_url,
@@ -48,11 +48,6 @@ module Demo
       else
         render(FlatPack::Content::Component.new) { mcp_reading(url) }
       end
-    end
-
-    def sorted_links
-      rows = links.sort_by { |row| row[sort_key].to_s.downcase }
-      sort_direction == "desc" ? rows.reverse : rows
     end
 
     def sort_key

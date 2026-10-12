@@ -36,6 +36,12 @@ class PageDemosController < ApplicationController
     direction = params[:direction].to_s
     data["sort"] = sort if Page::SORTS.include?(sort)
     data["direction"] = direction if Page::DIRECTIONS.include?(direction)
+    key = Page::SORTS.include?(data["sort"].to_s) ? data["sort"].to_s : "label"
+    dir = Page::DIRECTIONS.include?(data["direction"].to_s) ? data["direction"].to_s : "asc"
+    rows = Array(data["links"]).sort_by { |row| row[key].to_s.downcase }
+    data["links"] = dir == "desc" ? rows.reverse : rows
+    data["sort"] = key
+    data["direction"] = dir
     data
   end
 

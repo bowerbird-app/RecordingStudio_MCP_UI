@@ -358,6 +358,17 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     assert_equal @page.id, @recording.reload.recordable_id
   end
 
+  test "links document shows each label on the same row as its field" do
+    get "/page_demos/#{@recording.id}/document", params: { widget: "pages.links" }
+
+    assert_response :success
+    rows = response.body.scan(%r{<tr\b[^>]*data-mcp-row[^>]*>.*?</tr>}m)
+    labels = rows.map { |row| row[/name="links\[\]\[label\]"[^>]*value="([^"]+)"/, 1] }
+    visible = rows.map { |row| row[/class="[^"]*fp-content[^"]*"[^>]*>\s*([^<]+)/, 1]&.strip }
+    assert_equal [ "Press", "Site" ], labels
+    assert_equal labels, visible
+  end
+
   test "document route serves the packaged sections widget" do
     get "/page_demos/#{@recording.id}/document", params: { widget: "pages.sections" }
 
