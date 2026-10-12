@@ -3,7 +3,7 @@
 <div class="flex w-full flex-col gap-6">
   <%= render FlatPack::PageTitle::Component.new(
     title: "MCP UI Demo",
-    subtitle: "Two complete dummy widgets: a read-only project card and an editor that saves through projects.update.",
+    subtitle: "Project widgets and a page of sections, links, story, and topic chips.",
     variant: :h1
   ) %>
 
@@ -45,6 +45,26 @@
         <% if @project %>
           <%= link_to edit_demo_path(@project), class: "inline-flex" do %>
             <%= render FlatPack::Button::Component.new(text: "Open editor", style: :secondary, size: :md) %>
+          <% end %>
+        <% end %>
+      <% end %>
+    <% end %>
+    <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+      <% card.header do %>
+        <%= render FlatPack::PageTitle::Component.new(
+          title: "Page components",
+          subtitle: "Sections, links, story, topics, and notes.",
+          variant: :h3,
+          class: "mb-0 pb-0"
+        ) %>
+      <% end %>
+      <% card.body do %>
+        <p class="text-sm leading-6">A page with a collection editor, a sortable table, tabs, topic chips, and section notes.</p>
+      <% end %>
+      <% card.footer do %>
+        <% if @page_recording %>
+          <%= link_to page_demo_path(@page_recording), class: "inline-flex" do %>
+            <%= render FlatPack::Button::Component.new(text: "Open page", style: :primary, size: :md) %>
           <% end %>
         <% end %>
       <% end %>

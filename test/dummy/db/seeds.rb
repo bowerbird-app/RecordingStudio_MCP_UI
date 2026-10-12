@@ -75,6 +75,26 @@ begin
   folder_recording = find_or_record_child.call(folder, studio_root, studio_root)
   find_or_record_child.call(page, studio_root, folder_recording)
 
+  launch = Page.find_or_initialize_by(title: "Launch notes")
+  if launch.new_record? || launch.sections.blank?
+    launch.summary = "A short page for the launch. Sections, links, and topics live here."
+    launch.sections = [
+      { "id" => "open", "heading" => "Open", "body" => "Say what this page is for." },
+      { "id" => "proof", "heading" => "Proof", "body" => "Show the work, then the link." },
+      { "id" => "next", "heading" => "Next", "body" => "Tell people what to do now." }
+    ]
+    launch.links = [
+      { "id" => "site", "label" => "Site", "url" => "https://example.com" },
+      { "id" => "notes", "label" => "Notes", "url" => "https://example.com/notes" },
+      { "id" => "press", "label" => "Press", "url" => "https://example.com/press" }
+    ]
+    launch.topics = [ "Launch", "Story", "Links" ]
+    launch.sort = "label"
+    launch.direction = "asc"
+    launch.save!
+  end
+  find_or_record_child.call(launch, studio_root, folder_recording)
+
   if defined?(RecordingStudioSiteSettings) && RecordingStudioSiteSettings.name_for(studio_root) != "Studio"
     RecordingStudioSiteSettings.update!(studio_root, name: "Studio", actor: user)
   end
@@ -115,3 +135,4 @@ puts "Seeded: Seed MCP App client_id=#{oauth_client.client_id}"
 puts "Seeded: Studio Workspace (Connected)"
 puts "Seeded: MCP at /recording_studio_mcp"
 puts "Seeded: Project '#{beach.title}' and '#{cabin.title}'"
+puts "Seeded: Page 'Launch notes'"

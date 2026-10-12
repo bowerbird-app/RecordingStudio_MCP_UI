@@ -3,6 +3,12 @@
 require Rails.root.join("app/services/demo/project_arguments")
 require Rails.root.join("app/services/demo/project_show")
 require Rails.root.join("app/services/demo/project_api_update")
+require Rails.root.join("app/services/demo/page_content")
+require Rails.root.join("app/services/demo/page_arguments")
+require Rails.root.join("app/services/demo/page_payload")
+require Rails.root.join("app/services/demo/page_show")
+require Rails.root.join("app/services/demo/page_update")
+require Rails.root.join("app/services/demo/page_api_update")
 
 RecordingStudioApi.configure do |config|
   config.openapi_title = "Recording Studio API"
@@ -47,3 +53,52 @@ RecordingStudioApi.register_endpoint(
   },
   handler: Demo::ProjectApiUpdate
 )
+
+RecordingStudioApi.register_endpoint(
+  "pages.show",
+  http_verb: :get,
+  path: "pages/:id",
+  ui: "pages.tabs",
+  input_contract: {
+    fields: {
+      id: { type: :string, required: true }
+    }
+  },
+  handler: Demo::PageShow
+)
+
+RecordingStudioApi.register_endpoint(
+  "pages.update",
+  http_verb: :patch,
+  path: "pages/:id",
+  ui: "pages.sections",
+  input_contract: {
+    fields: {
+      id: { type: :string, required: true },
+      title: { type: :string, required: false },
+      summary: { type: :string, required: false },
+      sections: { type: :array, required: false },
+      links: { type: :array, required: false },
+      topics: { type: :array, required: false },
+      sort: { type: :string, required: false },
+      direction: { type: :string, required: false },
+      revision: { type: :integer, required: false }
+    }
+  },
+  handler: Demo::PageApiUpdate
+)
+
+%w[links topics notes].each do |name|
+  RecordingStudioApi.register_endpoint(
+    "pages.#{name}",
+    http_verb: :get,
+    path: "pages/:id/#{name}",
+    ui: "pages.#{name}",
+    input_contract: {
+      fields: {
+        id: { type: :string, required: true }
+      }
+    },
+    handler: Demo::PageShow
+  )
+end

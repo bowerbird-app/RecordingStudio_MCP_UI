@@ -1,0 +1,29 @@
+<%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+  <% card.header do %>
+    <%= render FlatPack::PageTitle::Component.new(
+      title: "Page links",
+      subtitle: "Drag a row, then save. Sort a header to reload.",
+      variant: :h3,
+      class: "mb-0 pb-0"
+    ) %>
+  <% end %>
+  <% card.body do %>
+    <div data-controller="mcp-editor" class="mcp-ui-form">
+      <%= render table %>
+
+      <input type="hidden" name="id" data-mcp-field value="<%= ERB::Util.html_escape(data["id"].to_s) %>">
+      <input type="hidden" name="revision" data-mcp-field value="<%= ERB::Util.html_escape(data["revision"].to_s) %>">
+
+      <div class="mcp-ui-actions">
+        <%= render FlatPack::Button::Component.new(
+          text: "Save",
+          style: :primary,
+          size: :md,
+          type: "button",
+          data: { mcp_save: "save" }
+        ) %>
+      </div>
+      <p data-mcp-status class="mcp-ui-status" hidden></p>
+    </div>
+  <% end %>
+<% end %>

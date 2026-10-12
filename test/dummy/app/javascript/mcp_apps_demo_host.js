@@ -1,13 +1,16 @@
 (function () {
   "use strict";
 
-  var frame = document.getElementById("mcp-ui-frame");
-  if (!frame) return;
-
-  var saveUrl = frame.getAttribute("data-save-url");
-  var projectId = frame.getAttribute("data-project-id");
   var csrf = document.querySelector("meta[name='csrf-token']");
   var csrfToken = csrf ? csrf.content : "";
+
+  function frameFor(source) {
+    var frames = document.querySelectorAll("iframe[data-save-url]");
+    for (var i = 0; i < frames.length; i++) {
+      if (frames[i].contentWindow === source) return frames[i];
+    }
+    return null;
+  }
 
   function reply(source, id, result) {
     source.postMessage({ jsonrpc: "2.0", id: id, result: result }, "*");
@@ -26,7 +29,8 @@
   }
 
   window.addEventListener("message", function (event) {
-    if (event.source !== frame.contentWindow) return;
+    var frame = frameFor(event.source);
+    if (!frame) return;
     var message = event.data;
     if (!message || message.jsonrpc !== "2.0" || !message.method) return;
 
@@ -36,8 +40,9 @@
     }
 
     if (message.method === "tools/call") {
-      var args = Object.assign({}, (message.params && message.params.arguments) || {}, { id: projectId });
-      fetch(saveUrl, {
+      var recordId = frame.getAttribute("data-record-id") || frame.getAttribute("data-project-id");
+      var args = Object.assign({}, (message.params && message.params.arguments) || {}, { id: recordId });
+      fetch(frame.getAttribute("data-save-url"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

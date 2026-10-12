@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The editor collects repeated and nested `[data-mcp-field]` names (`sections[][title]`, `tags[]`, `user[name]`) into arrays and objects in DOM order, and reads `data-mcp-type` of `json`, `array`, or `object`.
 
 ### Changed
+- Dummy Page demo packages a collection editor, a links table with one reorder grip per row, tabs, topic chips, and an accordion. The dummy `widget_script_path` points at the esbuild bundle that registers those controllers.
 - Unchecked radios are omitted from the save payload. A checked radio still sends its value. Checkboxes stay booleans, including inside nested names.
 - Field names `__proto__`, `constructor`, and `prototype` are ignored. Nested objects are built without a prototype, so a save payload cannot set `Object.prototype`.
 - Repeatable rows are elements with `data-mcp-row`. `data-mcp-restore-order` on the editor puts those rows back in connect order when widget data is applied, then binds by position.

@@ -48,6 +48,13 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :page_demos, only: [ :show ] do
+    member do
+      get :document
+      post :save
+    end
+  end
+
   # Defines the root path route ("/")
   root "home#index"
 end

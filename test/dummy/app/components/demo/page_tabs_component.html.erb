@@ -1,0 +1,26 @@
+<%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+  <% card.header do %>
+    <%= render FlatPack::PageTitle::Component.new(
+      title: title.presence || "Page story",
+      subtitle: "Story and outline.",
+      variant: :h3,
+      class: "mb-0 pb-0"
+    ) %>
+  <% end %>
+  <% card.body do %>
+    <%= render FlatPack::Tabs::Component.new(default_tab: 0, variant: :underline) do |tabs| %>
+      <% tabs.tab(label: "Story", id: "story") do %>
+        <p data-mcp-text="summary"><%= summary.presence || "Nothing here yet." %></p>
+      <% end %>
+      <% tabs.tab(label: "Outline", id: "outline") do %>
+        <% if sections.any? %>
+          <% sections.each do |section| %>
+            <p><%= section["heading"] %></p>
+          <% end %>
+        <% else %>
+          <p>Nothing here yet. Add a section to get going.</p>
+        <% end %>
+      <% end %>
+    <% end %>
+  <% end %>
+<% end %>

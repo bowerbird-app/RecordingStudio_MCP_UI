@@ -1,0 +1,46 @@
+<% dummy_page_nav(title: "Page components", back_url: root_path) %>
+
+<div class="flex w-full flex-col gap-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Page components",
+    subtitle: "Sections, links, story, topics, and notes for one page.",
+    variant: :h1
+  ) %>
+
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Sections",
+    subtitle: "Add, edit, and reorder. Save calls pages.update.",
+    variant: :h3
+  ) %>
+  <iframe
+    id="mcp-ui-frame"
+    class="min-h-[40rem] w-full rounded-lg border border-current"
+    src="<%= document_page_demo_path(@recording, widget: "pages.sections") %>"
+    data-save-url="<%= save_page_demo_path(@recording) %>"
+    data-record-id="<%= @recording.id %>"
+    sandbox="allow-scripts allow-same-origin"
+    title="Page sections"
+  ></iframe>
+  <% [
+    ["pages.links", "Links", "Drag a row, then save. Sort a header to reload.", true],
+    ["pages.tabs", "Story", "Tabs for the story and the outline.", false],
+    ["pages.topics", "Topics", "Topic chips for this page.", false],
+    ["pages.notes", "Notes", "Section notes in an accordion.", false]
+  ].each do |widget, label, detail, saves| %>
+    <%= render FlatPack::PageTitle::Component.new(title: label, subtitle: detail, variant: :h3) %>
+    <iframe
+      class="min-h-80 w-full rounded-lg border border-current"
+      src="<%= document_page_demo_path(@recording, widget: widget) %>"
+      <% if saves %>
+        data-save-url="<%= save_page_demo_path(@recording) %>"
+        data-record-id="<%= @recording.id %>"
+      <% end %>
+      sandbox="allow-scripts allow-forms allow-same-origin"
+      title="<%= label %>"
+    ></iframe>
+    <p class="text-sm">
+      <%= link_to "Open packaged #{label.downcase}", document_page_demo_path(@recording, widget: widget) %>
+    </p>
+  <% end %>
+  <%= javascript_tag Rails.root.join("app/javascript/mcp_apps_demo_host.js").read %>
+</div>

@@ -8,7 +8,8 @@ This Rails app exists to validate RecordingStudio MCP UI in a real host applicat
 - `Current.actor` wiring for Recording Studio events
 - Root workspace plus seeded folder and page recordables
 - Recording Studio default layout, FlatPack assets, and Tailwind source scanning
-- Two MCP UI demos: a Project preview card and a Project editor (Status is FlatPack Select; Save/Cancel are FlatPack Buttons; the form uses `p-6`, styled by dummy Tailwind in `compiled_css_path`). The editor has no repeatable rows. A host that adds them marks each row with `data-mcp-row` and, when reset should restore connect order, puts `data-mcp-restore-order` on the editor. `npm run build:widgets` bundles Stimulus and selected FlatPack controllers with esbuild into `app/assets/builds/mcp_ui_widgets.js`, which packaged documents inline.
+- Two MCP UI demos: a Project preview card and a Project editor (Status is FlatPack Select; Save/Cancel are FlatPack Buttons; the form uses `p-6`, styled by dummy Tailwind in `compiled_css_path`). The editor has no repeatable rows. A host that adds them marks each row with `data-mcp-row` and, when reset should restore connect order, puts `data-mcp-restore-order` on the editor. Topic chips and the story outline are display lists (`data-mcp-list`): `resources/read` packages them empty, and the tool result fills the template. `npm run build:widgets` bundles Stimulus and selected FlatPack controllers with esbuild into `app/assets/builds/mcp_ui_widgets.js`, which packaged documents inline through `widget_script_path`.
+- A Page demo (`Launch notes`) with FlatPack widgets packaged as `ui://` resources: collection editor for sections, sortable links table, tabs, topic chips, and an accordion. The page is a recordable. Section rows, including the add-row template, use `sections[][id]`, `sections[][heading]`, `sections[][body]`, and `sections[][_destroy]` with `data-mcp-field`. Heading and body are FlatPack text inputs with `chrome: :cell`, the same control the collection editor demo puts in a headed row. The links table follows the draggable table demo: one reorder grip per row and plain cells, with `links[][id]`, `links[][label]`, and `links[][url]` on the row so Save still collects them. Save sends those arrays in DOM order through `pages.update` and `revise`. Drag reorder does not set `orderable_url` or `reorder_url`. Header sort on the links table reloads the document. `app/javascript/mcp_ui_widgets.js` registers `flat-pack--collection-editor`, `flat-pack--list-orderable`, `flat-pack--table-sortable`, `flat-pack--tabs`, `flat-pack--chip`, and `flat-pack--accordion`.
 - Mounted `RecordingStudio::Engine` route behavior inside a host app
 - Dummy-only `/docs/*` pages for gem-specific onboarding
 
@@ -66,6 +67,8 @@ Sign in at `/users/sign_in`, then Connect **Seed MCP App** in Oauth so the clien
 - `/` - dummy app home page and MCP UI demo links
 - `/demos/:id` - read-only project card
 - `/demos/:id/edit` - project editor
+- `/page_demos/:id` - page component gallery (sections editor, links, tabs, topics, notes)
+- `/page_demos/:id/document?widget=pages.sections` - packaged MCP Apps HTML for a page widget (`pages.links`, `pages.tabs`, `pages.topics`, `pages.notes`)
 - `/recording_studio` - redirects to `/` while the mounted Recording Studio engine stays available under that prefix for non-root routes
 - `/users/sign_in` - Devise sign-in page
 - `/docs/install`, `/docs/config`, `/docs/recordable_types`, `/docs/recordings_tree`, `/docs/gem_views`, `/docs/methods` - dummy-only starter pages

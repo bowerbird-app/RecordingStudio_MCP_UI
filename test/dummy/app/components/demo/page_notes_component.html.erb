@@ -1,0 +1,19 @@
+<%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+  <% card.header do %>
+    <%= render FlatPack::PageTitle::Component.new(
+      title: "Section notes",
+      subtitle: "Open a block to read it.",
+      variant: :h3,
+      class: "mb-0 pb-0"
+    ) %>
+  <% end %>
+  <% card.body do %>
+    <%= render FlatPack::Accordion::Component.new do |accordion| %>
+      <% note_items.each_with_index do |section, index| %>
+        <% accordion.item(id: "note-#{section["id"]}", title: section["heading"], open: index.zero?) do %>
+          <p><%= section["body"] %></p>
+        <% end %>
+      <% end %>
+    <% end %>
+  <% end %>
+<% end %>

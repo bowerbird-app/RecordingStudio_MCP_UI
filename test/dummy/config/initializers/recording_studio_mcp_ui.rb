@@ -20,6 +20,48 @@ Rails.application.config.to_prepare do
     actions: { save: "projects.update" }
   )
 
+  RecordingStudio::MCP_UI.register(
+    "pages.sections",
+    component: Demo::PageSectionsComponent,
+    description: "Edit the sections on a page",
+    mode: :edit,
+    version: "1.0.0",
+    actions: { save: "pages.update" }
+  )
+
+  RecordingStudio::MCP_UI.register(
+    "pages.links",
+    component: Demo::PageLinksComponent,
+    description: "Sortable table of page links",
+    mode: :edit,
+    version: "1.0.0",
+    actions: { save: "pages.update" }
+  )
+
+  RecordingStudio::MCP_UI.register(
+    "pages.tabs",
+    component: Demo::PageTabsComponent,
+    description: "Story and outline for a page",
+    mode: :read,
+    version: "1.0.0"
+  )
+
+  RecordingStudio::MCP_UI.register(
+    "pages.topics",
+    component: Demo::PageTopicsComponent,
+    description: "Topic chips for a page",
+    mode: :read,
+    version: "1.0.0"
+  )
+
+  RecordingStudio::MCP_UI.register(
+    "pages.notes",
+    component: Demo::PageNotesComponent,
+    description: "Section notes for a page",
+    mode: :read,
+    version: "1.0.0"
+  )
+
   RecordingStudio::MCP_UI.configure do |config|
     config.compiled_css_path = [
       Rails.root.join("app/assets/builds/tailwind.css"),

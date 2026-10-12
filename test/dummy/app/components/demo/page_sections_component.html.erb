@@ -1,0 +1,87 @@
+<%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+  <% card.header do %>
+    <%= render FlatPack::PageTitle::Component.new(
+      title: "Edit sections",
+      subtitle: "Reorder the blocks, then save.",
+      variant: :h3,
+      class: "mb-0 pb-0"
+    ) %>
+  <% end %>
+  <% card.body do %>
+    <div data-controller="mcp-editor" class="mcp-ui-form">
+      <%= render FlatPack::TextInput::Component.new(
+        name: "title",
+        id: "page_title",
+        label: "Title",
+        value: title,
+        data: { mcp_field: true, flat_pack_validate: false }
+      ) %>
+      <p data-mcp-error="title" class="mcp-ui-error" hidden></p>
+
+      <%= render FlatPack::TextArea::Component.new(
+        name: "summary",
+        id: "page_summary",
+        label: "Summary",
+        value: summary,
+        rows: 3,
+        autogrow: false,
+        data: { mcp_field: true, flat_pack_validate: false }
+      ) %>
+      <p data-mcp-error="summary" class="mcp-ui-error" hidden></p>
+
+      <%= render FlatPack::CollectionEditor::Component.new(
+        title: "Sections",
+        add_label: "Add section",
+        empty_text: "Nothing here yet. Add a section to get going.",
+        headers: ["Heading", "Body"],
+        orderable: true
+      ) do |editor| %>
+        <% sections.each do |section| %>
+          <% editor.with_row(form: section_form(section), record_id: section["id"], persisted: true) do |row| %>
+            <% row.with_field do %>
+              <%= render heading_input(section, section["id"]) %>
+            <% end %>
+            <% row.with_field do %>
+              <%= render body_input(section, section["id"]) %>
+            <% end %>
+          <% end %>
+        <% end %>
+        <% editor.with_template do %>
+          <% template = FlatPack::CollectionEditor::Row::Component.new(
+            form: section_form("id" => "", "heading" => "", "body" => ""),
+            persisted: true,
+            record_id: "NEW_RECORD"
+          ) %>
+          <% template.with_field do %>
+            <%= render heading_input({ "heading" => "" }, "NEW_RECORD") %>
+          <% end %>
+          <% template.with_field do %>
+            <%= render body_input({ "body" => "" }, "NEW_RECORD") %>
+          <% end %>
+          <%= render template %>
+        <% end %>
+      <% end %>
+
+      <input type="hidden" name="id" data-mcp-field value="<%= ERB::Util.html_escape(data["id"].to_s) %>">
+      <input type="hidden" name="revision" data-mcp-field value="<%= ERB::Util.html_escape(data["revision"].to_s) %>">
+
+      <div class="mcp-ui-actions">
+        <%= render FlatPack::Button::Component.new(
+          text: "Save",
+          style: :primary,
+          size: :md,
+          type: "button",
+          data: { mcp_save: "save" }
+        ) %>
+        <%= render FlatPack::Button::Component.new(
+          text: "Cancel",
+          style: :secondary,
+          size: :md,
+          type: "button",
+          data: { mcp_reset: true }
+        ) %>
+      </div>
+      <p data-mcp-status class="mcp-ui-status" hidden></p>
+    </div>
+  <% end %>
+<% end %>
