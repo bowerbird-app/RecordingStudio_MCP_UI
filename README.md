@@ -22,7 +22,7 @@ See [docs/api_mcp_integration.md](docs/api_mcp_integration.md) for the exact API
 ## Installation
 
 ```ruby
-gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.1.0"
+gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.2.0"
 ```
 
 ```bash
@@ -103,10 +103,46 @@ Host communication uses the official MCP Apps View SDK (`App` + `PostMessageTran
 
 1. `app/assets/stylesheets/recording_studio_mcp_ui/widget.css`
 2. FlatPack `variables.css` and `application.css` from `FlatPack::Engine` when that gem is installed
-3. Optional host compiled CSS from `configuration.compiled_css_path` (dummy uses `app/assets/builds/tailwind.css`)
+3. Optional host CSS from `configuration.compiled_css_path` — one local path or an array of local paths, in order (dummy uses Tailwind then `app/assets/stylesheets/mcp_ui_widget.css`)
 4. The official SDK IIFE (`vendor/ext-apps.iife.js`) plus `runtime.js`, `controllers/editor_controller.js`, and `boot.js`
 
+Host CSS is read from disk at package time. Missing paths are skipped. Do not pass URLs; CSP allows only inline style.
+
 The document is a self-contained HTML page. It does not assume host importmaps or layout assets. The editor controller is Stimulus-shaped (`data-controller="mcp-editor"`) and talks only through `mcpUI`.
+
+### Widget CSS tokens
+
+The packaged page (`html` / `body`) is transparent so the host shows through. A bare widget paints `--mcp-ui-surface` on `#mcp-ui-root` and on `.mcp-ui-card` / `.mcp-ui-form`. `#mcp-ui-root` is transparent only when a Flatpack card (`--card-background-color`) is its only child, so headers and actions beside a card stay on the light surface. Nested `.mcp-ui-card` / `.mcp-ui-form` inside that card are transparent so the card colour shows through. Widget CSS paints those Flatpack card classes from `--card-background-color` even when the host has not inlined Tailwind. Inputs keep a readable `--mcp-ui-surface` fill. A component that sets its own background still wins on that element.
+
+The page is transparent only when the OS/browser color preference matches the host's color scheme; otherwise the browser paints a solid canvas (white on a dark host, black on a light host). Following the host theme is not implemented. Hosts that override `color-scheme` must target `:root[data-theme]` (the packager sets `data-theme` on `html`).
+
+Override tokens (or any widget rule) in the host stylesheet:
+
+```css
+:root {
+  --mcp-ui-background: transparent; /* page, default */
+  --mcp-ui-surface: #fff;           /* card, default */
+  --mcp-ui-surface-color: #1f1f1f;  /* card text, default */
+  --mcp-ui-surface-scheme: light;   /* native controls on the card */
+  --mcp-ui-padding: 1rem;
+  --mcp-ui-font-family: ui-sans-serif, system-ui, sans-serif;
+}
+```
+
+```ruby
+RecordingStudio::MCP_UI.configure do |config|
+  config.compiled_css_path = Rails.root.join("app/assets/stylesheets/mcp_ui_widget.css")
+end
+```
+
+Later files win. To keep a compiled app stylesheet and still tweak the widget, pass both:
+
+```ruby
+config.compiled_css_path = [
+  Rails.root.join("app/assets/builds/tailwind.css"),
+  Rails.root.join("app/assets/stylesheets/mcp_ui_widget.css")
+]
+```
 
 ## Data, editing, and security
 
@@ -123,7 +159,7 @@ The document is a self-contained HTML page. It does not assume host importmaps o
 Sign in at `/users/sign_in` with `admin@admin.com` / `Password`.
 
 - Demo A: `/demos/:id` — read-only Project card
-- Demo B: `/demos/:id/edit` — editor that POSTs to `Demo::ProjectUpdate`
+- Demo B: `/demos/:id/edit` — editor that POSTs to `Demo::ProjectUpdate`. Status, Save, and Cancel are FlatPack components; the form uses `p-6`. Dummy Tailwind in `compiled_css_path` styles them in the packaged document.
 - Packaged document: `/demos/:id/document?widget=projects.preview`
 
 The demo save path is a test stand-in. It never reports a successful save unless the Project row was updated.

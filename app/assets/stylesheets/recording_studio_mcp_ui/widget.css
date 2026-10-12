@@ -1,30 +1,104 @@
+:root {
+  --mcp-ui-background: transparent;
+  --mcp-ui-surface: #fff;
+  --mcp-ui-surface-color: #1f1f1f;
+  --mcp-ui-surface-scheme: light;
+  --mcp-ui-font-family: ui-sans-serif, system-ui, sans-serif;
+  --mcp-ui-padding: 1rem;
+  --mcp-ui-gap: 0.75rem;
+  --mcp-ui-field-gap: 0.25rem;
+  --mcp-ui-field-padding: 0.5rem 0.75rem;
+  --mcp-ui-field-border-color: color-mix(in srgb, var(--mcp-ui-surface-color) 22%, var(--mcp-ui-surface));
+  --mcp-ui-field-radius: 0.5rem;
+  --mcp-ui-status-error-color: #9b1c1c;
+  --mcp-ui-status-success-color: #146c2e;
+  --mcp-ui-status-loading-color: color-mix(in srgb, var(--mcp-ui-surface-color) 45%, var(--mcp-ui-surface));
+  --mcp-ui-save-accent-color: #c9a227;
+}
+
+/* Packager sets html data-theme (currently "rounded"). Specificity beats Flatpack
+   `:root, [data-theme] { color-scheme: light }`. */
+:root[data-theme] {
+  color-scheme: light dark;
+}
+
+html {
+  background: var(--mcp-ui-background);
+}
+
 .mcp-ui-body {
   margin: 0;
-  padding: 1rem;
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  background: var(--surface-color, #f8f8f5);
-  color: var(--surface-content-color, #1f1f1f);
+  padding: var(--mcp-ui-padding);
+  font-family: var(--mcp-ui-font-family);
+  background: var(--mcp-ui-background);
+  color: var(--mcp-ui-surface-color);
+}
+
+#mcp-ui-root,
+.mcp-ui-card,
+.mcp-ui-form {
+  --mcp-ui-field-border-color: color-mix(in srgb, var(--mcp-ui-surface-color) 22%, var(--mcp-ui-surface));
+  --mcp-ui-status-loading-color: color-mix(in srgb, var(--mcp-ui-surface-color) 45%, var(--mcp-ui-surface));
+  color-scheme: var(--mcp-ui-surface-scheme);
+  color: var(--mcp-ui-surface-color);
+}
+
+#mcp-ui-root {
+  background: transparent;
+}
+
+#mcp-ui-root:not(:has(> :is([class*="card-background-color"], [class*="card-background-muted-color"]):only-child)) {
+  background: var(--mcp-ui-surface);
+}
+
+.mcp-ui-card,
+.mcp-ui-form {
+  background: var(--mcp-ui-surface);
+}
+
+/* Coupled to FlatPack Card classes (`bg-[var(--card-background-color)]` and
+   `bg-[var(--card-background-muted-color)]` from FlatPack::Card::Component).
+   Paint from FlatPack tokens here so detection and fill work without host Tailwind. */
+[class*="card-background-color"] {
+  background-color: var(--card-background-color);
+}
+
+[class*="card-background-muted-color"] {
+  background-color: var(--card-background-muted-color);
+}
+
+[class*="card-background-color"] .mcp-ui-card,
+[class*="card-background-color"] .mcp-ui-form,
+[class*="card-background-muted-color"] .mcp-ui-card,
+[class*="card-background-muted-color"] .mcp-ui-form,
+.mcp-ui-card .mcp-ui-card,
+.mcp-ui-form .mcp-ui-card,
+.mcp-ui-card .mcp-ui-form,
+.mcp-ui-form .mcp-ui-form {
+  background: transparent;
 }
 
 .mcp-ui-card,
 .mcp-ui-form {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--mcp-ui-gap);
 }
 
 .mcp-ui-field {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--mcp-ui-field-gap);
 }
 
 .mcp-ui-field input,
 .mcp-ui-field textarea,
 .mcp-ui-field select {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #c8c8c2;
-  border-radius: 0.5rem;
+  padding: var(--mcp-ui-field-padding);
+  border: 1px solid var(--mcp-ui-field-border-color);
+  border-radius: var(--mcp-ui-field-radius);
+  background: var(--mcp-ui-surface);
+  color: var(--mcp-ui-surface-color);
   font: inherit;
 }
 
@@ -33,10 +107,10 @@
   gap: 0.5rem;
 }
 
-.mcp-ui-status[data-kind="error"] { color: #9b1c1c; }
-.mcp-ui-status[data-kind="success"] { color: #146c2e; }
-.mcp-ui-status[data-kind="loading"] { color: #5b5b55; }
-.mcp-ui-error { color: #9b1c1c; font-size: 0.85rem; }
+.mcp-ui-status[data-kind="error"] { color: var(--mcp-ui-status-error-color); }
+.mcp-ui-status[data-kind="success"] { color: var(--mcp-ui-status-success-color); }
+.mcp-ui-status[data-kind="loading"] { color: var(--mcp-ui-status-loading-color); }
+.mcp-ui-error { color: var(--mcp-ui-status-error-color); font-size: 0.85rem; }
 
 .is-saving { opacity: 0.75; }
-.is-dirty [data-mcp-save] { box-shadow: 0 0 0 2px #c9a227; }
+.is-dirty [data-mcp-save] { box-shadow: 0 0 0 2px var(--mcp-ui-save-accent-color); }

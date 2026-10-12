@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-12
+
+### Added
+- Widget CSS custom properties (`--mcp-ui-background`, `--mcp-ui-surface`, `--mcp-ui-surface-color`, and related tokens) so hosts can theme packaged documents without forking the gem.
+- `configuration.compiled_css_path` accepts one local path or an array of local paths. Files are inlined in order after the gem (and Flatpack) CSS.
+
+### Changed
+- Packaged widget page (`html` / `body`) background defaults to transparent. A bare widget paints a light card (`--mcp-ui-surface: #fff`, `--mcp-ui-surface-color: #1f1f1f`). `#mcp-ui-root` is transparent only when a Flatpack card is its only child. Nested `.mcp-ui-card` / `.mcp-ui-form` inside that card stay transparent. Widget CSS paints Flatpack card classes from `--card-background-color` without host Tailwind.
+- Widget documents declare `color-scheme: light dark` on `:root[data-theme]`. The page is transparent only when the OS/browser color preference matches the host's color scheme; otherwise the browser paints a solid canvas. Following the host theme is not implemented.
+- Dummy project editor uses FlatPack Select for Status and FlatPack Buttons for Save (primary) and Cancel (secondary), still wired through `projects.update`.
+- Dummy project editor form uses Tailwind `p-6` so the packaged widget has inset around the fields.
+- Installer comments and README document host CSS overrides.
+
+### Upgrade notes
+- Widgets no longer paint an off-white page (`#f8f8f5`). The page is transparent; the card stays white with dark text. Override `--mcp-ui-surface` and `--mcp-ui-surface-color` in a local stylesheet and point `compiled_css_path` at it.
+- `compiled_css_path` still accepts a single path. Pass an array when you already inline compiled CSS and need a second file that wins.
+
 ## [0.1.0] - 2026-10-09
 
 ### Added
@@ -32,5 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Ruby `action_executor`, `visibility_checker`, and `RecordingStudio::MCP_UI.execute`. Widget writes are ordinary MCP tool calls.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.1.1...v0.2.0
 [0.1.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/releases/tag/v0.1.0

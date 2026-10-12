@@ -43,6 +43,26 @@ class McpUiDemoTest < ActionDispatch::IntegrationTest
     refute_nil config
     parsed = JSON.parse(config)
     assert_equal "projects.update", parsed.fetch("actions").fetch("save")
+    gem_css_index = response.body.index("--mcp-ui-background: transparent")
+    host_css_index = response.body.index("--mcp-ui-padding: 1.25rem")
+    refute_nil gem_css_index
+    refute_nil host_css_index
+    assert gem_css_index < host_css_index, "dummy host widget CSS must follow gem widget.css"
+    assert_includes response.body, 'data-mcp-save="save"'
+    assert_match(/data-mcp-reset(?:=["'](?:true)?["'])?/, response.body)
+    assert_includes response.body, 'name="status"'
+    assert_includes response.body, "data-mcp-field"
+    assert_includes response.body, "flat-pack-select"
+    assert_includes response.body, "fp-button"
+    assert_includes response.body, 'data-fp-style="primary"'
+    assert_includes response.body, 'data-fp-style="secondary"'
+    refute_match(/<button[^>]*>\s*Save\s*<\/button>/, response.body)
+    assert_includes response.body, "[data-fp-style=\"primary\"]"
+    assert_includes response.body, ".fp-button"
+    assert_includes response.body, 'px-\[var\(--button-padding-x-md\)\]'
+    assert_includes response.body, 'px-\[var\(--form-control-padding\)\]'
+    assert_includes response.body, 'class="mcp-ui-form p-6"'
+    assert_includes response.body, ".p-6{padding:calc(var(--spacing) * 6)}"
     refute_includes config, "Password"
     refute_includes config, "token"
   end
