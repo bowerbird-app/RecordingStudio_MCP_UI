@@ -160,12 +160,18 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     assert_includes tabs, "Open"
     assert_includes tabs, 'role="tab"'
     assert_includes tabs, 'data-mcp-text="summary"'
+    assert_includes tabs, 'data-mcp-list="sections"'
+    assert_includes tabs, 'data-mcp-text="heading"'
     assert_includes tabs, "flat-pack-list"
 
     topics = RecordingStudio::MCP_UI.package("pages.topics", data: data).html
+    assert_includes topics, 'data-mcp-list="topics"'
+    assert_includes topics, "data-mcp-list-item"
     assert_includes topics, "Launch"
     assert_includes topics, "Story"
     assert_includes topics, "flat-pack--chip"
+    topic_template = topics[/<template\b[^>]*data-mcp-list-item[^>]*>.*?<\/template>/m]
+    refute_includes topic_template, "Launch"
     empty_topics = RecordingStudio::MCP_UI.package("pages.topics", data: {}).html
     assert_includes empty_topics, "No topics yet."
     assert_includes empty_topics, "fp-empty-state"

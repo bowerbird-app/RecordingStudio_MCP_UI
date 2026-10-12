@@ -15,21 +15,20 @@
         <% end %>
       <% end %>
       <% tabs.tab(label: "Outline", id: "outline") do %>
-        <% if sections.any? %>
+        <div data-mcp-list="sections">
           <%= render FlatPack::List::Component.new(spacing: :dense) do %>
-            <% sections.each do |section| %>
+            <template data-mcp-list-item>
               <%= render FlatPack::List::Item.new do %>
-                <%= section["heading"] %>
+                <span data-mcp-text="heading"></span>
               <% end %>
-            <% end %>
+            </template>
           <% end %>
-        <% else %>
           <%= render FlatPack::EmptyState::Component.new(
-            title: "Nothing here yet.",
-            description: "Add a section to get going.",
-            size: :sm
+            title: "Nothing here yet. Add a section to get going.",
+            size: :sm,
+            data: { mcp_list_empty: true }
           ) %>
-        <% end %>
+        </div>
       <% end %>
     <% end %>
   <% end %>

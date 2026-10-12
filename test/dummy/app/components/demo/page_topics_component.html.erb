@@ -8,20 +8,19 @@
     ) %>
   <% end %>
   <% card.body do %>
-    <% if topics.any? %>
+    <div data-mcp-list="topics">
       <%= render FlatPack::ChipGroup::Component.new do %>
-        <% topics.each_with_index do |topic, index| %>
-          <%= render FlatPack::Chip::Component.new(
-            text: topic,
-            type: :button,
-            selected: index.zero?,
-            style: index.zero? ? :primary : :default,
-            value: topic
-          ) %>
-        <% end %>
+        <template data-mcp-list-item>
+          <%= render FlatPack::Chip::Component.new(type: :button, style: :default) do %>
+            <span data-mcp-text></span>
+          <% end %>
+        </template>
       <% end %>
-    <% else %>
-      <%= render FlatPack::EmptyState::Component.new(title: "No topics yet.", size: :sm) %>
-    <% end %>
+      <%= render FlatPack::EmptyState::Component.new(
+        title: "No topics yet.",
+        size: :sm,
+        data: { mcp_list_empty: true }
+      ) %>
+    </div>
   <% end %>
 <% end %>
