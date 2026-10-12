@@ -41,9 +41,6 @@ Rails.application.routes.draw do
   get "docs/gem_views", to: "docs#gem_views", as: :docs_gem_views
   get "docs/methods", to: "docs#methods", as: :docs_methods
 
-  get "topics-widget", to: "topics_widgets#show", as: :topics_widget
-  get "topics-widget/document", to: "topics_widgets#document", as: :topics_widget_document
-
   resources :demos, only: %i[show edit] do
     member do
       get :document

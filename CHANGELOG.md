@@ -11,7 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Display lists in the packaged runtime. A container uses `data-mcp-list`, one FlatPack item lives in `<template data-mcp-list-item>`, and the empty state uses `data-mcp-list-empty`. Each tool result replaces the clones, writes slots with `textContent`, and toggles the empty state. An empty `data-mcp-text` fills a scalar. A named `data-mcp-text` fills that field on an object.
-- Dummy `pages.topics` chips and `pages.tabs` outline use that template. They package with empty data, the same way `resources/read` does. The host tool result fills the list.
 
 ### Upgrade notes
 - This does not change editor rows. Repeatable save rows stay `data-mcp-row` plus `data-mcp-field`, collected by the editor name parser. `data-mcp-restore-order` still restores those rows. A display list is a separate template and is replaced on each result.
