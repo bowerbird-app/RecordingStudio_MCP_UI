@@ -29,23 +29,15 @@
       ) %>
       <%= render mcp_error("summary") %>
 
-      <%= render FlatPack::CollectionEditor::Component.new(
+      <%= render Demo::PageSectionsEditor.new(
         title: "Sections",
         add_label: "Add section",
         empty_text: "Nothing here yet. Add a section to get going.",
         headers: ["Heading", "Body"],
-        orderable: true
+        orderable: true,
+        data: { mcp_list: "sections" },
+        list_row: -> { list_row }
       ) do |editor| %>
-        <% sections.each do |section| %>
-          <% editor.with_row(form: section_form(section), record_id: section["id"], persisted: true, data: { mcp_row: true }) do |row| %>
-            <% row.with_field do %>
-              <%= render heading_input(section, section["id"]) %>
-            <% end %>
-            <% row.with_field do %>
-              <%= render body_input(section, section["id"]) %>
-            <% end %>
-          <% end %>
-        <% end %>
         <% editor.with_template do %>
           <% template = FlatPack::CollectionEditor::Row::Component.new(
             form: section_form("id" => "", "heading" => "", "body" => ""),

@@ -68,6 +68,10 @@ class McpProjectWidgetsTest < ActionDispatch::IntegrationTest
     preview_html = (preview.dig("result", "contents") || preview.dig("result", "content")).first.fetch("text")
     assert_includes preview_html, "mcp-ui-config"
     assert_includes preview_html, "data-mcp-text=\"title\""
+    assert_includes preview_html, "data-mcp-text=\"description\""
+    assert_includes preview_html, "data-mcp-text=\"status\""
+    refute_includes preview_html, "Beach House"
+    refute_includes preview_html, "Widget House"
 
     post "/recording_studio_mcp",
          params: rpc("resources/read", uri: "ui://projects/editor").to_json,
@@ -81,6 +85,10 @@ class McpProjectWidgetsTest < ActionDispatch::IntegrationTest
     assert_includes html, "mcp-ui-config"
     assert_includes html, "projects.update"
     assert_includes html, "McpApps"
+    assert_includes html, 'name="title"'
+    assert_includes html, "data-mcp-field"
+    refute_includes html, "Beach House"
+    refute_includes html, "Widget House"
   end
 
   test "projects show returns fields at the top of structuredContent" do

@@ -6,7 +6,7 @@ module Demo
 
     def table
       component = PageLinksTable.new(
-        data: links,
+        data: [],
         sort: sort_key,
         direction: sort_direction,
         base_url: sort_base_url,
@@ -21,33 +21,29 @@ module Demo
           class: "inline-flex text-[var(--surface-muted-content-color)] cursor-grab"
         )
       end
-      component.column(title: "Label", sortable: true, sort_key: :label) do |row|
+      component.column(title: "Label", sortable: true, sort_key: :label) do |_row|
         helpers.safe_join([
-          helpers.tag.input(type: "hidden", name: "links[][id]", value: row["id"], data: { mcp_field: true }),
-          helpers.tag.input(type: "hidden", name: "links[][label]", value: row["label"], data: { mcp_field: true }),
-          render(FlatPack::Content::Component.new(class: "text-[var(--surface-content-color)]")) do
-            mcp_reading(row["label"])
-          end
+          helpers.tag.input(type: "hidden", name: "links[][id]", value: "", data: { mcp_field: true }),
+          link_field("links[][label]", "Label", "link-$index-label")
         ])
       end
-      component.column(title: "Link", sortable: true, sort_key: :url) do |row|
-        helpers.safe_join([
-          helpers.tag.input(type: "hidden", name: "links[][url]", value: row["url"], data: { mcp_field: true }),
-          link_url(row)
-        ])
+      component.column(title: "Link", sortable: true, sort_key: :url) do |_row|
+        link_field("links[][url]", "Link", "link-$index-url")
       end
       component
     end
 
     private
 
-    def link_url(row)
-      url = row["url"].to_s
-      if url.match?(/\Ahttps?:/i)
-        render(FlatPack::Link::Component.new(href: url)) { url }
-      else
-        render(FlatPack::Content::Component.new) { mcp_reading(url) }
-      end
+    def link_field(name, label, attr_id)
+      render(FlatPack::TextInput::Component.new(
+        name: name,
+        label: nil,
+        value: "",
+        chrome: :cell,
+        aria: { label: label },
+        data: { mcp_field: true, flat_pack_validate: false, mcp_attr_id: attr_id }
+      ))
     end
 
     def sort_key

@@ -8,14 +8,6 @@
     ) %>
   <% end %>
   <% card.body do %>
-    <%= render FlatPack::Accordion::Component.new do |accordion| %>
-      <% note_items.each_with_index do |section, index| %>
-        <% accordion.item(id: "note-#{section["id"]}", title: section["heading"], open: index.zero?) do %>
-          <%= render FlatPack::Content::Component.new do %>
-            <%= mcp_reading(section["body"]) %>
-          <% end %>
-        <% end %>
-      <% end %>
-    <% end %>
+    <%= render Demo::PageNotesAccordion.new %>
   <% end %>
 <% end %>

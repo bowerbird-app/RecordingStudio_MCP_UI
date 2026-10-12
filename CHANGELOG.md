@@ -8,11 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- Dummy topic chips and the tabs outline are `data-mcp-list` templates. The tool result clones the FlatPack chip or list item. Sections, links, and notes stay editor and accordion markup.
-- Dummy section rows, including the add-row template, opt in with `data-mcp-row`. The sections editor sets `data-mcp-restore-order` so Cancel restores that order before values bind. Link rows opt in with `data-mcp-row` on each body `<tr>`. The links editor leaves order alone on refresh, because Save returns the new DOM order and the visible label is not a field. The links document sorts that array into the header order before packaging, so the visible label and its fields stay on the same row.
+- Dummy page widgets fill from the tool result. Topic chips, the outline, section rows, link rows, and note items are `data-mcp-list` templates. `resources/read` packages them empty. The tool result clones the FlatPack row and sets its fields.
+- Dummy section rows, including the add-row template, opt in with `data-mcp-row`. The sections editor sets `data-mcp-restore-order`. Link rows opt in with `data-mcp-row` on the template `<tr>` and use FlatPack text inputs named `links[][label]` and `links[][url]`. The links editor leaves order alone on refresh, because Save returns the new DOM order. The links document sorts that array into the header order before packaging.
 - Dummy Page demo packages a collection editor, a links table with one reorder grip per row, tabs, topic chips, and an accordion. The dummy `widget_script_path` points at the esbuild bundle that registers those controllers.
 - Dummy project editor sits in a FlatPack card: page title in the header, fields and Save/Cancel in the body.
-- Dummy widget controls are FlatPack components. Project title is a text input and description is a textarea. Error and status lines are alerts. Preview text is Content and a badge. Page story, outline, notes, topic empty state, and link cells use Content, List, EmptyState, or Link.
+- Dummy widget controls are FlatPack components. Project title is a text input and description is a textarea. Error and status lines are alerts. Preview text is Content and a badge. Page story, outline, notes, topic empty state, and link cells use Content, List, EmptyState, or text inputs.
 
 ## [0.4.0] - 2026-10-12
 

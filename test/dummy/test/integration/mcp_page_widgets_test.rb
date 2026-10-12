@@ -50,11 +50,11 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
 
   test "resources read renders each page widget" do
     expectations = {
-      "ui://pages/sections" => [ "flat-pack-collection-editor", "Add section", "pages.update" ],
-      "ui://pages/links" => [ "Label", "Link" ],
+      "ui://pages/sections" => [ "flat-pack-collection-editor", "Add section", "pages.update", 'data-mcp-list="sections"', "data-mcp-list-item" ],
+      "ui://pages/links" => [ "Label", "Link", 'data-mcp-list="links"', "No data available", 'name="links[][label]"' ],
       "ui://pages/tabs" => [ "Story", "Outline", "flat-pack--tabs", 'data-mcp-list="sections"' ],
       "ui://pages/topics" => [ "No topics yet.", 'data-mcp-list="topics"', "data-mcp-list-item" ],
-      "ui://pages/notes" => [ "flat-pack--accordion", "Nothing here yet" ]
+      "ui://pages/notes" => [ "flat-pack--accordion", "Nothing here yet.", 'data-mcp-list="sections"', 'data-mcp-text="heading"' ]
     }
 
     expectations.each do |uri, markers|
@@ -69,6 +69,8 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
       assert_includes html, "mcp-ui-config"
       assert_includes html, "card-background-color"
       markers.each { |marker| assert_includes html, marker, uri }
+      refute_includes html, "Say hello.", uri
+      refute_includes html, ">Site<", uri
     end
   end
 
@@ -81,8 +83,10 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     assert_includes sections, "Say hello."
     assert_match(/data-controller="mcp-editor"[^>]*data-mcp-restore-order/, sections)
     section_rows = sections.scan(/<li\b[^>]*flat-pack-collection-editor-row[^>]*>/)
-    assert_equal 3, section_rows.size
+    assert_equal 2, section_rows.size
     section_rows.each { |row| assert_includes row, "data-mcp-row" }
+    assert_includes sections, 'data-mcp-list="sections"'
+    assert_includes sections, "data-mcp-list-empty"
     assert_includes sections, 'data-mcp-save="save"'
     assert_includes sections, 'data-mcp-error="title"'
     assert_includes sections, 'role="alert"'
@@ -102,7 +106,7 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     %w[id heading body _destroy].each do |key|
       assert_includes sections, %(name="sections[][#{key}]")
     end
-    assert_equal 3, sections.scan('name="sections[][id]"').size
+    assert_equal 2, sections.scan('name="sections[][id]"').size
     refute_includes sections, 'name="sections[open][id]"'
     template = sections[/<template[^>]*>(?<inner>.*?)<\/template>/m, :inner]
     assert template
@@ -111,9 +115,12 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
       assert_includes template, "data-mcp-field"
     end
     assert_includes template, "data-mcp-row"
+    list_template = sections[/<template\b[^>]*data-mcp-list-item[^>]*>.*?<\/template>/m]
+    refute_includes list_template, "Open"
+    refute_includes list_template, "Say hello."
     refute_includes sections, "sections[open][heading]"
     handles = sections.scan(%r{<button[^>]*flat-pack-collection-editor-handle[^>]*>.*?</button>}m)
-    assert_equal 3, handles.size
+    assert_equal 2, handles.size
     handles.each { |handle| assert_equal 1, handle.scan("<svg").size }
     refute_includes sections, "⋮"
     %w[heading body].each do |key|
@@ -129,26 +136,30 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     assert_includes links, "Site"
     assert_includes links, "https://example.com/press"
     assert_includes links, "sort=label"
+    assert_includes links, 'data-mcp-list="links"'
     assert_includes links, 'name="links[][label]"'
     assert_includes links, 'name="links[][url]"'
     assert_includes links, 'name="links[][id]"'
     assert_includes links, "data-mcp-field"
+    assert_includes links, "data-mcp-attr-id"
     assert_includes links, "flat-pack--table-sortable"
+    assert_includes links, "No data available"
     refute_match(/data-controller="mcp-editor"[^>]*data-mcp-restore-order/, links)
     body = links[/<tbody\b[^>]*>.*?<\/tbody>/m]
     assert body
-    body_rows = body.scan(/<tr\b[^>]*>/)
-    assert_equal 2, body_rows.size
-    body_rows.each { |row| assert_includes row, "data-mcp-row" }
+    link_template = body[/<template\b[^>]*data-mcp-list-item[^>]*>.*?<\/template>/m]
+    assert_includes link_template, "data-mcp-row"
+    assert_includes link_template, 'name="links[][label]"'
+    refute_includes link_template, "Site"
+    assert_includes body, "data-mcp-list-empty"
     header = links[/<thead\b[^>]*>.*?<\/thead>/m]
     refute_includes header, "data-mcp-row"
     assert_includes links, 'data-mcp-save="save"'
     grips = links.scan(%r{<span[^>]*cursor-grab[^>]*>⋮</span>})
-    assert_equal 2, grips.size
+    assert_equal 1, grips.size
     refute_includes links, "⋮⋮"
     assert_includes links, "cursor-grab"
-    assert_includes links, "flat-pack-link"
-    assert_includes links, "fp-content"
+    assert_includes links, "border-0"
     assert_includes links, 'role="alert"'
     assert_includes links, "data-mcp-status"
     refute_includes links, ">Label</label>"
@@ -193,6 +204,14 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     assert_includes notes, "Do the thing."
     assert_includes notes, "flat-pack--accordion"
     assert_includes notes, "fp-content"
+    assert_includes notes, 'data-mcp-list="sections"'
+    assert_includes notes, 'data-mcp-text="heading"'
+    assert_includes notes, 'data-mcp-text="body"'
+    assert_includes notes, "data-mcp-attr-aria-controls"
+    assert_includes notes, "Nothing here yet."
+    note_template = notes[/<template\b[^>]*data-mcp-list-item[^>]*>.*?<\/template>/m]
+    refute_includes note_template, "Say hello."
+    refute_includes note_template, "Nothing here yet."
   end
 
   test "pages show returns fields at the top of structuredContent" do
@@ -376,15 +395,17 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     assert_equal @page.id, @recording.reload.recordable_id
   end
 
-  test "links document shows each label on the same row as its field" do
+  test "links document sorts the packaged array and leaves the row template empty" do
     get "/page_demos/#{@recording.id}/document", params: { widget: "pages.links" }
 
     assert_response :success
-    rows = response.body.scan(%r{<tr\b[^>]*data-mcp-row[^>]*>.*?</tr>}m)
-    labels = rows.map { |row| row[/name="links\[\]\[label\]"[^>]*value="([^"]+)"/, 1] }
-    visible = rows.map { |row| row[/class="[^"]*fp-content[^"]*"[^>]*>\s*([^<]+)/, 1]&.strip }
-    assert_equal [ "Press", "Site" ], labels
-    assert_equal labels, visible
+    config = JSON.parse(response.body[%r{id="mcp-ui-config">(?<json>.*?)</script>}m, :json])
+    assert_equal [ "Press", "Site" ], config.dig("data", "links").map { |row| row["label"] }
+    template = response.body[/<template\b[^>]*data-mcp-list-item[^>]*>.*?<\/template>/m]
+    assert_includes template, 'name="links[][label]"'
+    assert_includes template, 'name="links[][url]"'
+    refute_includes template, "Press"
+    refute_includes template, "Site"
   end
 
   test "document route serves the packaged sections widget" do
