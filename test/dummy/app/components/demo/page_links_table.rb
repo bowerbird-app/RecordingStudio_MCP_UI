@@ -15,12 +15,6 @@ module Demo
       end
     end
 
-    def container_attributes
-      attrs = super
-      attrs[:data] = (attrs[:data] || {}).merge(mcp_reconnect: "flat-pack--table-sortable")
-      attrs
-    end
-
     def tbody_attributes
       attrs = super
       attrs[:data] = (attrs[:data] || {}).merge(mcp_list: "links")
