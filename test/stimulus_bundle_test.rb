@@ -64,7 +64,8 @@ class StimulusBundleTest < Minitest::Test
       JS
       built = RecordingStudio::MCP_UI::ImportMapCatalog.new([
                                                               file_entry("@hotwired/stimulus", stimulus),
-                                                              entry("controllers/demo/echo_controller", "echo_controller.js")
+                                                              entry("controllers/demo/echo_controller",
+                                                                    "echo_controller.js")
                                                             ])
       source = bundle_for(@configuration, built)
 
