@@ -51,6 +51,27 @@ class StimulusBundleTest < Minitest::Test
     assert_equal "Item Ada", registered.fetch("copy")
   end
 
+  def test_bundle_keeps_backslashes_that_sub_would_treat_as_tokens
+    Dir.mktmpdir do |dir|
+      stimulus = File.join(dir, "stimulus.js")
+      File.write(stimulus, <<~'JS')
+        export class Controller {}
+        export class Application {
+          static start() { return new Application() }
+          register() {}
+        }
+        export const descriptorPattern = /^(?:(?:([^.]+?)\+)?(.+?)(?:\.(.+?))?(?:@(window|document))?->)?(.+?)(?:#([^:]+?))(?::(.+))?$/
+      JS
+      built = RecordingStudio::MCP_UI::ImportMapCatalog.new([
+                                                              file_entry("@hotwired/stimulus", stimulus),
+                                                              entry("controllers/demo/echo_controller", "echo_controller.js")
+                                                            ])
+      source = bundle_for(@configuration, built)
+
+      assert_includes source, '([^.]+?)\+'
+    end
+  end
+
   def test_reorder_of_static_imports_is_not_required_for_registration
     source = bundle_for(@configuration, catalog)
 

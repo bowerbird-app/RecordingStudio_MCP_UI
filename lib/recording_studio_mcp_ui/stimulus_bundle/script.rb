@@ -26,11 +26,12 @@ module RecordingStudio
       JS
 
       def wrap(modules)
+        # Block form: a replacement string treats \+ and \1 as match tokens.
         TEMPLATE
-          .sub("__NOTES__", notes_js)
-          .sub("__BODY__", modules.map { |entry| define_module(entry) }.join)
-          .sub("__STIMULUS__", JSON.generate(StimulusBundle::STIMULUS))
-          .sub("__REGISTERS__", modules.filter_map { |entry| register_line(entry) }.join)
+          .sub("__NOTES__") { notes_js }
+          .sub("__BODY__") { modules.map { |entry| define_module(entry) }.join }
+          .sub("__STIMULUS__") { JSON.generate(StimulusBundle::STIMULUS) }
+          .sub("__REGISTERS__") { modules.filter_map { |entry| register_line(entry) }.join }
       end
 
       def define_module(entry)

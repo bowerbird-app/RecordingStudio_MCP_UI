@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Regular expressions with an escaped character in a class (`/[^\s]+/g`) stay inside the regex. Stimulus can be inlined without leaving an `export` in the widget script.
+- Backslashes in inlined modules stay in the widget script. Stimulus action patterns keep `\+`, so `click->` still listens for click.
 
 ### Changed
 - Unchecked radios are omitted from the save payload. A checked radio still sends its value. Checkboxes stay booleans, including inside nested names.
