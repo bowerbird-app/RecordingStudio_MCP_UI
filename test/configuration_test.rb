@@ -13,6 +13,12 @@ class ConfigurationTest < Minitest::Test
     assert_equal "/tmp/app.css", @configuration.compiled_css_path
   end
 
+  def test_compiled_css_path_accepts_an_array_of_paths
+    @configuration.compiled_css_path = ["/tmp/app.css", "/tmp/widget.css"]
+
+    assert_equal ["/tmp/app.css", "/tmp/widget.css"], @configuration.compiled_css_path
+  end
+
   def test_merge_ignores_unknown_keys
     @configuration.merge!(unknown_key: "ignored", compiled_css_path: "/tmp/x.css")
 

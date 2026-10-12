@@ -43,6 +43,11 @@ class McpUiDemoTest < ActionDispatch::IntegrationTest
     refute_nil config
     parsed = JSON.parse(config)
     assert_equal "projects.update", parsed.fetch("actions").fetch("save")
+    gem_css_index = response.body.index("--mcp-ui-background: transparent")
+    host_css_index = response.body.index("--mcp-ui-padding: 1.25rem")
+    refute_nil gem_css_index
+    refute_nil host_css_index
+    assert gem_css_index < host_css_index, "dummy host widget CSS must follow gem widget.css"
     refute_includes config, "Password"
     refute_includes config, "token"
   end

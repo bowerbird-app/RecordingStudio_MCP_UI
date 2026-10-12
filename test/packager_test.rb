@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "fileutils"
+require "tmpdir"
 
 class PackagerTest < Minitest::Test
   class UnsafeComponent < ViewComponent::Base
@@ -17,9 +19,11 @@ class PackagerTest < Minitest::Test
   def setup
     RecordingStudio::MCP_UI.reset_registry!
     RecordingStudio::MCP_UI.register("projects.preview", component: UnsafeComponent, description: "card")
+    @original_compiled_css_path = RecordingStudio::MCP_UI.configuration.compiled_css_path
   end
 
   def teardown
+    RecordingStudio::MCP_UI.configuration.compiled_css_path = @original_compiled_css_path
     RecordingStudio::MCP_UI.reset_registry!
   end
 
@@ -66,5 +70,63 @@ class PackagerTest < Minitest::Test
     html = RecordingStudio::MCP_UI.render("projects.preview", data: { title: "Beach House" })
 
     assert_includes html, "Beach House"
+  end
+
+  def test_package_defaults_to_transparent_widget_background
+    RecordingStudio::MCP_UI.configuration.compiled_css_path = nil
+
+    document = RecordingStudio::MCP_UI.package("projects.preview", data: { title: "Beach House" })
+
+    assert_includes document.html, "--mcp-ui-background: transparent"
+    assert_includes document.html, "--mcp-ui-color: CanvasText"
+    refute_includes document.html, "background: var(--surface-color, #f8f8f5)"
+  end
+
+  def test_package_inlines_host_css_after_gem_widget_css
+    Dir.mktmpdir do |dir|
+      host_css = File.join(dir, "mcp_ui_widget.css")
+      File.write(host_css, ".mcp-ui-body { background: rgb(12, 34, 56); }")
+      RecordingStudio::MCP_UI.configuration.compiled_css_path = host_css
+
+      document = RecordingStudio::MCP_UI.package("projects.preview", data: { title: "Beach House" })
+      gem_index = document.html.index("--mcp-ui-background: transparent")
+      host_index = document.html.index(".mcp-ui-body { background: rgb(12, 34, 56); }")
+
+      refute_nil gem_index
+      refute_nil host_index
+      assert gem_index < host_index, "host CSS must follow gem widget.css"
+    end
+  end
+
+  def test_package_inlines_host_css_paths_in_order
+    Dir.mktmpdir do |dir|
+      first = File.join(dir, "first.css")
+      second = File.join(dir, "second.css")
+      File.write(first, ".mcp-ui-host-first { color: red; }")
+      File.write(second, ".mcp-ui-host-second { color: blue; }")
+      RecordingStudio::MCP_UI.configuration.compiled_css_path = [first, second]
+
+      document = RecordingStudio::MCP_UI.package("projects.preview", data: { title: "Beach House" })
+      first_index = document.html.index(".mcp-ui-host-first { color: red; }")
+      second_index = document.html.index(".mcp-ui-host-second { color: blue; }")
+
+      refute_nil first_index
+      refute_nil second_index
+      assert first_index < second_index
+    end
+  end
+
+  def test_package_skips_missing_and_blank_host_css_paths
+    RecordingStudio::MCP_UI.configuration.compiled_css_path = [
+      nil,
+      "",
+      "/tmp/recording-studio-mcp-ui-missing-#{Process.pid}.css"
+    ]
+
+    document = RecordingStudio::MCP_UI.package("projects.preview", data: { title: "Beach House" })
+
+    assert_includes document.html, "mcp-ui-body"
+    assert_includes document.html, "--mcp-ui-background: transparent"
+    refute_includes document.html, "recording-studio-mcp-ui-missing"
   end
 end

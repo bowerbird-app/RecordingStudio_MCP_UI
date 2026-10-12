@@ -22,7 +22,7 @@ See [docs/api_mcp_integration.md](docs/api_mcp_integration.md) for the exact API
 ## Installation
 
 ```ruby
-gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.1.0"
+gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.2.0"
 ```
 
 ```bash
@@ -103,10 +103,40 @@ Host communication uses the official MCP Apps View SDK (`App` + `PostMessageTran
 
 1. `app/assets/stylesheets/recording_studio_mcp_ui/widget.css`
 2. FlatPack `variables.css` and `application.css` from `FlatPack::Engine` when that gem is installed
-3. Optional host compiled CSS from `configuration.compiled_css_path` (dummy uses `app/assets/builds/tailwind.css`)
+3. Optional host CSS from `configuration.compiled_css_path` — one local path or an array of local paths, in order (dummy uses Tailwind then `app/assets/stylesheets/mcp_ui_widget.css`)
 4. The official SDK IIFE (`vendor/ext-apps.iife.js`) plus `runtime.js`, `controllers/editor_controller.js`, and `boot.js`
 
+Host CSS is read from disk at package time. Missing paths are skipped. Do not pass URLs; CSP allows only inline style.
+
 The document is a self-contained HTML page. It does not assume host importmaps or layout assets. The editor controller is Stimulus-shaped (`data-controller="mcp-editor"`) and talks only through `mcpUI`.
+
+### Widget CSS tokens
+
+The packaged page is transparent by default so it sits on whatever surface the host already has. Override tokens (or any widget rule) in the host stylesheet:
+
+```css
+:root {
+  --mcp-ui-background: transparent; /* default */
+  --mcp-ui-color: CanvasText;       /* follows the host color scheme */
+  --mcp-ui-padding: 1rem;
+  --mcp-ui-font-family: ui-sans-serif, system-ui, sans-serif;
+}
+```
+
+```ruby
+RecordingStudio::MCP_UI.configure do |config|
+  config.compiled_css_path = Rails.root.join("app/assets/stylesheets/mcp_ui_widget.css")
+end
+```
+
+Later files win. To keep a compiled app stylesheet and still tweak the widget, pass both:
+
+```ruby
+config.compiled_css_path = [
+  Rails.root.join("app/assets/builds/tailwind.css"),
+  Rails.root.join("app/assets/stylesheets/mcp_ui_widget.css")
+]
+```
 
 ## Data, editing, and security
 

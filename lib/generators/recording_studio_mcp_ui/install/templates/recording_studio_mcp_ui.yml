@@ -1,2 +1,4 @@
 shared:
+  # Local CSS path or list of paths inlined after the gem widget CSS.
+  # Missing files are skipped. Do not use URLs.
   compiled_css_path:

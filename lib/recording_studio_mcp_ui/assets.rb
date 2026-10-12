@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "pathname"
+
 module RecordingStudio
   module McpUi
     class Assets
@@ -44,10 +46,14 @@ module RecordingStudio
       end
 
       def self.compiled_host_css
-        path = RecordingStudio::MCP_UI.configuration.compiled_css_path
-        return if path.blank? || !File.exist?(path)
+        Array(RecordingStudio::MCP_UI.configuration.compiled_css_path).filter_map do |path|
+          next if path.blank?
 
-        File.read(path)
+          file = Pathname.new(path)
+          next unless file.file?
+
+          file.read
+        end.join("\n").presence
       end
     end
   end
