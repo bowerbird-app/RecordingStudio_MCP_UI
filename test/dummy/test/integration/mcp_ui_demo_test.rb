@@ -48,6 +48,19 @@ class McpUiDemoTest < ActionDispatch::IntegrationTest
     refute_nil gem_css_index
     refute_nil host_css_index
     assert gem_css_index < host_css_index, "dummy host widget CSS must follow gem widget.css"
+    assert_includes response.body, 'data-mcp-save="save"'
+    assert_match(/data-mcp-reset(?:=["'](?:true)?["'])?/, response.body)
+    assert_includes response.body, 'name="status"'
+    assert_includes response.body, "data-mcp-field"
+    assert_includes response.body, "flat-pack-select"
+    assert_includes response.body, "fp-button"
+    assert_includes response.body, 'data-fp-style="primary"'
+    assert_includes response.body, 'data-fp-style="secondary"'
+    refute_match(/<button[^>]*>\s*Save\s*<\/button>/, response.body)
+    assert_includes response.body, "[data-fp-style=\"primary\"]"
+    assert_includes response.body, ".fp-button"
+    assert_includes response.body, 'px-\[var\(--button-padding-x-md\)\]'
+    assert_includes response.body, 'px-\[var\(--form-control-padding\)\]'
     refute_includes config, "Password"
     refute_includes config, "token"
   end

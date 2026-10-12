@@ -159,7 +159,7 @@ config.compiled_css_path = [
 Sign in at `/users/sign_in` with `admin@admin.com` / `Password`.
 
 - Demo A: `/demos/:id` — read-only Project card
-- Demo B: `/demos/:id/edit` — editor that POSTs to `Demo::ProjectUpdate`
+- Demo B: `/demos/:id/edit` — editor that POSTs to `Demo::ProjectUpdate`. Status, Save, and Cancel are FlatPack components; dummy Tailwind in `compiled_css_path` styles them in the packaged document.
 - Packaged document: `/demos/:id/document?widget=projects.preview`
 
 The demo save path is a test stand-in. It never reports a successful save unless the Project row was updated.

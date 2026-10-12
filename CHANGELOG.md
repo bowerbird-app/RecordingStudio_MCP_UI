@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Packaged widget page (`html` / `body`) background defaults to transparent. A bare widget paints a light card (`--mcp-ui-surface: #fff`, `--mcp-ui-surface-color: #1f1f1f`). `#mcp-ui-root` is transparent only when a Flatpack card is its only child. Nested `.mcp-ui-card` / `.mcp-ui-form` inside that card stay transparent. Widget CSS paints Flatpack card classes from `--card-background-color` without host Tailwind.
 - Widget documents declare `color-scheme: light dark` on `:root[data-theme]`. The page is transparent only when the OS/browser color preference matches the host's color scheme; otherwise the browser paints a solid canvas. Following the host theme is not implemented.
+- Dummy project editor uses FlatPack Select for Status and FlatPack Buttons for Save (primary) and Cancel (secondary), still wired through `projects.update`.
 - Installer comments and README document host CSS overrides.
 
 ### Upgrade notes
