@@ -2,6 +2,8 @@
 
 module Demo
   class PageLinksComponent < PageWidgetComponent
+    include McpWidgetChrome
+
     def table
       component = FlatPack::Table::Component.new(
         data: sorted_links,
@@ -23,19 +25,30 @@ module Demo
         helpers.safe_join([
           helpers.tag.input(type: "hidden", name: "links[][id]", value: row["id"], data: { mcp_field: true }),
           helpers.tag.input(type: "hidden", name: "links[][label]", value: row["label"], data: { mcp_field: true }),
-          row["label"].to_s
+          render(FlatPack::Content::Component.new(class: "text-[var(--surface-content-color)]")) do
+            mcp_reading(row["label"])
+          end
         ])
       end
       component.column(title: "Link", sortable: true, sort_key: :url) do |row|
         helpers.safe_join([
           helpers.tag.input(type: "hidden", name: "links[][url]", value: row["url"], data: { mcp_field: true }),
-          row["url"].to_s
+          link_url(row)
         ])
       end
       component
     end
 
     private
+
+    def link_url(row)
+      url = row["url"].to_s
+      if url.match?(/\Ahttps?:/i)
+        render(FlatPack::Link::Component.new(href: url)) { url }
+      else
+        render(FlatPack::Content::Component.new) { mcp_reading(url) }
+      end
+    end
 
     def sorted_links
       rows = links.sort_by { |row| row[sort_key].to_s.downcase }

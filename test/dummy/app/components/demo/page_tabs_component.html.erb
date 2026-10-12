@@ -10,15 +10,25 @@
   <% card.body do %>
     <%= render FlatPack::Tabs::Component.new(default_tab: 0, variant: :underline) do |tabs| %>
       <% tabs.tab(label: "Story", id: "story") do %>
-        <p data-mcp-text="summary"><%= summary.presence || "Nothing here yet." %></p>
+        <%= render FlatPack::Content::Component.new(data: { mcp_text: "summary" }) do %>
+          <%= summary.presence || "Nothing here yet." %>
+        <% end %>
       <% end %>
       <% tabs.tab(label: "Outline", id: "outline") do %>
         <% if sections.any? %>
-          <% sections.each do |section| %>
-            <p><%= section["heading"] %></p>
+          <%= render FlatPack::List::Component.new(spacing: :dense) do %>
+            <% sections.each do |section| %>
+              <%= render FlatPack::List::Item.new do %>
+                <%= section["heading"] %>
+              <% end %>
+            <% end %>
           <% end %>
         <% else %>
-          <p>Nothing here yet. Add a section to get going.</p>
+          <%= render FlatPack::EmptyState::Component.new(
+            title: "Nothing here yet.",
+            description: "Add a section to get going.",
+            size: :sm
+          ) %>
         <% end %>
       <% end %>
     <% end %>

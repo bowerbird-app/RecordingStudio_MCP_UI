@@ -2,6 +2,8 @@
 
 module Demo
   class PageSectionsComponent < PageWidgetComponent
+    include McpWidgetChrome
+
     def section_form(section)
       object = PageSection.new(id: section["id"], heading: section["heading"], body: section["body"])
       McpFieldsBuilder.new("sections[]", object, helpers, {})

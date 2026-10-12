@@ -8,9 +8,20 @@
   <% end %>
   <% card.body do %>
     <div class="mcp-ui-card">
-      <h3 data-mcp-text="title"><%= ERB::Util.html_escape(title.to_s) %></h3>
-      <p data-mcp-text="description"><%= ERB::Util.html_escape(description.to_s) %></p>
-      <p data-mcp-text="status"><%= ERB::Util.html_escape(status.to_s) %></p>
+      <%= render FlatPack::Content::Component.new(
+        class: "font-semibold text-[var(--surface-content-color)]",
+        data: { mcp_text: "title" }
+      ) do %>
+        <%= mcp_reading(title) %>
+      <% end %>
+      <%= render FlatPack::Content::Component.new(data: { mcp_text: "description" }) do %>
+        <%= mcp_reading(description) %>
+      <% end %>
+      <%= render FlatPack::Badge::Component.new(
+        text: mcp_reading(status),
+        style: :info,
+        data: { mcp_text: "status" }
+      ) %>
     </div>
   <% end %>
 <% end %>

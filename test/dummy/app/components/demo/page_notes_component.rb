@@ -2,6 +2,8 @@
 
 module Demo
   class PageNotesComponent < PageWidgetComponent
+    include McpWidgetChrome
+
     def note_items
       return sections if sections.any?
 

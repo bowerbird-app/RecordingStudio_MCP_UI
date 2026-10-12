@@ -16,7 +16,7 @@
         value: title,
         data: { mcp_field: true, flat_pack_validate: false }
       ) %>
-      <p data-mcp-error="title" class="mcp-ui-error" hidden></p>
+      <%= render mcp_error("title") %>
 
       <%= render FlatPack::TextArea::Component.new(
         name: "summary",
@@ -27,7 +27,7 @@
         autogrow: false,
         data: { mcp_field: true, flat_pack_validate: false }
       ) %>
-      <p data-mcp-error="summary" class="mcp-ui-error" hidden></p>
+      <%= render mcp_error("summary") %>
 
       <%= render FlatPack::CollectionEditor::Component.new(
         title: "Sections",
@@ -81,7 +81,7 @@
           data: { mcp_reset: true }
         ) %>
       </div>
-      <p data-mcp-status class="mcp-ui-status" hidden></p>
+      <%= render mcp_status %>
     </div>
   <% end %>
 <% end %>

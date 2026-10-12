@@ -21,7 +21,7 @@
         <% end %>
       <% end %>
     <% else %>
-      <p>No topics yet.</p>
+      <%= render FlatPack::EmptyState::Component.new(title: "No topics yet.", size: :sm) %>
     <% end %>
   <% end %>
 <% end %>

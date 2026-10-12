@@ -80,6 +80,9 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     assert_includes sections, "Open"
     assert_includes sections, "Say hello."
     assert_includes sections, 'data-mcp-save="save"'
+    assert_includes sections, 'data-mcp-error="title"'
+    assert_includes sections, 'role="alert"'
+    assert_includes sections, "data-mcp-status"
     assert_includes sections, "pages.update"
     %w[
       flat-pack--collection-editor
@@ -131,6 +134,10 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     assert_equal 2, grips.size
     refute_includes links, "⋮⋮"
     assert_includes links, "cursor-grab"
+    assert_includes links, "flat-pack-link"
+    assert_includes links, "fp-content"
+    assert_includes links, 'role="alert"'
+    assert_includes links, "data-mcp-status"
     refute_includes links, ">Label</label>"
     refute_includes links, ">Link</label>"
     refute_includes links, "reorder-url"
@@ -139,16 +146,22 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     assert_includes tabs, "A short page."
     assert_includes tabs, "Open"
     assert_includes tabs, 'role="tab"'
+    assert_includes tabs, 'data-mcp-text="summary"'
+    assert_includes tabs, "flat-pack-list"
 
     topics = RecordingStudio::MCP_UI.package("pages.topics", data: data).html
     assert_includes topics, "Launch"
     assert_includes topics, "Story"
     assert_includes topics, "flat-pack--chip"
+    empty_topics = RecordingStudio::MCP_UI.package("pages.topics", data: {}).html
+    assert_includes empty_topics, "No topics yet."
+    assert_includes empty_topics, "fp-empty-state"
 
     notes = RecordingStudio::MCP_UI.package("pages.notes", data: data).html
     assert_includes notes, "Say hello."
     assert_includes notes, "Do the thing."
     assert_includes notes, "flat-pack--accordion"
+    assert_includes notes, "fp-content"
   end
 
   test "pages show returns fields at the top of structuredContent" do

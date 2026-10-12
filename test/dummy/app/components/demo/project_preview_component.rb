@@ -2,6 +2,8 @@
 
 module Demo
   class ProjectPreviewComponent < ViewComponent::Base
+    include McpWidgetChrome
+
     def initialize(data: {})
       @data = data.stringify_keys
     end

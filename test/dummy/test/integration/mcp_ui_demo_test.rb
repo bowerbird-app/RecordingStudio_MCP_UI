@@ -53,6 +53,19 @@ class McpUiDemoTest < ActionDispatch::IntegrationTest
     assert_includes response.body, 'name="status"'
     assert_includes response.body, "data-mcp-field"
     assert_includes response.body, "flat-pack-select"
+    title_input = response.body[/<input\b[^>]*name="title"[^>]*>/]
+    assert title_input, "title should be a FlatPack text input"
+    assert_includes title_input, "data-mcp-field"
+    assert_includes title_input, 'id="project_title"'
+    description = response.body[/<textarea\b[^>]*name="description"[^>]*>/]
+    assert description, "description should be a FlatPack textarea"
+    assert_includes description, "data-mcp-field"
+    assert_includes response.body, 'data-mcp-error="title"'
+    assert_includes response.body, 'data-mcp-error="description"'
+    assert_includes response.body, 'data-mcp-error="status"'
+    assert_includes response.body, 'role="alert"'
+    assert_includes response.body, "data-mcp-status"
+    refute_includes response.body, 'class="mcp-ui-error"'
     assert_includes response.body, "fp-button"
     assert_includes response.body, 'data-fp-style="primary"'
     assert_includes response.body, 'data-fp-style="secondary"'
