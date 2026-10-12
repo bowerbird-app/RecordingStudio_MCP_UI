@@ -22,7 +22,7 @@ See [docs/api_mcp_integration.md](docs/api_mcp_integration.md) for the exact API
 ## Installation
 
 ```ruby
-gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.2.0"
+gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.3.0"
 ```
 
 ```bash
@@ -80,7 +80,7 @@ end
 ## First editable widget
 
 1. Register `mode: :edit` and `actions: { save: "your.api_action" }`.
-2. Render fields with `data-mcp-field` and a `data-mcp-save="save"` button inside `data-controller="mcp-editor"`.
+2. Render fields with `data-mcp-field` and a `data-mcp-save="save"` button inside `data-controller="mcp-editor"`. Give repeated rows Rails-style names such as `sections[][title]` so Save sends an array in DOM order.
 3. Call `await mcpUI.execute("save", payload)` from widget JS. The runtime maps `save` to the registered tool name and calls `app.callServerTool({ name, arguments })`.
 
 The packaged document carries that alias-to-tool-name map. MCP treats the call as an ordinary tool invocation and applies the server's normal authorization.
@@ -105,10 +105,32 @@ Host communication uses the official MCP Apps View SDK (`App` + `PostMessageTran
 2. FlatPack `variables.css` and `application.css` from `FlatPack::Engine` when that gem is installed
 3. Optional host CSS from `configuration.compiled_css_path` — one local path or an array of local paths, in order (dummy uses Tailwind then `app/assets/stylesheets/mcp_ui_widget.css`)
 4. The official SDK IIFE (`vendor/ext-apps.iife.js`) plus `runtime.js`, `controllers/editor_controller.js`, and `boot.js`
+5. Stimulus and the host's local Stimulus controllers, inlined from the host import map before `boot.js`
 
 Host CSS is read from disk at package time. Missing paths are skipped. Do not pass URLs; CSP allows only inline style.
 
-The document is a self-contained HTML page. It does not assume host importmaps or layout assets. The editor controller is Stimulus-shaped (`data-controller="mcp-editor"`) and talks only through `mcpUI`.
+The document is a self-contained HTML page. It does not fetch host importmaps or layout assets at view time. The editor controller is Stimulus-shaped (`data-controller="mcp-editor"`) and talks only through `mcpUI`.
+
+### Stimulus in the widget
+
+`configuration.stimulus_controllers` controls what gets inlined:
+
+- `nil` (the default) inlines `@hotwired/stimulus` and every local `controllers/**/*_controller` pin, including FlatPack controllers the host import map already points at.
+- `false` opts out. The document keeps the editor runtime and does not start Stimulus.
+- A string or array limits the bundle to those Stimulus identifiers (`flat-pack--tabs`) or module names (`controllers/flat_pack/tabs_controller`).
+
+Resolution uses the host import map (package pins and `pin_all_from` directories) and Propshaft's load path. Nothing is vendored from FlatPack, and there is no hardcoded component list. Controllers whose static import graph includes a remote URL or a module that is not in the import map are left out, with a comment in the script. Dynamic `import()` stays in the source and fails at runtime: the sandbox CSP has `connect-src 'none'` and no network. That covers TipTap (`@tiptap/core`), ApexCharts, the Google Charts loader, remote search, and any controller `fetch()`. Drag-reorder that only needs the DOM still runs; a PATCH to `orderable_url` or `reorder_url` does not. Send the new order on Save.
+
+### Structured save fields
+
+Save reads `[data-mcp-field]` elements only.
+
+- A plain name (`title`, or `data-mcp-field` without brackets) stays a string. Checkboxes are booleans. Unchecked radios are omitted.
+- Bracket names follow form semantics, in DOM order: `sections[][title]` becomes an array of objects, `tags[]` becomes an array, and `user[name]` becomes an object. A new object starts when the same child key appears again on the last array element, so a drag that moves the row moves that object.
+- `data-mcp-type="json"`, `"array"`, or `"object"` JSON-parses the value. Empty input becomes `null`, `[]`, or `{}`. A parse failure keeps the raw string.
+- Disabled fields, file inputs, and buttons are skipped.
+
+Hidden FlatPack inputs such as `id` and `_destroy` are collected only when they also have `data-mcp-field`. Reset restores the row order captured when the editor connected, then writes values back by position, when the data object is the same one the widget opened with. A tool result is a new object and does not reorder the DOM.
 
 ### Widget CSS tokens
 
@@ -132,6 +154,8 @@ Override tokens (or any widget rule) in the host stylesheet:
 ```ruby
 RecordingStudio::MCP_UI.configure do |config|
   config.compiled_css_path = Rails.root.join("app/assets/stylesheets/mcp_ui_widget.css")
+  # config.stimulus_controllers = false
+  # config.stimulus_controllers = %w[flat-pack--tabs flat-pack--collection-editor]
 end
 ```
 

@@ -33,6 +33,22 @@ class ConfigurationTest < Minitest::Test
     assert_equal original[:compiled_css_path], @configuration.compiled_css_path if original[:compiled_css_path]
   end
 
+  def test_stimulus_controllers_defaults_to_every_local_controller
+    assert_nil @configuration.stimulus_controllers
+    assert_nil @configuration.to_h.fetch(:stimulus_controllers)
+  end
+
+  def test_stimulus_controllers_accepts_false_and_a_list
+    @configuration.stimulus_controllers = false
+    assert_equal false, @configuration.stimulus_controllers
+
+    @configuration.merge!(stimulus_controllers: :tabs)
+    assert_equal ["tabs"], @configuration.stimulus_controllers
+
+    @configuration.stimulus_controllers = ["flat-pack--tabs", :other]
+    assert_equal %w[flat-pack--tabs other], @configuration.to_h.fetch(:stimulus_controllers)
+  end
+
   def test_to_h_reports_registered_hook_counts
     @configuration.hooks.before_initialize { nil }
     @configuration.hooks.before_initialize { nil }

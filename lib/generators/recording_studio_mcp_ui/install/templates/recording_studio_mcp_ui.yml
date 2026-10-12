@@ -2,3 +2,7 @@ shared:
   # Local CSS path or list of paths inlined after the gem widget CSS.
   # Missing files are skipped. Do not use URLs.
   compiled_css_path:
+  # Stimulus controllers inlined into packaged widgets.
+  # Omit the key (or leave it null) to inline every local controller.
+  # false opts out. A list limits the bundle to those identifiers or module names.
+  # stimulus_controllers:

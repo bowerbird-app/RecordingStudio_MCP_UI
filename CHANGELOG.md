@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-12
+
+### Added
+- Packaged widget HTML inlines Stimulus and the host's local Stimulus controllers from the host import map, before `boot.js`. The sandbox CSP has no network, so the script is a single classic file.
+- `configuration.stimulus_controllers`: `nil` inlines every local controller, `false` opts out, and a string or array limits the bundle to those identifiers or module names.
+- Controllers whose static imports are remote URLs or missing from the import map are omitted, with a comment naming the import. Dynamic `import()` is left unchanged.
+- The editor collects repeated and nested `[data-mcp-field]` names (`sections[][title]`, `tags[]`, `user[name]`) into arrays and objects in DOM order, and reads `data-mcp-type` of `json`, `array`, or `object`.
+
+### Changed
+- Unchecked radios are omitted from the save payload. A checked radio still sends its value. Checkboxes stay booleans, including inside nested names.
+- Reset puts dragged rows back in the order captured at connect when widget data is still the opening record, then binds by position.
+
+### Upgrade notes
+- Documents are larger. Set `config.stimulus_controllers = false` to keep the 0.2.0 script, or pass a list of identifiers when you do not want every host controller (heroicons included).
+- TipTap, charts, remote search, and any `fetch()` inside a controller still cannot run: `connect-src` is `none`. Do not point `orderable_url` or `reorder_url` at the widget. Capture reorder in the DOM and send it on Save with `sections[][field]` names.
+- `sections[id][heading]` stays a hash keyed by id. Use empty brackets (`sections[][heading]`) when Save should receive an array in DOM order. Mark each value you want saved with `data-mcp-field`; unmarked hidden inputs are ignored.
+- A name that previously relied on the last radio input winning, even when unchecked, now sends only the checked radio.
+
 ## [0.2.0] - 2026-10-12
 
 ### Added
@@ -49,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Ruby `action_executor`, `visibility_checker`, and `RecordingStudio::MCP_UI.execute`. Widget writes are ordinary MCP tool calls.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.1.1...v0.2.0
 [0.1.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/releases/tag/v0.1.0
