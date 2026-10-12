@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Dummy topic chips and the tabs outline are `data-mcp-list` templates. The tool result clones the FlatPack chip or list item. Sections, links, and notes stay editor and accordion markup.
 - Dummy section rows, including the add-row template, opt in with `data-mcp-row`. The sections editor sets `data-mcp-restore-order` so Cancel restores that order before values bind. Link rows opt in with `data-mcp-row` on each body `<tr>`. The links editor leaves order alone on refresh, because Save returns the new DOM order and the visible label is not a field. The links document sorts that array into the header order before packaging, so the visible label and its fields stay on the same row.
+- Dummy Page demo packages a collection editor, a links table with one reorder grip per row, tabs, topic chips, and an accordion. The dummy `widget_script_path` points at the esbuild bundle that registers those controllers.
+- Dummy project editor sits in a FlatPack card: page title in the header, fields and Save/Cancel in the body.
+- Dummy widget controls are FlatPack components. Project title is a text input and description is a textarea. Error and status lines are alerts. Preview text is Content and a badge. Page story, outline, notes, topic empty state, and link cells use Content, List, EmptyState, or Link.
 
 ## [0.4.0] - 2026-10-12
 
@@ -39,9 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The editor collects repeated and nested `[data-mcp-field]` names (`sections[][title]`, `tags[]`, `user[name]`) into arrays and objects in DOM order, and reads `data-mcp-type` of `json`, `array`, or `object`.
 
 ### Changed
-- Dummy Page demo packages a collection editor, a links table with one reorder grip per row, tabs, topic chips, and an accordion. The dummy `widget_script_path` points at the esbuild bundle that registers those controllers.
-- Dummy project editor sits in a FlatPack card: page title in the header, fields and Save/Cancel in the body.
-- Dummy widget controls are FlatPack components. Project title is a text input and description is a textarea. Error and status lines are alerts. Preview text is Content and a badge. Page story, outline, notes, topic empty state, and link cells use Content, List, EmptyState, or Link.
 - Unchecked radios are omitted from the save payload. A checked radio still sends its value. Checkboxes stay booleans, including inside nested names.
 - Field names `__proto__`, `constructor`, and `prototype` are ignored. Nested objects are built without a prototype, so a save payload cannot set `Object.prototype`.
 - Repeatable rows are elements with `data-mcp-row`. `data-mcp-restore-order` on the editor puts those rows back in connect order when widget data is applied, then binds by position.

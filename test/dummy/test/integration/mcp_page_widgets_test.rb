@@ -52,8 +52,8 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     expectations = {
       "ui://pages/sections" => [ "flat-pack-collection-editor", "Add section", "pages.update" ],
       "ui://pages/links" => [ "Label", "Link" ],
-      "ui://pages/tabs" => [ "Story", "Outline", "flat-pack--tabs" ],
-      "ui://pages/topics" => [ "No topics yet." ],
+      "ui://pages/tabs" => [ "Story", "Outline", "flat-pack--tabs", 'data-mcp-list="sections"' ],
+      "ui://pages/topics" => [ "No topics yet.", 'data-mcp-list="topics"', "data-mcp-list-item" ],
       "ui://pages/notes" => [ "flat-pack--accordion", "Nothing here yet" ]
     }
 
@@ -162,16 +162,28 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     assert_includes tabs, 'data-mcp-text="summary"'
     assert_includes tabs, 'data-mcp-list="sections"'
     assert_includes tabs, 'data-mcp-text="heading"'
+    assert_includes tabs, "data-mcp-list-empty"
+    assert_includes tabs, "Nothing here yet. Add a section to get going."
     assert_includes tabs, "flat-pack-list"
+    outline = tabs[/<template\b[^>]*data-mcp-list-item[^>]*>.*?<\/template>/m]
+    assert_includes outline, 'data-mcp-text="heading"'
+    refute_includes outline, "Open"
 
     topics = RecordingStudio::MCP_UI.package("pages.topics", data: data).html
     assert_includes topics, 'data-mcp-list="topics"'
     assert_includes topics, "data-mcp-list-item"
+    assert_includes topics, "data-mcp-list-empty"
     assert_includes topics, "Launch"
     assert_includes topics, "Story"
     assert_includes topics, "flat-pack--chip"
     topic_template = topics[/<template\b[^>]*data-mcp-list-item[^>]*>.*?<\/template>/m]
+    assert_includes topic_template, "data-mcp-text"
+    assert_includes topic_template, "rounded-[var(--chip-border-radius)]"
     refute_includes topic_template, "Launch"
+    refute_includes topic_template, "No topics yet."
+    assert_equal 1, topics.scan(/<template\b[^>]*data-mcp-list-item/).size
+    topic_config = JSON.parse(topics[%r{id="mcp-ui-config">(?<json>.*?)</script>}m, :json])
+    assert_equal data["topics"], topic_config.dig("data", "topics")
     empty_topics = RecordingStudio::MCP_UI.package("pages.topics", data: {}).html
     assert_includes empty_topics, "No topics yet."
     assert_includes empty_topics, "fp-empty-state"
