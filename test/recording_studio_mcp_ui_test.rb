@@ -46,7 +46,7 @@ class RecordingStudioMcpUiTest < Minitest::Test
     gemfile = File.read(File.expand_path("dummy/Gemfile", __dir__))
 
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v4.5.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.13.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.15.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_attachable", tag: "v0.13.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.8.0"'
     assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.213"'
@@ -61,6 +61,8 @@ class RecordingStudioMcpUiTest < Minitest::Test
     schema = File.read(File.expand_path("dummy/db/schema.rb", __dir__))
     assert_includes schema, 't.uuid "depends_on_recording_id"'
     assert_includes schema, 'create_table "recording_studio_access_invitations"'
+    assert_includes schema, 'create_table "recording_studio_access_constraints"'
+    assert_includes schema, 'create_table "recording_studio_access_rules"'
     assert_includes schema, 'create_table "recording_studio_attachable_libraries"'
     assert_includes schema, 'create_table "recording_studio_attachable_placements"'
   end
