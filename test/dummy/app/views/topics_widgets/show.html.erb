@@ -1,0 +1,37 @@
+<% dummy_page_nav(title: "Topics", back_url: root_path) %>
+
+<div class="flex w-full flex-col gap-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Topics",
+    subtitle: "The packaged widget starts empty. A tool result fills the chips.",
+    variant: :h1
+  ) %>
+
+  <iframe
+    id="mcp-ui-frame"
+    src="<%= topics_widget_document_path %>"
+    sandbox="allow-scripts allow-same-origin"
+    title="Topics"
+    style="width: 100%; min-height: 24rem; border: 0;"
+  ></iframe>
+
+  <%= render FlatPack::Button::Component.new(
+    text: "Show topics",
+    style: :primary,
+    size: :md,
+    type: "button",
+    id: "topics-show"
+  ) %>
+  <%= render FlatPack::Button::Component.new(
+    text: "Clear topics",
+    style: :secondary,
+    size: :md,
+    type: "button",
+    id: "topics-clear"
+  ) %>
+  <%= javascript_tag Rails.root.join("app/javascript/topics_widget_host.js").read %>
+
+  <p>
+    <%= link_to "Open packaged MCP document", topics_widget_document_path %>
+  </p>
+</div>

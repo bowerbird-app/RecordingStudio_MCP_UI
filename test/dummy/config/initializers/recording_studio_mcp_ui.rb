@@ -20,6 +20,22 @@ Rails.application.config.to_prepare do
     actions: { save: "projects.update" }
   )
 
+  RecordingStudio::MCP_UI.register(
+    "pages.topics",
+    component: Demo::PageTopicsComponent,
+    description: "Topic chips for a page",
+    mode: :read,
+    version: "1.0.0"
+  )
+
+  RecordingStudio::MCP_UI.register(
+    "pages.tabs",
+    component: Demo::PageTabsComponent,
+    description: "Story and outline for a page",
+    mode: :read,
+    version: "1.0.0"
+  )
+
   RecordingStudio::MCP_UI.configure do |config|
     config.compiled_css_path = [
       Rails.root.join("app/assets/builds/tailwind.css"),

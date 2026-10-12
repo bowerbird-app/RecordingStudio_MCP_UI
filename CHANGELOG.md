@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-12
+
+### Added
+- Display lists in the packaged runtime. A container uses `data-mcp-list`, one FlatPack item lives in `<template data-mcp-list-item>`, and the empty state uses `data-mcp-list-empty`. Each tool result replaces the clones, writes slots with `textContent`, and toggles the empty state. An empty `data-mcp-text` fills a scalar. A named `data-mcp-text` fills that field on an object.
+- Dummy `pages.topics` chips and `pages.tabs` outline use that template. They package with empty data, the same way `resources/read` does. The host tool result fills the list.
+
+### Upgrade notes
+- This does not change editor rows. Repeatable save rows stay `data-mcp-row` plus `data-mcp-field`, collected by the editor name parser. `data-mcp-restore-order` still restores those rows. A display list is a separate template and is replaced on each result.
+- A Ruby loop over the packaged record stays empty, because `resources/read` packages with no data. Move repeating display markup onto the list template. Preview text outside a list, and editor fields, are unchanged.
+- The runtime writes text with `textContent` and the `hidden` attribute. It does not assign `innerHTML`.
+
 ## [0.3.0] - 2026-10-12
 
 ### Added
@@ -68,7 +79,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Ruby `action_executor`, `visibility_checker`, and `RecordingStudio::MCP_UI.execute`. Widget writes are ordinary MCP tool calls.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.1.1...v0.2.0
 [0.1.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/releases/tag/v0.1.0

@@ -22,7 +22,7 @@ See [docs/api_mcp_integration.md](docs/api_mcp_integration.md) for the exact API
 ## Installation
 
 ```ruby
-gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.3.0"
+gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.4.0"
 ```
 
 ```bash
@@ -95,7 +95,29 @@ Packaged documents define `window.mcpUI`:
 - `mcpUI.onData(listener)` — listener receives `(data, { dirty, dataChanged })`. `dataChanged` is true for `applyData`, `reset`, start, and accepted tool results. `markDirty` only flips `dirty`.
 - `mcpUI.execute(alias, payload)` — looks up the real tool name and calls `app.callServerTool`; rejects unknown aliases without sending; rejects with `No action transport` when no host is connected
 
-Host communication uses the official MCP Apps View SDK (`App` + `PostMessageTransport` from `@modelcontextprotocol/ext-apps`). The packaged document vendors that SDK, registers `ontoolresult` before `app.connect()`, and calls `app.callServerTool()` / `app.updateModelContext()`. The tool-result notification that opened the widget, and the result of `mcpUI.execute`, share one unwrap: use `structuredContent` when present, then `data` when that object has a `data` object. That is the widget record. A successful write may also include `contextUpdate` (camelCase) for `app.updateModelContext`. Boot writes widget data into every `[data-mcp-text]` node after start and on each `onData`. The editor writes `[data-mcp-field]` values only when `dataChanged` is true, so typing then blurring Save does not restore the opening record. `execute` fills blank `id` and `revision` from current widget data so hidden fields that have not bound yet do not wipe the record. There is no per-client protocol, sniffing, or host-specific metadata. Clients that cannot load the UI keep the structured tool result.
+Host communication uses the official MCP Apps View SDK (`App` + `PostMessageTransport` from `@modelcontextprotocol/ext-apps`). The packaged document vendors that SDK, registers `ontoolresult` before `app.connect()`, and calls `app.callServerTool()` / `app.updateModelContext()`. The tool-result notification that opened the widget, and the result of `mcpUI.execute`, share one unwrap: use `structuredContent` when present, then `data` when that object has a `data` object. That is the widget record. A successful write may also include `contextUpdate` (camelCase) for `app.updateModelContext`. Boot writes widget data into every `[data-mcp-text]` node after start and on each `onData`, skipping nodes inside a rendered list row. The editor writes `[data-mcp-field]` values only when `dataChanged` is true, so typing then blurring Save does not restore the opening record. `execute` fills blank `id` and `revision` from current widget data so hidden fields that have not bound yet do not wipe the record. There is no per-client protocol, sniffing, or host-specific metadata. Clients that cannot load the UI keep the structured tool result.
+
+### Lists
+
+`resources/read` packages the widget with empty data. A Ruby loop has already taken the empty branch by the time `ui/notifications/tool-result` arrives. Repeating display content is a template the runtime clones. Editor rows are a different mechanism: `data-mcp-row` opts a server-rendered row into save and restore order. Do not use the list template for those rows.
+
+```html
+<div data-mcp-list="topics">
+  <template data-mcp-list-item>
+    <span data-mcp-text></span>
+  </template>
+  <p data-mcp-list-empty>No topics yet.</p>
+</div>
+```
+
+| Attribute | Where | Meaning |
+| --- | --- | --- |
+| `data-mcp-list` | container | Key on the widget record whose value is the array |
+| `data-mcp-list-item` | `<template>` | One item. Cloned for each entry |
+| `data-mcp-list-empty` | element | Shown when the array is missing or empty. Hidden when it has entries |
+| `data-mcp-text` | inside the item | Field name on an object. Leave it empty for a scalar such as a topic string |
+
+Each result replaces the previous clones. Boot builds the list before the editor rebinds fields, on the same data change. The runtime sets slot text with `textContent` and toggles `hidden` on the empty state. It does not use `innerHTML`. `data-mcp-list-entry` marks each clone and is removed on the next result; do not author it. `markDirty` does not rebuild the list. Preview text and `data-mcp-field` values outside the list are unchanged.
 
 ## How Flatpack CSS and Stimulus get into widget HTML
 

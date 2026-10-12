@@ -8,7 +8,7 @@ This Rails app exists to validate RecordingStudio MCP UI in a real host applicat
 - `Current.actor` wiring for Recording Studio events
 - Root workspace plus seeded folder and page recordables
 - Recording Studio default layout, FlatPack assets, and Tailwind source scanning
-- Two MCP UI demos: a Project preview card and a Project editor (Status is FlatPack Select; Save/Cancel are FlatPack Buttons; the form uses `p-6`, styled by dummy Tailwind in `compiled_css_path`). The editor has no repeatable rows. A host that adds them marks each row with `data-mcp-row` and, when reset should restore connect order, puts `data-mcp-restore-order` on the editor. `npm run build:widgets` bundles Stimulus and selected FlatPack controllers with esbuild into `app/assets/builds/mcp_ui_widgets.js`, which packaged documents inline.
+- Project preview, a project editor, and topic chips. The editor has no repeatable rows. A host that adds them marks each row with `data-mcp-row` and, when reset should restore connect order, puts `data-mcp-restore-order` on the editor. Topic chips and the story outline are display lists (`data-mcp-list`): `resources/read` packages them empty, and the tool result fills the template. Status is FlatPack Select; Save and Cancel are FlatPack Buttons; the editor form uses `p-6`, styled by dummy Tailwind in `compiled_css_path`. `npm run build:widgets` bundles Stimulus and selected FlatPack controllers with esbuild into `app/assets/builds/mcp_ui_widgets.js`, which packaged documents inline.
 - Mounted `RecordingStudio::Engine` route behavior inside a host app
 - Dummy-only `/docs/*` pages for gem-specific onboarding
 
@@ -66,6 +66,8 @@ Sign in at `/users/sign_in`, then Connect **Seed MCP App** in Oauth so the clien
 - `/` - dummy app home page and MCP UI demo links
 - `/demos/:id` - read-only project card
 - `/demos/:id/edit` - project editor
+- `/topics-widget` - topic chips. Show topics sends three names. Clear topics returns the empty line
+- `/topics-widget/document` - packaged `pages.topics` document (`?widget=pages.tabs` for the outline)
 - `/recording_studio` - redirects to `/` while the mounted Recording Studio engine stays available under that prefix for non-root routes
 - `/users/sign_in` - Devise sign-in page
 - `/docs/install`, `/docs/config`, `/docs/recordable_types`, `/docs/recordings_tree`, `/docs/gem_views`, `/docs/methods` - dummy-only starter pages

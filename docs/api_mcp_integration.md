@@ -102,6 +102,8 @@ A tool result that opens or updates a widget uses this shape in `structuredConte
 
 The view unwraps `data` when present and treats `contextUpdate` as the optional model-context string (camelCase, not `context_update`). Editor fields re-bind from that record only when data changes, not when the form is marked dirty.
 
+Display lists are not filled by the server render. `resources/read` calls `package` with empty data, so a Ruby loop renders its empty branch and cannot refill. Mark the container with `data-mcp-list`, put one item in `<template data-mcp-list-item>`, and mark the empty state with `data-mcp-list-empty`. Inside the item, `data-mcp-text` names an object field, or is left empty for a scalar. The runtime clones that template from the tool result and writes values with `textContent` only. Repeatable save rows stay on `data-mcp-row` and `data-mcp-field`; the list template does not collect them.
+
 ### 3. Visibility
 
 ```ruby

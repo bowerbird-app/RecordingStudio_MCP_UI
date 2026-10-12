@@ -799,3 +799,274 @@ test("editor reset leaves opted-in rows in place without data-mcp-restore-order"
   resetButton.dispatch("click");
   assert.deepEqual(parent.childNodes.filter((node) => node.fields), [second, first]);
 });
+
+class ListNode {
+  constructor() {
+    this.childNodes = [];
+    this.parentNode = null;
+    this._text = "";
+  }
+
+  appendChild(child) {
+    if (child.parentNode) child.remove();
+    child.parentNode = this;
+    this.childNodes.push(child);
+    return child;
+  }
+
+  insertBefore(node, ref) {
+    if (node.parentNode) node.remove();
+    node.parentNode = this;
+    const index = ref ? this.childNodes.indexOf(ref) : -1;
+    if (index < 0) this.childNodes.push(node);
+    else this.childNodes.splice(index, 0, node);
+    return node;
+  }
+
+  remove() {
+    if (!this.parentNode) return;
+    const index = this.parentNode.childNodes.indexOf(this);
+    if (index >= 0) this.parentNode.childNodes.splice(index, 1);
+    this.parentNode = null;
+  }
+
+  get textContent() {
+    if (this.childNodes.length === 0) return this._text;
+    return this.childNodes.map((node) => node.textContent).join("");
+  }
+
+  set textContent(value) {
+    this._text = String(value);
+    this.childNodes = [];
+  }
+}
+
+class ListFragment extends ListNode {
+  constructor(children) {
+    super();
+    this.nodeType = 11;
+    (children || []).forEach((child) => this.appendChild(child));
+  }
+
+  cloneNode(deep) {
+    const copy = new ListFragment();
+    if (deep) this.childNodes.forEach((child) => copy.appendChild(child.cloneNode(true)));
+    return copy;
+  }
+}
+
+class ListElement extends ListNode {
+  constructor(tag, attrs) {
+    super();
+    this.nodeType = 1;
+    this.tagName = String(tag).toUpperCase();
+    this.attrs = Object.assign({}, attrs);
+  }
+
+  getAttribute(name) {
+    return Object.prototype.hasOwnProperty.call(this.attrs, name) ? this.attrs[name] : null;
+  }
+
+  setAttribute(name, value) {
+    this.attrs[name] = String(value);
+  }
+
+  hasAttribute(name) {
+    return Object.prototype.hasOwnProperty.call(this.attrs, name);
+  }
+
+  removeAttribute(name) {
+    delete this.attrs[name];
+  }
+
+  set innerHTML(_value) {
+    throw new Error("innerHTML is not allowed");
+  }
+
+  matches(selector) {
+    if (selector.indexOf("template[") === 0 && selector.endsWith("]")) {
+      return this.tagName === "TEMPLATE" && this.hasAttribute(selector.slice("template[".length, -1));
+    }
+    if (selector.indexOf("[") === 0 && selector.endsWith("]") && selector.indexOf("~=") === -1) {
+      return this.hasAttribute(selector.slice(1, -1));
+    }
+    return false;
+  }
+
+  closest(selector) {
+    let node = this;
+    while (node) {
+      if (node.nodeType === 1 && node.matches(selector)) return node;
+      node = node.parentNode;
+    }
+    return null;
+  }
+
+  querySelector(selector) {
+    return this.querySelectorAll(selector)[0] || null;
+  }
+
+  querySelectorAll(selector) {
+    const found = [];
+    collectElements(this, selector, found);
+    return found;
+  }
+
+  cloneNode(deep) {
+    const copy = new ListElement(this.tagName.toLowerCase(), this.attrs);
+    copy._text = this._text;
+    if (deep) this.childNodes.forEach((child) => copy.appendChild(child.cloneNode(true)));
+    if (this.content) copy.content = this.content.cloneNode(true);
+    return copy;
+  }
+}
+
+function collectElements(root, selector, found) {
+  root.childNodes.forEach((node) => {
+    if (node.nodeType !== 1) return;
+    if (node.matches(selector)) found.push(node);
+    if (node.tagName === "TEMPLATE") return;
+    collectElements(node, selector, found);
+  });
+}
+
+function listElement(tag, attrs, children) {
+  const node = new ListElement(tag, attrs);
+  (children || []).forEach((child) => node.appendChild(child));
+  return node;
+}
+
+function listDocument(config, body) {
+  const configNode = listElement("script", { id: "mcp-ui-config" });
+  configNode.textContent = JSON.stringify(config);
+  return {
+    readyState: "complete",
+    documentElement: body,
+    body,
+    head: { appendChild() {} },
+    getElementById(id) {
+      if (id === "mcp-ui-config") return configNode;
+      return null;
+    },
+    querySelector(selector) {
+      return this.querySelectorAll(selector)[0] || null;
+    },
+    querySelectorAll(selector) {
+      const found = [];
+      collectElements(body, selector, found);
+      return found;
+    },
+    addEventListener() {},
+    createElement(tag) {
+      return listElement(tag);
+    }
+  };
+}
+
+function topicsList() {
+  const label = listElement("span", { "data-mcp-text": "" });
+  const chip = listElement("span", { class: "chip" }, [ label ]);
+  const template = listElement("template", { "data-mcp-list-item": "" });
+  template.content = new ListFragment([ chip ]);
+  const group = listElement("div", {}, [ template ]);
+  const empty = listElement("p", { "data-mcp-list-empty": "" });
+  empty.textContent = "No topics yet.";
+  const list = listElement("div", { "data-mcp-list": "topics" }, [ group, empty ]);
+  return { list, empty, body: listElement("div", {}, [ list ]) };
+}
+
+test("tool-result with 3 topics renders 3 chips and an empty list clears them", async () => {
+  const topics = topicsList();
+  const windowLike = windowStub({ widgetId: "pages.topics", data: {} });
+  windowLike.document = listDocument({ widgetId: "pages.topics", data: {} }, topics.body);
+  let handler;
+  attachFakeApp(windowLike, function (next) {
+    handler = next;
+    next({
+      content: [],
+      structuredContent: { topics: [ "Launch", "Story", "Press <kit>" ] }
+    });
+  });
+
+  const ctx = loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise(function (resolve) { setTimeout(resolve, 0); });
+
+  let chips = topics.list.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(chips.length, 3);
+  assert.deepEqual(chips.map((chip) => chip.textContent), [ "Launch", "Story", "Press <kit>" ]);
+  assert.equal(elementWithTag(topics.list, "IMG"), null);
+  assert.equal(topics.empty.hasAttribute("hidden"), true);
+  assert.equal(topics.empty.textContent, "No topics yet.");
+
+  ctx.mcpUI.markDirty();
+  assert.equal(topics.list.querySelectorAll("[data-mcp-list-entry]").length, 3);
+
+  handler({
+    isError: true,
+    structuredContent: { topics: [] }
+  });
+  assert.equal(topics.list.querySelectorAll("[data-mcp-list-entry]").length, 3);
+
+  handler({ content: [], structuredContent: { topics: [] } });
+  chips = topics.list.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(chips.length, 0);
+  assert.equal(topics.empty.hasAttribute("hidden"), false);
+
+  handler({ content: [], structuredContent: { topics: "Launch" } });
+  assert.equal(topics.list.querySelectorAll("[data-mcp-list-entry]").length, 0);
+  assert.equal(topics.empty.hasAttribute("hidden"), false);
+});
+
+test("list binder fills object fields and leaves them alone when the form is dirty", async () => {
+  const heading = listElement("p", { "data-mcp-text": "heading" });
+  const body = listElement("p", { "data-mcp-text": "body" });
+  const item = listElement("div", {}, [ heading, body ]);
+  const template = listElement("template", { "data-mcp-list-item": "" });
+  template.content = new ListFragment([ item ]);
+  const empty = listElement("p", { "data-mcp-list-empty": "" });
+  const list = listElement("div", { "data-mcp-list": "sections" }, [ template, empty ]);
+  const title = listElement("h3", { "data-mcp-text": "title" });
+  const root = listElement("div", {}, [ title, list ]);
+  const windowLike = windowStub({ widgetId: "pages.tabs", data: {} });
+  windowLike.document = listDocument({ widgetId: "pages.tabs", data: {} }, root);
+  attachFakeApp(windowLike, function (next) {
+    next({
+      content: [],
+      structuredContent: {
+        title: "Launch notes",
+        heading: "WRONG",
+        sections: [ { heading: "Open", body: "Say hello." } ]
+      }
+    });
+  });
+
+  const ctx = loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise(function (resolve) { setTimeout(resolve, 0); });
+
+  function slotText(entry, field) {
+    const slot = entry.querySelectorAll("[data-mcp-text]").find((node) => node.getAttribute("data-mcp-text") === field);
+    return slot ? slot.textContent : null;
+  }
+
+  const entries = list.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(entries.length, 1);
+  assert.equal(slotText(entries[0], "heading"), "Open");
+  assert.equal(slotText(entries[0], "body"), "Say hello.");
+  assert.equal(title.textContent, "Launch notes");
+
+  ctx.mcpUI.markDirty();
+  const live = list.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(live.length, 1);
+  assert.equal(slotText(live[0], "heading"), "Open");
+});
+
+function elementWithTag(root, tag) {
+  if (root.tagName === tag) return root;
+  const children = root.childNodes || [];
+  for (const child of children) {
+    if (child.nodeType !== 1) continue;
+    const found = elementWithTag(child, tag);
+    if (found) return found;
+  }
+  return null;
+}

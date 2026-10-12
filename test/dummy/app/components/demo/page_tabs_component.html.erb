@@ -1,0 +1,25 @@
+<%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+  <% card.header do %>
+    <%= render FlatPack::PageTitle::Component.new(
+      title: "Page story",
+      subtitle: "Story and outline.",
+      variant: :h3,
+      class: "mb-0 pb-0"
+    ) %>
+  <% end %>
+  <% card.body do %>
+    <%= render FlatPack::Tabs::Component.new(default_tab: 0, variant: :underline) do |tabs| %>
+      <% tabs.tab(label: "Story", id: "story") do %>
+        <p data-mcp-text="summary">Nothing here yet.</p>
+      <% end %>
+      <% tabs.tab(label: "Outline", id: "outline") do %>
+        <div data-mcp-list="sections">
+          <template data-mcp-list-item>
+            <p data-mcp-text="heading"></p>
+          </template>
+          <p data-mcp-list-empty>Nothing here yet. Add a section to get going.</p>
+        </div>
+      <% end %>
+    <% end %>
+  <% end %>
+<% end %>

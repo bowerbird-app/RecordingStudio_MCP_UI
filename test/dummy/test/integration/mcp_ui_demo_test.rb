@@ -114,11 +114,12 @@ class McpUiDemoTest < ActionDispatch::IntegrationTest
     assert_equal "Beach House", @project.reload.title
   end
 
-  test "home page links to both demos" do
+  test "home page links to the project demos and topics" do
     get root_path
     assert_response :success
     assert_includes response.body, "MCP UI Demo"
     assert_includes response.body, demo_path(@project)
     assert_includes response.body, edit_demo_path(@project)
+    assert_includes response.body, topics_widget_path
   end
 end

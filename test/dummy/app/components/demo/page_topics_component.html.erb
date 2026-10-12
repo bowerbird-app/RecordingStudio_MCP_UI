@@ -1,0 +1,22 @@
+<%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+  <% card.header do %>
+    <%= render FlatPack::PageTitle::Component.new(
+      title: "Topics",
+      subtitle: "The tags on this page.",
+      variant: :h3,
+      class: "mb-0 pb-0"
+    ) %>
+  <% end %>
+  <% card.body do %>
+    <div data-mcp-list="topics">
+      <%= render FlatPack::ChipGroup::Component.new do %>
+        <template data-mcp-list-item>
+          <%= render FlatPack::Chip::Component.new(type: :static, style: :default) do %>
+            <span data-mcp-text></span>
+          <% end %>
+        </template>
+      <% end %>
+      <p data-mcp-list-empty>No topics yet.</p>
+    </div>
+  <% end %>
+<% end %>
