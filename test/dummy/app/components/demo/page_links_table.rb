@@ -1,24 +1,18 @@
 # frozen_string_literal: true
 
 module Demo
-  # FlatPack::Table draws each body row from Ruby data and has no row template.
-  # <template> is allowed in a <tbody>, so the tool result clones one row there.
+  # FlatPack::Table accepts `tbody_data`. It has no row template, no data
+  # attribute on the empty row, and no extra attributes on a body row.
   class PageLinksTable < FlatPack::Table::Component
     private
 
     def render_body
       tag.tbody(**tbody_attributes) do
         safe_join([
-          tag.template(render_row(template_row), data: { mcp_list_item: true }),
+          tag.template(render_row("id" => "", "label" => "", "url" => ""), data: { mcp_list_item: true }),
           render_empty_state
         ])
       end
-    end
-
-    def tbody_attributes
-      attrs = super
-      attrs[:data] = (attrs[:data] || {}).merge(mcp_list: "links")
-      attrs
     end
 
     def render_empty_state
@@ -32,10 +26,8 @@ module Demo
       end
     end
 
-    def template_row
-      { "id" => "", "label" => "", "url" => "" }
-    end
-
+    # Table sets the sortable target and `data-id` only. Save order and the
+    # binder's id attribute have no option on the component.
     def row_attributes(row)
       attrs = super
       attrs[:data] = (attrs[:data] || {}).merge(mcp_row: true, mcp_attr_data_id: "id")

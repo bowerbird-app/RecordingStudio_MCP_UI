@@ -1,7 +1,7 @@
 <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
   <% card.header do %>
     <%= render FlatPack::PageTitle::Component.new(
-      title: title.presence || "Page story",
+      title: tag.span(title.presence || "Page story", data: { mcp_text: "title" }),
       subtitle: "Story and outline.",
       variant: :h3,
       class: "mb-0 pb-0"

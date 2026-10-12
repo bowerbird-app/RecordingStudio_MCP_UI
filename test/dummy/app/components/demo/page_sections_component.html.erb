@@ -35,9 +35,11 @@
         empty_text: "Nothing here yet. Add a section to get going.",
         headers: ["Heading", "Body"],
         orderable: true,
-        data: { mcp_list: "sections" },
-        list_row: -> { list_row }
+        data: { mcp_list: "sections" }
       ) do |editor| %>
+        <% editor.with_list_item do %>
+          <%= list_row %>
+        <% end %>
         <% editor.with_template do %>
           <% template = FlatPack::CollectionEditor::Row::Component.new(
             form: section_form("id" => "", "heading" => "", "body" => ""),

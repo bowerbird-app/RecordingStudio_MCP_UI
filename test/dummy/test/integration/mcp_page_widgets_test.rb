@@ -52,9 +52,9 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     expectations = {
       "ui://pages/sections" => [ "flat-pack-collection-editor", "Add section", "pages.update", 'data-mcp-list="sections"', "data-mcp-list-item" ],
       "ui://pages/links" => [ "Label", "Link", 'data-mcp-list="links"', "No data available", 'name="links[][label]"', 'data-flat-pack--table-sortable-target="row"' ],
-      "ui://pages/tabs" => [ "Story", "Outline", "flat-pack--tabs", 'data-mcp-list="sections"' ],
+      "ui://pages/tabs" => [ "Story", "Outline", "flat-pack--tabs", 'data-mcp-list="sections"', 'data-mcp-text="title"', "Page story" ],
       "ui://pages/topics" => [ "No topics yet.", 'data-mcp-list="topics"', "data-mcp-list-item" ],
-      "ui://pages/notes" => [ "flat-pack--accordion", "Nothing here yet.", 'data-mcp-list="sections"', 'data-mcp-text="heading"' ]
+      "ui://pages/notes" => [ "flat-pack--accordion" ]
     }
 
     expectations.each do |uri, markers|
@@ -87,6 +87,10 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     section_rows.each { |row| assert_includes row, "data-mcp-row" }
     assert_includes sections, 'data-mcp-list="sections"'
     assert_includes sections, "data-mcp-list-empty"
+    empty_sections = sections[/<p\b[^>]*flat-pack-collection-editor-empty[^>]*>/]
+    assert empty_sections
+    assert_includes empty_sections, "data-mcp-list-empty"
+    refute_includes empty_sections, "hidden"
     assert_includes sections, 'data-mcp-save="save"'
     assert_includes sections, 'data-mcp-error="title"'
     assert_includes sections, 'role="alert"'
@@ -172,6 +176,9 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     assert_includes tabs, "A short page."
     assert_includes tabs, "Open"
     assert_includes tabs, 'role="tab"'
+    assert_includes tabs, 'data-mcp-text="title"'
+    assert_includes tabs, ">Launch notes</span>"
+    assert_includes tabs, "Story and outline."
     assert_includes tabs, 'data-mcp-text="summary"'
     assert_includes tabs, 'data-mcp-list="sections"'
     assert_includes tabs, 'data-mcp-text="heading"'
@@ -192,6 +199,7 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     topic_template = topics[/<template\b[^>]*data-mcp-list-item[^>]*>.*?<\/template>/m]
     assert_includes topic_template, "data-mcp-text"
     assert_includes topic_template, "rounded-[var(--chip-border-radius)]"
+    refute_includes topic_template, "<button"
     refute_includes topic_template, "Launch"
     refute_includes topic_template, "No topics yet."
     assert_equal 1, topics.scan(/<template\b[^>]*data-mcp-list-item/).size
@@ -202,18 +210,11 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     assert_includes empty_topics, "fp-empty-state"
 
     notes = RecordingStudio::MCP_UI.package("pages.notes", data: data).html
-    assert_includes notes, "Say hello."
-    assert_includes notes, "Do the thing."
     assert_includes notes, "flat-pack--accordion"
-    assert_includes notes, "fp-content"
-    assert_includes notes, 'data-mcp-list="sections"'
-    assert_includes notes, 'data-mcp-text="heading"'
-    assert_includes notes, 'data-mcp-text="body"'
-    assert_includes notes, "data-mcp-attr-aria-controls"
-    assert_includes notes, "Nothing here yet."
-    note_template = notes[/<template\b[^>]*data-mcp-list-item[^>]*>.*?<\/template>/m]
-    refute_includes note_template, "Say hello."
-    refute_includes note_template, "Nothing here yet."
+    refute_includes notes, "data-mcp-list-item"
+    refute_includes notes, 'data-mcp-text="heading"'
+    refute_includes notes, "data-mcp-attr-aria-controls"
+    refute_includes notes, "aria-expanded"
   end
 
   test "pages show returns fields at the top of structuredContent" do
@@ -375,6 +376,58 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     assert_equal false, body["ok"]
     assert_equal "unauthorized", body["error"]
     assert_equal "Launch notes", @recording.reload.recordable.title
+  end
+
+  test "a link url must be http, https, or relative" do
+    assert Demo::PageContent.allowed_url?("https://example.com/press")
+    assert Demo::PageContent.allowed_url?("http://example.com/press")
+    assert Demo::PageContent.allowed_url?("/press")
+    assert Demo::PageContent.allowed_url?("notes")
+    assert Demo::PageContent.allowed_url?("")
+    refute Demo::PageContent.allowed_url?("javascript:alert(1)")
+    refute Demo::PageContent.allowed_url?(" java\nscript:alert(1)")
+    refute Demo::PageContent.allowed_url?("//evil.example/a")
+    refute Demo::PageContent.allowed_url?("\\evil.example\\a")
+    refute Demo::PageContent.allowed_url?("data:text/html,hi")
+    refute Demo::PageContent.allowed_url?("mailto:ed@example.com")
+    assert_nil Demo::PageContent.links([ { "label" => "Bad", "url" => "javascript:alert(1)" } ]).first
+
+    post "/recording_studio_mcp",
+         params: rpc(
+           "tools/call",
+           name: "pages.update",
+           arguments: {
+             id: @recording.id,
+             links: [ { "id" => "site", "label" => "Site", "url" => "javascript:alert(1)" } ],
+             revision: @page.revision
+           }
+         ).to_json,
+         headers: json_headers("Authorization" => "Bearer #{@token}")
+
+    assert_response :success, response.body
+    body = tool_payload(JSON.parse(response.body))
+    assert_equal false, body["ok"]
+    assert_equal "validation_failed", body["error"]
+    assert_equal "https://example.com", @recording.reload.recordable.links.first["url"]
+    assert_equal @page.id, @recording.recordable_id
+
+    post "/recording_studio_mcp",
+         params: rpc(
+           "tools/call",
+           name: "pages.update",
+           arguments: {
+             id: @recording.id,
+             links: [ { "id" => "site", "label" => "Site", "url" => "/press" } ],
+             revision: @page.revision
+           }
+         ).to_json,
+         headers: json_headers("Authorization" => "Bearer #{@token}")
+
+    assert_response :success, response.body
+    saved = tool_payload(JSON.parse(response.body))
+    saved = saved["data"] || saved
+    assert_equal "/press", saved["links"].first["url"]
+    assert_equal "/press", @recording.reload.recordable.links.first["url"]
   end
 
   test "a section without a heading does not revise the page" do

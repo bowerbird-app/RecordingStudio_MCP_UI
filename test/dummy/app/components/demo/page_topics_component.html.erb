@@ -11,7 +11,7 @@
     <div data-mcp-list="topics">
       <%= render FlatPack::ChipGroup::Component.new do %>
         <template data-mcp-list-item>
-          <%= render FlatPack::Chip::Component.new(type: :button, style: :default) do %>
+          <%= render FlatPack::Chip::Component.new(style: :default) do %>
             <span data-mcp-text></span>
           <% end %>
         </template>

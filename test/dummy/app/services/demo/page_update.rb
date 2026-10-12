@@ -58,9 +58,8 @@ module Demo
       end
 
       if @attributes.key?("links")
-        Demo::PageContent.links(@attributes["links"]).each do |link|
-          return { "links" => "Each link needs a label." } if link["label"].blank?
-        end
+        message = Demo::PageContent.link_error(@attributes["links"])
+        return { "links" => message } if message
       end
 
       nil

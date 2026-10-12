@@ -12,6 +12,7 @@ module Demo
         base_url: sort_base_url,
         min_width: :none,
         draggable_rows: true,
+        tbody_data: { mcp_list: "links" },
         row_id: ->(row) { row["id"] }
       )
       component.column(title: "Reorder") do |_row|
