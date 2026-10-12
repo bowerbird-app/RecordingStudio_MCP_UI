@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Packaged widget page (`html` / `body`) background defaults to transparent. The widget root is a light card (`--mcp-ui-surface: #fff`, `--mcp-ui-surface-color: #1f1f1f`).
-- Widget documents declare `color-scheme: light dark` so a dark host does not paint an opaque light iframe canvas.
+- Widget documents declare `color-scheme: light dark` on `:root[data-theme]`. The page is transparent only when the OS/browser color preference matches the host's color scheme; otherwise the browser paints a solid canvas. Following the host theme is not implemented.
 - Installer comments and README document host CSS overrides.
 
 ### Upgrade notes

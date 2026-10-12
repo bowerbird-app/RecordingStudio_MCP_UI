@@ -2,6 +2,7 @@
   --mcp-ui-background: transparent;
   --mcp-ui-surface: #fff;
   --mcp-ui-surface-color: #1f1f1f;
+  --mcp-ui-surface-scheme: light;
   --mcp-ui-font-family: ui-sans-serif, system-ui, sans-serif;
   --mcp-ui-padding: 1rem;
   --mcp-ui-gap: 0.75rem;
@@ -15,8 +16,8 @@
   --mcp-ui-save-accent-color: #c9a227;
 }
 
-/* Beat Flatpack `:root, [data-theme] { color-scheme: light }` so a dark host
-   does not get an opaque light canvas behind a transparent iframe. */
+/* Packager sets html data-theme (currently "rounded"). Specificity beats Flatpack
+   `:root, [data-theme] { color-scheme: light }`. */
 :root[data-theme] {
   color-scheme: light dark;
 }
@@ -36,6 +37,9 @@ html {
 #mcp-ui-root,
 .mcp-ui-card,
 .mcp-ui-form {
+  --mcp-ui-field-border-color: color-mix(in srgb, var(--mcp-ui-surface-color) 22%, var(--mcp-ui-surface));
+  --mcp-ui-status-loading-color: color-mix(in srgb, var(--mcp-ui-surface-color) 45%, var(--mcp-ui-surface));
+  color-scheme: var(--mcp-ui-surface-scheme);
   background: var(--mcp-ui-surface);
   color: var(--mcp-ui-surface-color);
 }
