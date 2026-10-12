@@ -47,13 +47,24 @@ html {
   background: transparent;
 }
 
-#mcp-ui-root:not(:has([class*="card-background-color"], [class*="card-background-muted-color"])) {
+#mcp-ui-root:not(:has(> :is([class*="card-background-color"], [class*="card-background-muted-color"]):only-child)) {
   background: var(--mcp-ui-surface);
 }
 
 .mcp-ui-card,
 .mcp-ui-form {
   background: var(--mcp-ui-surface);
+}
+
+/* Coupled to FlatPack Card classes (`bg-[var(--card-background-color)]` and
+   `bg-[var(--card-background-muted-color)]` from FlatPack::Card::Component).
+   Paint from FlatPack tokens here so detection and fill work without host Tailwind. */
+[class*="card-background-color"] {
+  background-color: var(--card-background-color);
+}
+
+[class*="card-background-muted-color"] {
+  background-color: var(--card-background-muted-color);
 }
 
 [class*="card-background-color"] .mcp-ui-card,

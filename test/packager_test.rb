@@ -2,6 +2,7 @@
 
 require "test_helper"
 require "fileutils"
+require "nokogiri"
 require "tmpdir"
 
 class PackagerTest < Minitest::Test
@@ -83,10 +84,37 @@ class PackagerTest < Minitest::Test
     assert_includes document.html, "--mcp-ui-surface-scheme: light"
     assert_includes document.html, "color-scheme: var(--mcp-ui-surface-scheme)"
     assert_includes document.html, "color-scheme: light dark"
-    assert_includes document.html, '[class*="card-background-color"] .mcp-ui-card'
-    assert_includes document.html, "#mcp-ui-root:not(:has("
     refute_includes document.html, "CanvasText"
     refute_includes document.html, "background: var(--surface-color, #f8f8f5)"
+  end
+
+  def test_package_paints_flatpack_card_tokens_without_host_css
+    RecordingStudio::MCP_UI.configuration.compiled_css_path = nil
+
+    document = RecordingStudio::MCP_UI.package("projects.preview", data: { title: "Beach House" })
+    css = packaged_css(document.html)
+
+    assert_includes css, "background-color: var(--card-background-color)"
+    assert_includes css, "background-color: var(--card-background-muted-color)"
+  end
+
+  def test_package_keeps_mixed_content_beside_a_component_card
+    card = %(<div class="bg-[var(--card-background-color)]"><div class="mcp-ui-card">Inside</div></div>)
+
+    only_child = RecordingStudio::MCP_UI.package("projects.preview", data: {}, body_html: card)
+    only_root = packaged_root(only_child.html)
+    assert_equal 1, only_root.element_children.size
+    assert_includes only_root.element_children.first["class"], "card-background-color"
+
+    mixed = RecordingStudio::MCP_UI.package(
+      "projects.preview",
+      data: {},
+      body_html: %(<p class="outside">Header</p>#{card})
+    )
+    mixed_root = packaged_root(mixed.html)
+    assert_equal 2, mixed_root.element_children.size
+    assert_equal "outside", mixed_root.element_children.first["class"]
+    assert_includes mixed.html, "--mcp-ui-surface: #fff"
   end
 
   def test_package_host_css_can_override_card_surface
@@ -151,5 +179,15 @@ class PackagerTest < Minitest::Test
     assert_includes document.html, "mcp-ui-body"
     assert_includes document.html, "--mcp-ui-background: transparent"
     refute_includes document.html, "recording-studio-mcp-ui-missing"
+  end
+
+  private
+
+  def packaged_css(html)
+    html[%r{<style>(.*?)</style>}m, 1]
+  end
+
+  def packaged_root(html)
+    Nokogiri::HTML(html).at_css("#mcp-ui-root")
   end
 end

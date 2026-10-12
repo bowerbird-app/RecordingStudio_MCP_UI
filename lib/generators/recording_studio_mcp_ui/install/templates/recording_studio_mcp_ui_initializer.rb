@@ -8,6 +8,7 @@ RecordingStudio::MCP_UI.configure do |config|
   #   --mcp-ui-background      (page, default: transparent)
   #   --mcp-ui-surface         (card, default: #fff)
   #   --mcp-ui-surface-color   (card text, default: #1f1f1f)
+  #   --mcp-ui-surface-scheme  (native controls, default: light)
   #
   # config.compiled_css_path = Rails.root.join("app/assets/stylesheets/mcp_ui_widget.css")
   # config.compiled_css_path = [

@@ -112,7 +112,7 @@ The document is a self-contained HTML page. It does not assume host importmaps o
 
 ### Widget CSS tokens
 
-The packaged page (`html` / `body`) is transparent so the host shows through. A bare widget (no component card) paints `--mcp-ui-surface` on `#mcp-ui-root` and on `.mcp-ui-card` / `.mcp-ui-form`. Nested `.mcp-ui-card` / `.mcp-ui-form` inside a component card (for example a Flatpack card using `--card-background-color`) are transparent so that card's own colour shows through; `#mcp-ui-root` stays transparent in that case so rounded corners are not boxed in white. Inputs keep a readable `--mcp-ui-surface` fill. A component that sets its own background still wins on that element.
+The packaged page (`html` / `body`) is transparent so the host shows through. A bare widget paints `--mcp-ui-surface` on `#mcp-ui-root` and on `.mcp-ui-card` / `.mcp-ui-form`. `#mcp-ui-root` is transparent only when a Flatpack card (`--card-background-color`) is its only child, so headers and actions beside a card stay on the light surface. Nested `.mcp-ui-card` / `.mcp-ui-form` inside that card are transparent so the card colour shows through. Widget CSS paints those Flatpack card classes from `--card-background-color` even when the host has not inlined Tailwind. Inputs keep a readable `--mcp-ui-surface` fill. A component that sets its own background still wins on that element.
 
 The page is transparent only when the OS/browser color preference matches the host's color scheme; otherwise the browser paints a solid canvas (white on a dark host, black on a light host). Following the host theme is not implemented. Hosts that override `color-scheme` must target `:root[data-theme]` (the packager sets `data-theme` on `html`).
 
