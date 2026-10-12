@@ -1,12 +1,18 @@
 (function (root) {
   "use strict";
 
+  function fieldsApi() {
+    return root.McpFields;
+  }
+
   function bindText(data) {
+    var api = fieldsApi();
     var nodes = document.querySelectorAll("[data-mcp-text]");
     Array.prototype.forEach.call(nodes, function (node) {
       if (insideListEntry(node)) return;
       var field = node.getAttribute("data-mcp-text");
-      if (field && data && data[field] != null) node.textContent = data[field];
+      if (!field || !api || !api.own(data, field) || data[field] == null) return;
+      node.textContent = data[field];
     });
   }
 
@@ -15,7 +21,9 @@
   }
 
   function listItems(data, key) {
-    if (!data || typeof data !== "object") return [];
+    var api = fieldsApi();
+    if (!api || !data || typeof data !== "object" || Array.isArray(data)) return [];
+    if (!api.own(data, key)) return [];
     var value = data[key];
     return Array.isArray(value) ? value : [];
   }
@@ -35,55 +43,6 @@
     return !!item && typeof item === "object" && !Array.isArray(item);
   }
 
-  function itemFieldName(name) {
-    if (!name) return "";
-    var marker = "[][";
-    var at = name.lastIndexOf(marker);
-    if (at === -1) return name;
-    var inner = name.slice(at + marker.length);
-    if (!inner || inner.charAt(inner.length - 1) !== "]") return name;
-    inner = inner.slice(0, -1);
-    if (!inner || inner.indexOf("[") !== -1 || inner.indexOf("]") !== -1) return name;
-    return inner;
-  }
-
-  function fieldKey(input) {
-    var named = input.getAttribute("name") || "";
-    if (named) return itemFieldName(named);
-    var marked = input.getAttribute("data-mcp-field") || "";
-    if (!marked || marked === "true") return "";
-    return itemFieldName(marked);
-  }
-
-  function controlType(input) {
-    var typed = input.type || (input.getAttribute && input.getAttribute("type")) || "";
-    return String(typed).toLowerCase();
-  }
-
-  function controlValue(input) {
-    if (input.value != null && String(input.value) !== "") return String(input.value);
-    var attr = input.getAttribute && input.getAttribute("value");
-    return attr == null ? "" : String(attr);
-  }
-
-  function assignFieldValue(input, value) {
-    var type = controlType(input);
-    if (type === "button" || type === "submit" || type === "reset" || type === "file") return;
-    if (type === "checkbox") {
-      input.checked = value === true || value === "true" || value === "1" || value === 1;
-      return;
-    }
-    if (type === "radio") {
-      input.checked = value != null && controlValue(input) === String(value);
-      return;
-    }
-    if (value == null) {
-      input.value = "";
-      return;
-    }
-    input.value = typeof value === "object" ? JSON.stringify(value) : String(value);
-  }
-
   function fillText(node, item) {
     var slots = [];
     if (node.hasAttribute("data-mcp-text")) slots.push(node);
@@ -96,16 +55,17 @@
   }
 
   function fillFields(node, item) {
-    if (!itemRecord(item)) return;
+    var api = fieldsApi();
+    if (!api || !itemRecord(item)) return;
     var inputs = [];
     if (node.hasAttribute("data-mcp-field")) inputs.push(node);
     Array.prototype.forEach.call(node.querySelectorAll("[data-mcp-field]"), function (input) {
       inputs.push(input);
     });
     inputs.forEach(function (input) {
-      var key = fieldKey(input);
-      if (!key || !Object.prototype.hasOwnProperty.call(item, key)) return;
-      assignFieldValue(input, item[key]);
+      var key = api.inputFieldKey(input);
+      if (!key || !api.own(item, key)) return;
+      api.writeField(input, item[key]);
     });
   }
 
@@ -141,13 +101,41 @@
     return textForSlot(item, text);
   }
 
+  function allowedUrl(value) {
+    var text = String(value == null ? "" : value);
+    var stripped = "";
+    for (var i = 0; i < text.length; i++) {
+      var code = text.charCodeAt(i);
+      if (code <= 32 || code === 127) continue;
+      stripped += text.charAt(i);
+    }
+    if (!stripped) return true;
+    if (stripped.charAt(0) === "\\") return false;
+    if (stripped.slice(0, 2) === "//") return false;
+    var match = /^([a-zA-Z][a-zA-Z0-9+.-]*):/.exec(stripped);
+    if (!match) return true;
+    var scheme = match[1].toLowerCase();
+    return scheme === "http" || scheme === "https" || scheme === "mailto";
+  }
+
+  function assignAttribute(element, htmlName, value) {
+    var name = String(htmlName || "").toLowerCase();
+    if (!name || name.indexOf("on") === 0 || name === "style" || name === "srcdoc") return;
+    var url = name === "href" || name === "src";
+    var plain = name === "id" || name === "class" || name === "title" || name === "value" ||
+      name.indexOf("data-") === 0 || name.indexOf("aria-") === 0;
+    if (!plain && !url) return;
+    if (url && !allowedUrl(value)) return;
+    element.setAttribute(name, value);
+  }
+
   function fillAttributes(node, item, index) {
     elementsWithin(node).forEach(function (element) {
       attributeNames(element).slice().forEach(function (name) {
         if (name.indexOf("data-mcp-attr-") !== 0) return;
         var htmlName = name.slice("data-mcp-attr-".length);
         if (!htmlName) return;
-        element.setAttribute(htmlName, attributeValue(element.getAttribute(name), item, index));
+        assignAttribute(element, htmlName, attributeValue(element.getAttribute(name), item, index));
       });
     });
   }
@@ -158,20 +146,20 @@
     fillAttributes(node, item, index);
   }
 
-  function clearEntries(list) {
-    [ "[data-mcp-list-entry]", "[data-mcp-row]" ].forEach(function (selector) {
-      Array.prototype.forEach.call(list.querySelectorAll(selector), function (node) {
-        if (node === list) return;
-        if (typeof node.closest === "function" && node.closest("[data-mcp-list]") === list) node.remove();
-      });
+  function owned(list, selector) {
+    var found = [];
+    Array.prototype.forEach.call(list.querySelectorAll(selector), function (node) {
+      if (node === list) return;
+      if (typeof node.closest === "function" && node.closest("[data-mcp-list]") === list) found.push(node);
     });
+    return found;
   }
 
   function toggleEmpty(list, isEmpty) {
-    var empty = list.querySelector("[data-mcp-list-empty]");
-    if (!empty) return;
-    if (isEmpty) empty.removeAttribute("hidden");
-    else empty.setAttribute("hidden", "");
+    owned(list, "[data-mcp-list-empty]").forEach(function (empty) {
+      if (isEmpty) empty.removeAttribute("hidden");
+      else empty.setAttribute("hidden", "");
+    });
   }
 
   function clonedElements(template) {
@@ -183,79 +171,123 @@
     return nodes;
   }
 
-  function bindList(list, data) {
-    var template = list.querySelector("template[data-mcp-list-item]");
-    if (!template || !template.content || typeof template.content.cloneNode !== "function") return;
-    var items = listItems(data, list.getAttribute("data-mcp-list") || "");
-    clearEntries(list);
-    items.forEach(function (item, index) {
-      clonedElements(template).forEach(function (node) {
-        node.setAttribute("data-mcp-list-entry", "");
-        fillItem(node, item, index);
-        if (template.parentNode) template.parentNode.insertBefore(node, template);
+  function itemKey(item) {
+    var api = fieldsApi();
+    if (!api || !itemRecord(item) || !api.own(item, "id") || item.id == null) return "";
+    var text = String(item.id);
+    return text ? text : "";
+  }
+
+  function entryPools(entries) {
+    var pools = Object.create(null);
+    entries.forEach(function (entry) {
+      var key = entry.getAttribute("data-mcp-list-key");
+      if (!key) return;
+      if (!pools[key]) pools[key] = [];
+      pools[key].push(entry);
+    });
+    return pools;
+  }
+
+  function nodesFor(template, pools, item, index, refill) {
+    var key = itemKey(item);
+    var clones = clonedElements(template);
+    var bucket = key && pools[key] ? pools[key] : null;
+    if (bucket && clones.length && bucket.length >= clones.length) {
+      var reused = bucket.splice(0, clones.length);
+      reused.forEach(function (node) {
+        fillText(node, item);
+        fillAttributes(node, item, index);
+        if (refill) fillFields(node, item);
+      });
+      return { nodes: reused, reused: true };
+    }
+    clones.forEach(function (node) {
+      node.setAttribute("data-mcp-list-entry", "");
+      if (key) node.setAttribute("data-mcp-list-key", key);
+      fillItem(node, item, index);
+    });
+    return { nodes: clones, reused: false };
+  }
+
+  function schedule(fn) {
+    var queue = typeof root.queueMicrotask === "function" ? root.queueMicrotask : function (callback) {
+      setTimeout(callback, 0);
+    };
+    queue(fn);
+  }
+
+  function targetIdentifiers(nodes) {
+    var found = [];
+    nodes.forEach(function (node) {
+      elementsWithin(node).forEach(function (element) {
+        attributeNames(element).forEach(function (name) {
+          var suffix = "-target";
+          if (name.indexOf("data-") !== 0 || name.length <= "data-".length + suffix.length) return;
+          if (name.lastIndexOf(suffix) !== name.length - suffix.length) return;
+          var identifier = name.slice("data-".length, name.length - suffix.length);
+          if (!identifier || found.indexOf(identifier) !== -1) return;
+          found.push(identifier);
+        });
       });
     });
-    toggleEmpty(list, items.length === 0);
+    return found;
   }
 
-  function reconnectNames(element) {
-    return (element.getAttribute("data-mcp-reconnect") || "").split(/\s+/).filter(function (name) {
-      return name;
+  function refreshControllerToken(element, identifiers) {
+    var original = element.getAttribute("data-controller");
+    if (!original) return;
+    var tokens = original.split(/\s+/).filter(function (token) { return token; });
+    var remove = false;
+    var kept = [];
+    tokens.forEach(function (token) {
+      if (identifiers.indexOf(token) === -1) kept.push(token);
+      else remove = true;
+    });
+    if (!remove) return;
+    element.setAttribute("data-controller", kept.join(" "));
+    schedule(function () {
+      element.setAttribute("data-controller", original);
     });
   }
 
-  function rowsNeedConnect(rows) {
-    if (!rows || typeof rows.length !== "number" || rows.length === 0) return false;
-    for (var i = 0; i < rows.length; i++) {
-      if (!rows[i] || rows[i].mcpReconnectBound) return false;
-      if (typeof rows[i].getAttribute === "function" && rows[i].getAttribute("draggable") === "true") return false;
+  function refreshControllers(list, nodes) {
+    var identifiers = targetIdentifiers(nodes);
+    if (!identifiers.length) return;
+    var node = list;
+    while (node && node.nodeType === 1) {
+      refreshControllerToken(node, identifiers);
+      node = node.parentNode;
     }
-    return true;
   }
 
-  function reconnectController(element) {
-    var application = root.Stimulus;
-    if (!application || typeof application.getControllerForElementAndIdentifier !== "function") return;
-    reconnectNames(element).forEach(function (identifier) {
-      var controller = application.getControllerForElementAndIdentifier(element, identifier);
-      if (!controller || typeof controller.connect !== "function") return;
-      var rows = controller.rowTargets;
-      if (!rowsNeedConnect(rows)) return;
-      controller.connect();
-      for (var i = 0; i < rows.length; i++) {
-        if (rows[i]) rows[i].mcpReconnectBound = true;
-      }
+  function bindList(list, data, refill) {
+    var template = owned(list, "template[data-mcp-list-item]")[0];
+    if (!template || !template.content || typeof template.content.cloneNode !== "function") return;
+    var items = listItems(data, list.getAttribute("data-mcp-list") || "");
+    var pools = entryPools(owned(list, "[data-mcp-list-entry]"));
+    var live = [];
+    var reusedAny = false;
+    items.forEach(function (item, index) {
+      var taken = nodesFor(template, pools, item, index, refill);
+      if (taken.reused) reusedAny = true;
+      taken.nodes.forEach(function (node) {
+        if (template.parentNode) template.parentNode.insertBefore(node, template);
+        live.push(node);
+      });
     });
-  }
-
-  function watchReconnect(element) {
-    if (element.mcpReconnectObserver || typeof MutationObserver !== "function") return;
-    var observer = new MutationObserver(function () {
-      reconnectController(element);
+    owned(list, "[data-mcp-list-entry]").forEach(function (node) {
+      if (live.indexOf(node) === -1) node.remove();
     });
-    observer.observe(element, { childList: true, subtree: true });
-    element.mcpReconnectObserver = observer;
+    toggleEmpty(list, items.length === 0);
+    if (live.length && !reusedAny) refreshControllers(list, live);
   }
 
-  function reconnectLists() {
-    Array.prototype.forEach.call(document.querySelectorAll("[data-mcp-reconnect]"), function (element) {
-      watchReconnect(element);
-      reconnectController(element);
-    });
-  }
-
-  function scheduleReconnect() {
-    var schedule = typeof root.queueMicrotask === "function" ? root.queueMicrotask : function (fn) {
-      setTimeout(fn, 0);
-    };
-    schedule(reconnectLists);
-  }
-
-  function bindLists(data) {
+  function bindLists(data, meta) {
+    var refill = !!(meta && meta.reset);
     Array.prototype.forEach.call(document.querySelectorAll("[data-mcp-list]"), function (list) {
-      bindList(list, data);
+      bindList(list, data, refill);
     });
-    scheduleReconnect();
   }
 
   function bindWidget(data) {
@@ -267,7 +299,7 @@
     if (!root.mcpUI) return;
     root.mcpUI.onData(function (data, meta) {
       bindText(data);
-      if (!meta || meta.dataChanged) bindLists(data);
+      if (!meta || meta.dataChanged) bindLists(data, meta);
     });
     root.mcpUI.start().then(function () {
       bindWidget(root.mcpUI.data());

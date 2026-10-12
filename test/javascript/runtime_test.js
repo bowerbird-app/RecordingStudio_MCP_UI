@@ -1092,6 +1092,8 @@ test("list binder fills fields and attributes on each clone and keeps input name
   const url = listElement("input", { type: "text", name: "links[][url]", "data-mcp-field": "true", value: "" });
   const destroy = listElement("input", { type: "hidden", name: "links[][_destroy]", "data-mcp-field": "true", value: "0" });
   const picked = listElement("input", { type: "checkbox", name: "links[][picked]", "data-mcp-field": "true" });
+  const meta = listElement("input", { type: "text", name: "links[][meta]", "data-mcp-field": "true", "data-mcp-type": "json" });
+  const extra = listElement("input", { type: "text", name: "links[][extra]", "data-mcp-field": "true" });
   const trigger = listElement("button", {
     type: "button",
     "data-mcp-attr-id": "note-$index-trigger",
@@ -1107,6 +1109,8 @@ test("list binder fills fields and attributes on each clone and keeps input name
   row.appendChild(url);
   row.appendChild(destroy);
   row.appendChild(picked);
+  row.appendChild(meta);
+  row.appendChild(extra);
   row.appendChild(trigger);
   row.appendChild(panel);
   row.appendChild(visible);
@@ -1127,8 +1131,8 @@ test("list binder fills fields and attributes on each clone and keeps input name
     content: [],
     structuredContent: {
       links: [
-        { id: "notes", label: "Notes", url: "https://example.com/notes", picked: true },
-        { id: "press", label: "Press <kit>", url: "https://example.com/press", picked: false }
+        { id: "notes", label: "Notes", url: "https://example.com/notes", picked: true, meta: { a: 1 }, extra: { b: 2 } },
+        { id: "press", label: "Press <kit>", url: "https://example.com/press", picked: "false" }
       ]
     }
   });
@@ -1148,9 +1152,15 @@ test("list binder fills fields and attributes on each clone and keeps input name
   const firstUrl = entries[0].querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][url]");
   const firstDestroy = entries[0].querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][_destroy]");
   const firstPicked = entries[0].querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][picked]");
+  const secondPicked = entries[1].querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][picked]");
+  const firstMeta = entries[0].querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][meta]");
+  const firstExtra = entries[0].querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][extra]");
   assert.equal(firstUrl.value, "https://example.com/notes");
   assert.equal(firstDestroy.value, "0");
   assert.equal(firstPicked.checked, true);
+  assert.equal(secondPicked.checked, false);
+  assert.equal(firstMeta.value, '{"a":1}');
+  assert.equal(firstExtra.value, "[object Object]");
   assert.equal(elementWithTag(entries[0], "BUTTON").getAttribute("id"), "note-0-trigger");
   assert.equal(elementWithTag(entries[0], "BUTTON").getAttribute("aria-controls"), "note-0-content");
   assert.equal(elementWithTag(entries[1], "BUTTON").getAttribute("id"), "note-1-trigger");
@@ -1160,7 +1170,8 @@ test("list binder fills fields and attributes on each clone and keeps input name
   list.appendChild(added);
   handler({ content: [], structuredContent: { links: [] } });
   assert.equal(list.querySelectorAll("[data-mcp-list-entry]").length, 0);
-  assert.equal(list.querySelectorAll("[data-mcp-row]").length, 0);
+  assert.equal(added.parentNode, list);
+  assert.equal(list.querySelectorAll("[data-mcp-row]").length, 1);
   assert.equal(empty.hasAttribute("hidden"), false);
 });
 
@@ -1255,10 +1266,138 @@ test("cloned rows save in DOM order and reset restores the opening tool result",
   assert.equal(title.value, "Launch notes");
 });
 
-test("list binder reconnects a row controller after clones land and does not bind twice", async () => {
+test("list binder rejects javascript hrefs and event-handler attributes", async () => {
+  function anchor(field) {
+    return listElement("a", { "data-mcp-attr-href": field });
+  }
+  const scriptUrl = anchor("url");
+  const paddedUrl = anchor("padded");
+  const brokenUrl = anchor("proto");
+  const safeUrl = anchor("safe");
+  const mailUrl = anchor("mail");
+  const relativeUrl = anchor("rel");
+  const indexed = listElement("a", { "data-mcp-attr-href": "javascript:alert($index)" });
+  const relativeIndex = listElement("a", { "data-mcp-attr-href": "/files/$index" });
+  const click = listElement("a", { "data-mcp-attr-onclick": "id" });
+  const styled = listElement("a", { "data-mcp-attr-style": "label" });
+  const frame = listElement("iframe", { "data-mcp-attr-srcdoc": "label" });
+  const action = listElement("form", { "data-mcp-attr-formaction": "safe" });
+  const image = listElement("img", { "data-mcp-attr-src": "url" });
+  const safeImage = listElement("img", { "data-mcp-attr-src": "safe" });
+  const titled = listElement("span", { "data-mcp-attr-title": "label" });
+  const row = listElement("div", {}, [
+    scriptUrl, paddedUrl, brokenUrl, safeUrl, mailUrl, relativeUrl, indexed, relativeIndex,
+    click, styled, frame, action, image, safeImage, titled
+  ]);
+  const template = listElement("template", { "data-mcp-list-item": "" });
+  template.content = new ListFragment([ row ]);
+  const list = listElement("div", { "data-mcp-list": "links" }, [ template ]);
+  const windowLike = windowStub({ widgetId: "pages.links", data: {} });
+  windowLike.document = listDocument({ widgetId: "pages.links", data: {} }, listElement("div", {}, [ list ]));
+  attachFakeApp(windowLike, function (next) {
+    next({
+      content: [],
+      structuredContent: {
+        links: [
+          {
+            id: "notes",
+            label: "Notes",
+            url: "javascript:alert(1)",
+            padded: " java\nscript:alert(1)",
+            proto: "//evil.example/a",
+            safe: "https://example.com/a",
+            mail: "mailto:ed@example.com",
+            rel: "/notes"
+          }
+        ]
+      }
+    });
+  });
+
+  loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  const entry = list.querySelectorAll("[data-mcp-list-entry]")[0];
+  const anchors = [];
+  const images = [];
+  function walk(node) {
+    if (!node || node.nodeType !== 1) return;
+    if (node.tagName === "A") anchors.push(node);
+    if (node.tagName === "IMG") images.push(node);
+    (node.childNodes || []).forEach(walk);
+  }
+  walk(entry);
+  assert.equal(anchors[0].getAttribute("href"), null);
+  assert.equal(anchors[1].getAttribute("href"), null);
+  assert.equal(anchors[2].getAttribute("href"), null);
+  assert.equal(anchors[3].getAttribute("href"), "https://example.com/a");
+  assert.equal(anchors[4].getAttribute("href"), "mailto:ed@example.com");
+  assert.equal(anchors[5].getAttribute("href"), "/notes");
+  assert.equal(anchors[6].getAttribute("href"), null);
+  assert.equal(anchors[7].getAttribute("href"), "/files/0");
+  assert.equal(anchors[8].getAttribute("onclick"), null);
+  assert.equal(anchors[9].getAttribute("style"), null);
+  assert.equal(elementWithTag(entry, "IFRAME").getAttribute("srcdoc"), null);
+  assert.equal(elementWithTag(entry, "FORM").getAttribute("formaction"), null);
+  assert.equal(images[0].getAttribute("src"), null);
+  assert.equal(images[1].getAttribute("src"), "https://example.com/a");
+  assert.equal(elementWithTag(entry, "SPAN").getAttribute("title"), "Notes");
+});
+
+test("list binder ignores inherited keys and leaves a nested list alone", async () => {
+  const title = listElement("h1", { "data-mcp-text": "title" });
+  const summary = listElement("p", { "data-mcp-text": "summary" });
+  const inheritedLabel = listElement("input", { type: "text", name: "links[][label]", "data-mcp-field": "true", value: "" });
+  const inheritedRow = listElement("div", {}, [ inheritedLabel ]);
+  const linkTemplate = listElement("template", { "data-mcp-list-item": "" });
+  linkTemplate.content = new ListFragment([ inheritedRow ]);
+  const linkEmpty = listElement("p", { "data-mcp-list-empty": "" });
+  linkEmpty.setAttribute("hidden", "");
+  const links = listElement("div", { "data-mcp-list": "links" }, [ linkTemplate, linkEmpty ]);
+  const heading = listElement("span", { "data-mcp-text": "heading" });
+  const sectionTemplate = listElement("template", { "data-mcp-list-item": "" });
+  sectionTemplate.content = new ListFragment([ listElement("div", {}, [ heading ]) ]);
+  const sectionEmpty = listElement("p", { "data-mcp-list-empty": "" });
+  const sections = listElement("div", { "data-mcp-list": "sections" }, [ links, sectionTemplate, sectionEmpty ]);
+  const windowLike = windowStub({ widgetId: "pages.tabs", data: {} });
+  windowLike.document = listDocument({ widgetId: "pages.tabs", data: {} }, listElement("div", {}, [ title, summary, sections ]));
+  let handler;
+  attachFakeApp(windowLike, function (next) { handler = next; });
+
+  loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  const inherited = Object.create({ title: "Hidden", topics: [ "Hidden" ], links: [ { label: "Hidden" } ] });
+  inherited.summary = "Shown";
+  const link = Object.create({ label: "Hidden" });
+  link.id = "notes";
+  handler({
+    content: [],
+    structuredContent: Object.assign(inherited, {
+      sections: [ { heading: "Open" } ],
+      links: [ link ]
+    })
+  });
+
+  assert.equal(title.textContent, "");
+  assert.equal(summary.textContent, "Shown");
+  assert.equal(sections.querySelectorAll("[data-mcp-list-entry]").filter((node) => node.closest("[data-mcp-list]") === sections).length, 1);
+  const linkEntry = links.querySelectorAll("[data-mcp-list-entry]")[0];
+  assert.equal(linkEntry.querySelectorAll("[data-mcp-field]")[0].value, "");
+  assert.equal(sectionEmpty.hasAttribute("hidden"), true);
+  assert.equal(linkEmpty.hasAttribute("hidden"), true);
+
+  handler({ content: [], structuredContent: { sections: [], links: [ link ] } });
+  assert.equal(sectionEmpty.hasAttribute("hidden"), false);
+  assert.equal(linkEmpty.hasAttribute("hidden"), true);
+  assert.equal(links.querySelectorAll("[data-mcp-list-entry]").length, 1);
+});
+
+test("list binder reuses keyed rows and refreshes a controller only for new clones", async () => {
   const row = listElement("tr", {
     "data-mcp-row": "",
     "data-mcp-attr-data-id": "id",
+    "data-mcp-attr-id": "row-$index",
     "data-flat-pack--table-sortable-target": "row"
   });
   const label = listElement("input", { type: "text", name: "links[][label]", "data-mcp-field": "true" });
@@ -1266,15 +1405,14 @@ test("list binder reconnects a row controller after clones land and does not bin
   const template = listElement("template", { "data-mcp-list-item": "" });
   template.content = new ListFragment([ row ]);
   const list = listElement("tbody", { "data-mcp-list": "links" }, [ template ]);
-  const shell = listElement("div", {
-    "data-controller": "flat-pack--table-sortable",
-    "data-mcp-reconnect": "flat-pack--table-sortable"
-  }, [ list ]);
+  const shell = listElement("div", { "data-controller": "mcp-editor flat-pack--table-sortable" }, [ list ]);
   const windowLike = windowStub({ widgetId: "pages.links", data: {} });
   windowLike.document = listDocument({ widgetId: "pages.links", data: {} }, listElement("div", {}, [ shell ]));
-  const binds = [];
+  let connected = true;
+  let cycles = 0;
   const controller = {
-    get rowTargets() {
+    connect() {
+      cycles += 1;
       const found = [];
       function walk(node) {
         if (!node || node.nodeType !== 1 || node.tagName === "TEMPLATE") return;
@@ -1282,20 +1420,21 @@ test("list binder reconnects a row controller after clones land and does not bin
         (node.childNodes || []).forEach(walk);
       }
       walk(shell);
-      return found;
-    },
-    connect() {
-      this.rowTargets.forEach((entry) => {
+      found.forEach((entry) => {
         entry._binds = (entry._binds || 0) + 1;
         entry.setAttribute("draggable", "true");
-        binds.push(entry.getAttribute("data-id") || entry._binds);
       });
     }
   };
-  windowLike.Stimulus = {
-    getControllerForElementAndIdentifier(element, identifier) {
-      if (element === shell && identifier === "flat-pack--table-sortable") return controller;
-      return null;
+  const writeAttribute = shell.setAttribute.bind(shell);
+  shell.setAttribute = function (name, value) {
+    writeAttribute(name, value);
+    if (name !== "data-controller") return;
+    const present = String(value).split(/\s+/).indexOf("flat-pack--table-sortable") !== -1;
+    if (!present && connected) connected = false;
+    else if (present && !connected) {
+      connected = true;
+      controller.connect();
     }
   };
   let handler;
@@ -1304,44 +1443,54 @@ test("list binder reconnects a row controller after clones land and does not bin
   loadEngine(windowLike, { sdk: false, boot: true });
   await new Promise((resolve) => setTimeout(resolve, 0));
   await new Promise((resolve) => setTimeout(resolve, 0));
-  assert.equal(binds.length, 0);
+  assert.equal(cycles, 0);
 
-  handler({
-    content: [],
-    structuredContent: {
-      links: [
-        { id: "notes", label: "Notes" },
-        { id: "press", label: "Press" },
-        { id: "site", label: "Site" }
-      ]
-    }
-  });
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  function deliver(links) {
+    handler({ content: [], structuredContent: { links: links } });
+    return new Promise((resolve) => setTimeout(resolve, 0));
+  }
+
+  await deliver([
+    { id: "notes", label: "Notes" },
+    { id: "press", label: "Press" },
+    { id: "site", label: "Site" }
+  ]);
 
   let entries = list.querySelectorAll("[data-mcp-list-entry]");
   assert.equal(entries.length, 3);
+  assert.equal(cycles, 1);
+  assert.deepEqual(entries.map((entry) => entry._binds), [ 1, 1, 1 ]);
   assert.deepEqual(entries.map((entry) => entry.getAttribute("draggable")), [ "true", "true", "true" ]);
-  assert.deepEqual(entries.map((entry) => entry._binds), [ 1, 1, 1 ]);
+  assert.equal(shell.getAttribute("data-controller"), "mcp-editor flat-pack--table-sortable");
+  const labelOf = (entry) => entry.querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][label]");
+  const notes = entries[0];
+  labelOf(notes).value = "Draft notes";
 
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  assert.deepEqual(entries.map((entry) => entry._binds), [ 1, 1, 1 ]);
+  await deliver([
+    { id: "site", label: "Server site" },
+    { id: "notes", label: "Server notes" }
+  ]);
 
-  handler({
-    content: [],
-    structuredContent: {
-      links: [
-        { id: "site", label: "Site" },
-        { id: "notes", label: "Notes" }
-      ]
-    }
-  });
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  await new Promise((resolve) => setTimeout(resolve, 0));
   entries = list.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(cycles, 1);
   assert.equal(entries.length, 2);
+  assert.equal(entries[1], notes);
+  assert.equal(labelOf(entries[1]).value, "Draft notes");
   assert.deepEqual(entries.map((entry) => entry.getAttribute("data-id")), [ "site", "notes" ]);
+  assert.deepEqual(entries.map((entry) => entry.getAttribute("id")), [ "row-0", "row-1" ]);
   assert.deepEqual(entries.map((entry) => entry._binds), [ 1, 1 ]);
+
+  await deliver([
+    { id: "alpha", label: "Alpha" },
+    { id: "beta", label: "Beta" }
+  ]);
+
+  entries = list.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(cycles, 2);
+  assert.deepEqual(entries.map((entry) => entry.getAttribute("data-id")), [ "alpha", "beta" ]);
+  assert.deepEqual(entries.map((entry) => entry._binds), [ 1, 1 ]);
+  assert.deepEqual(entries.map((entry) => labelOf(entry).value), [ "Alpha", "Beta" ]);
+  assert.equal(notes.parentNode, null);
 });
 
 function elementWithTag(root, tag) {

@@ -10,19 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.0] - 2026-10-12
 
 ### Added
-- Display lists in the packaged runtime. A container uses `data-mcp-list`, one item lives in `<template data-mcp-list-item>`, and the empty state uses `data-mcp-list-empty`. Each tool result replaces the clones. An empty `data-mcp-text` fills a scalar. A named `data-mcp-text` fills that field on an object.
-- The same clone fills `[data-mcp-field]` from the item and keeps the input `name`, so a template row can save `links[][label]` in DOM order. `[data-mcp-row]` marks that row. `data-mcp-attr-<name>` sets one HTML attribute from a field or from `$index` (`note-$index-content`).
-- `data-mcp-reconnect` on a controller element. After a list inside it fills, the runtime calls that controller's `connect()` so new `rowTargets` bind the same way rows present at connect do.
+- Display lists in the packaged runtime. A container uses `data-mcp-list`, one item lives in `<template data-mcp-list-item>`, and the empty state uses `data-mcp-list-empty`. An empty `data-mcp-text` fills a scalar. A named `data-mcp-text` fills that field on an object. Both reads use own properties only.
+- The same clone fills `[data-mcp-field]` through the editor's field writer and keeps the input `name`, so a template row can save `links[][label]` in DOM order. `[data-mcp-row]` marks that row. The name parser is the editor's `place` parser.
+- `data-mcp-attr-<name>` sets one allowlisted attribute from a field or from `$index` (`note-$index-content`). Allowed names are `id`, `class`, `title`, `value`, `data-*`, and `aria-*`. `href` and `src` are written only for `http:`, `https:`, `mailto:`, or a relative URL.
 
 ### Changed
-- `mcpUI.reset()` restores the first non-blank record. An empty `resources/read` package resets to the tool result that opened the widget. A package that already had data still resets to that data.
-- `data-mcp-restore-order` moves only rows that are still in their parent. A list rebuild replaces cloned rows from the record before that restore runs.
+- `mcpUI.reset()` restores the first non-blank record. An empty `resources/read` package resets to the tool result that opened the widget. A package that already had data still resets to that data. `onData` receives `reset: true` for that call, and a reused list row is filled from that record again.
+- `data-mcp-restore-order` moves only rows that are still in their parent and are not list clones. List clones stay in the order the binder placed them.
+- A later tool result removes only `[data-mcp-list-entry]` clones for that list. Rows a collection editor added stay. The empty toggle ignores a nested list. An item `id` reuses the previous clone, keeps unsaved input values, and refreshes text and allowlisted attributes.
+- When every row in a result is a new clone, a clone that carries `data-<identifier>-target` causes that identifier's `data-controller` token to be removed and restored on the next microtask. Stimulus disconnects and connects the controller. A result that reuses a row does not touch the token, so listeners are not added again.
 
 ### Upgrade notes
-- Put repeating rows in the list template. `resources/read` packages with no data, so a Ruby loop cannot show the tool result. Keep `data-mcp-field` names such as `sections[][heading]` and mark the row `data-mcp-row`.
-- A later tool result removes `[data-mcp-list-entry]` clones and any `[data-mcp-row]` already in that list, then clones the template again. Rows added by a collection editor are replaced by the result.
-- The runtime writes text with `textContent`, input values with the `value` property, and attributes with `setAttribute`. It does not assign `innerHTML`. `$index` in a `data-mcp-attr-*` value is the zero-based clone index.
-- Stimulus sees the inserted nodes. Actions on those nodes work. A controller that only binds `rowTargets` during `connect` does not see rows added later. Put `data-mcp-reconnect="controller-name"` on that controller's element. After the list fills, the runtime calls `connect()` again. Rows that are already `draggable` are left alone, so listeners are not added twice.
+- Put repeating rows in the list template. `resources/read` packages with no data, so a Ruby loop cannot show the tool result. Keep `data-mcp-field` names such as `sections[][heading]` and mark the row `data-mcp-row`. Give items an `id` when a later result should keep unsaved edits on that row.
+- A later tool result removes binder clones for that list only. It does not remove `[data-mcp-row]` elements the binder did not create. Do not set `data-mcp-reconnect`; the runtime does not read it.
+- The runtime writes text with `textContent`, input values with the shared field writer, and attributes with `setAttribute` after the allowlist. It does not assign `innerHTML`. `$index` in a `data-mcp-attr-*` value is the zero-based clone index. `javascript:` URLs and `on*` attributes are not written.
+- Stimulus sees inserted nodes, so actions on those nodes work. A controller that binds targets only inside `connect` picks up a batch of new clones because its token is removed and restored. It is left alone when any of those rows is reused.
 
 ## [0.3.0] - 2026-10-12
 

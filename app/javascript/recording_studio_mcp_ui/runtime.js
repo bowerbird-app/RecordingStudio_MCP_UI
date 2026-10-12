@@ -18,9 +18,15 @@
     }
   }
 
-  function notify(dataChanged) {
+  function notify(dataChanged, extra) {
+    var meta = { dirty: dirty, dataChanged: !!dataChanged };
+    if (extra && typeof extra === "object") {
+      Object.keys(extra).forEach(function (key) {
+        meta[key] = extra[key];
+      });
+    }
     listeners.slice().forEach(function (listener) {
-      listener(data, { dirty: dirty, dataChanged: !!dataChanged });
+      listener(data, meta);
     });
   }
 
@@ -28,10 +34,10 @@
     return !value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length === 0;
   }
 
-  function setData(next) {
+  function setData(next, extra) {
     data = next && typeof next === "object" ? next : {};
     if (openedRecord == null && !blankRecord(data)) openedRecord = data;
-    notify(true);
+    notify(true, extra);
   }
 
   function textContent(result) {
@@ -151,7 +157,7 @@
     },
     reset: function () {
       dirty = false;
-      setData(openedRecord || config.data || {});
+      setData(openedRecord || config.data || {}, { reset: true });
     },
     execute: function (aliasName, payload) {
       var toolName = toolNameFor(aliasName);
