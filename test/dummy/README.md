@@ -8,7 +8,7 @@ This Rails app exists to validate RecordingStudio MCP UI in a real host applicat
 - `Current.actor` wiring for Recording Studio events
 - Root workspace plus seeded folder and page recordables
 - Recording Studio default layout, FlatPack assets, and Tailwind source scanning
-- Two MCP UI demos: a Project preview card and a Project editor (Status is FlatPack Select; Save/Cancel are FlatPack Buttons; the form uses `p-6`, styled by dummy Tailwind in `compiled_css_path`)
+- Two MCP UI demos: a Project preview card and a Project editor (Status is FlatPack Select; Save/Cancel are FlatPack Buttons; the form uses `p-6`, styled by dummy Tailwind in `compiled_css_path`). The editor has no repeatable rows. A host that adds them marks each row with `data-mcp-row` and, when reset should restore connect order, puts `data-mcp-restore-order` on the editor. `npm run build:widgets` bundles Stimulus and selected FlatPack controllers with esbuild into `app/assets/builds/mcp_ui_widgets.js`, which packaged documents inline.
 - Mounted `RecordingStudio::Engine` route behavior inside a host app
 - Dummy-only `/docs/*` pages for gem-specific onboarding
 

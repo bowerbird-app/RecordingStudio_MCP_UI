@@ -22,7 +22,7 @@ See [docs/api_mcp_integration.md](docs/api_mcp_integration.md) for the exact API
 ## Installation
 
 ```ruby
-gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.2.0"
+gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.3.0"
 ```
 
 ```bash
@@ -80,7 +80,7 @@ end
 ## First editable widget
 
 1. Register `mode: :edit` and `actions: { save: "your.api_action" }`.
-2. Render fields with `data-mcp-field` and a `data-mcp-save="save"` button inside `data-controller="mcp-editor"`.
+2. Render fields with `data-mcp-field` and a `data-mcp-save="save"` button inside `data-controller="mcp-editor"`. Give repeated rows Rails-style names such as `sections[][title]` so Save sends an array in DOM order.
 3. Call `await mcpUI.execute("save", payload)` from widget JS. The runtime maps `save` to the registered tool name and calls `app.callServerTool({ name, arguments })`.
 
 The packaged document carries that alias-to-tool-name map. MCP treats the call as an ordinary tool invocation and applies the server's normal authorization.
@@ -104,11 +104,73 @@ Host communication uses the official MCP Apps View SDK (`App` + `PostMessageTran
 1. `app/assets/stylesheets/recording_studio_mcp_ui/widget.css`
 2. FlatPack `variables.css` and `application.css` from `FlatPack::Engine` when that gem is installed
 3. Optional host CSS from `configuration.compiled_css_path` — one local path or an array of local paths, in order (dummy uses Tailwind then `app/assets/stylesheets/mcp_ui_widget.css`)
-4. The official SDK IIFE (`vendor/ext-apps.iife.js`) plus `runtime.js`, `controllers/editor_controller.js`, and `boot.js`
+4. The official SDK IIFE (`vendor/ext-apps.iife.js`)
+5. The host's prebuilt widget script from `configuration.widget_script_path`, when that file exists
+6. `runtime.js`, `controllers/editor_controller.js`, and `boot.js`
 
-Host CSS is read from disk at package time. Missing paths are skipped. Do not pass URLs; CSP allows only inline style.
+Host CSS and the widget script are read from disk at package time. A missing CSS path is skipped. A configured `widget_script_path` that is not a file logs a warning and is skipped. `nil` leaves the script out and stays quiet. Do not pass URLs; CSP allows only inline style and script.
 
-The document is a self-contained HTML page. It does not assume host importmaps or layout assets. The editor controller is Stimulus-shaped (`data-controller="mcp-editor"`) and talks only through `mcpUI`.
+The document is a self-contained HTML page. It does not fetch host importmaps or layout assets at view time. The editor controller is Stimulus-shaped (`data-controller="mcp-editor"`) and talks only through `mcpUI`.
+
+### Stimulus in the widget
+
+The gem does not bundle Stimulus. The host builds one classic script with esbuild (or another bundler) and points `widget_script_path` at it. `nil` leaves Stimulus out of the widget. The file is copied in before the editor runtime.
+
+```javascript
+// app/javascript/mcp_ui_widgets.js
+import { Application } from "@hotwired/stimulus"
+import TabsController from "flat_pack/controllers/tabs_controller"
+import CollectionEditorController from "flat_pack/controllers/collection_editor_controller"
+
+const application = Application.start()
+application.register("flat-pack--tabs", TabsController)
+application.register("flat-pack--collection-editor", CollectionEditorController)
+window.Stimulus = application
+```
+
+```javascript
+// esbuild.config.mjs
+import * as esbuild from "esbuild"
+import { execSync } from "node:child_process"
+import path from "node:path"
+
+const flatPack = execSync("bundle info --path flat_pack", { encoding: "utf8" }).trim()
+const javascript = path.join(flatPack, "app/javascript/flat_pack")
+
+await esbuild.build({
+  entryPoints: ["app/javascript/mcp_ui_widgets.js"],
+  bundle: true,
+  format: "iife",
+  platform: "browser",
+  outfile: "app/assets/builds/mcp_ui_widgets.js",
+  nodePaths: [path.resolve("node_modules")],
+  alias: {
+    flat_pack: javascript,
+    "controllers/flat_pack": path.join(javascript, "controllers")
+  }
+})
+```
+
+`flat_pack/controllers/...` and `controllers/flat_pack/...` are the specifiers FlatPack controllers already use. The alias points them at the installed gem. Install `@hotwired/stimulus` and `esbuild` in the host, then run `node esbuild.config.mjs`.
+
+```ruby
+config.widget_script_path = Rails.root.join("app/assets/builds/mcp_ui_widgets.js")
+```
+
+Include only controllers whose imports esbuild can bundle from disk. TipTap (`@tiptap/core`), ApexCharts, the Google Charts loader, remote search, and any controller `fetch()` still cannot run: the sandbox CSP has `connect-src 'none'`. Drag-reorder that only changes the DOM still runs. A PATCH to `orderable_url` or `reorder_url` does not. Send the new order on Save.
+
+### Structured save fields
+
+Save reads `[data-mcp-field]` elements only.
+
+- A plain name (`title`, or `data-mcp-field` without brackets) stays a string. Checkboxes are booleans. Unchecked radios are omitted.
+- Bracket names follow form semantics, in DOM order: `sections[][title]` becomes an array of objects, `tags[]` becomes an array, and `user[name]` becomes an object. A new object starts when the same child key appears again on the last array element, so a drag that moves the row moves that object.
+- `data-mcp-type="json"`, `"array"`, or `"object"` JSON-parses the value. Empty input becomes `null`, `[]`, or `{}`. A parse failure keeps the raw string.
+- Disabled fields, file inputs, and buttons are skipped.
+
+Hidden FlatPack inputs such as `id` and `_destroy` are collected only when they also have `data-mcp-field`. Names `__proto__`, `constructor`, and `prototype` are ignored.
+
+A repeatable row opts in with `data-mcp-row` on the element that should move as a unit. `tr` and `li` are ordinary markup. Put `data-mcp-restore-order` on the editor (`data-controller="mcp-editor"`) when a data refresh should move those rows back to the order from connect, then write values by that position. Without the attribute, rows stay where they are and values bind in the current DOM order.
 
 ### Widget CSS tokens
 
@@ -132,6 +194,7 @@ Override tokens (or any widget rule) in the host stylesheet:
 ```ruby
 RecordingStudio::MCP_UI.configure do |config|
   config.compiled_css_path = Rails.root.join("app/assets/stylesheets/mcp_ui_widget.css")
+  config.widget_script_path = Rails.root.join("app/assets/builds/mcp_ui_widgets.js")
 end
 ```
 

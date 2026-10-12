@@ -13,11 +13,39 @@ module RecordingStudio
       ].freeze
 
       def self.javascript
-        [read_engine_js(SDK_JS), runtime].join("\n")
+        escape_script([read_engine_js(SDK_JS), widget_script, runtime].join("\n"))
       end
 
       def self.runtime
         RUNTIME_JS.map { |relative| read_engine_js(relative) }.join("\n")
+      end
+
+      def self.widget_script
+        read_host_script(RecordingStudio::MCP_UI.configuration.widget_script_path)
+      end
+
+      def self.read_host_script(path)
+        return "" if path.blank?
+
+        file = Pathname.new(path)
+        return file.read if file.file?
+
+        warn_missing_widget_script(path)
+        ""
+      end
+
+      def self.warn_missing_widget_script(path)
+        rails_logger&.warn("Recording Studio MCP UI widget script is missing: #{path}")
+      end
+
+      def self.rails_logger
+        return unless defined?(Rails)
+
+        Rails.logger
+      end
+
+      def self.escape_script(source)
+        source.gsub(%r{</script}i, "<\\/script").gsub("<!--", "<\\!--")
       end
 
       def self.css

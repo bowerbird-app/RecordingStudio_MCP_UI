@@ -33,6 +33,17 @@ class ConfigurationTest < Minitest::Test
     assert_equal original[:compiled_css_path], @configuration.compiled_css_path if original[:compiled_css_path]
   end
 
+  def test_widget_script_path_defaults_to_nil
+    assert_nil @configuration.widget_script_path
+    assert_nil @configuration.to_h.fetch(:widget_script_path)
+  end
+
+  def test_merge_sets_widget_script_path
+    @configuration.merge!(widget_script_path: "/tmp/mcp_ui_widgets.js")
+
+    assert_equal "/tmp/mcp_ui_widgets.js", @configuration.to_h.fetch(:widget_script_path)
+  end
+
   def test_to_h_reports_registered_hook_counts
     @configuration.hooks.before_initialize { nil }
     @configuration.hooks.before_initialize { nil }

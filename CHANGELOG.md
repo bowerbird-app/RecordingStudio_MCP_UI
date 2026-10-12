@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-12
+
+### Added
+- `configuration.widget_script_path` inlines one host-built JavaScript file before the editor runtime. `nil`, or a missing file, leaves it out. The gem does not parse or rewrite that file.
+- The editor collects repeated and nested `[data-mcp-field]` names (`sections[][title]`, `tags[]`, `user[name]`) into arrays and objects in DOM order, and reads `data-mcp-type` of `json`, `array`, or `object`.
+
+### Changed
+- Unchecked radios are omitted from the save payload. A checked radio still sends its value. Checkboxes stay booleans, including inside nested names.
+- Field names `__proto__`, `constructor`, and `prototype` are ignored. Nested objects are built without a prototype, so a save payload cannot set `Object.prototype`.
+- Repeatable rows are elements with `data-mcp-row`. `data-mcp-restore-order` on the editor puts those rows back in connect order when widget data is applied, then binds by position.
+- A configured `widget_script_path` that is missing logs a warning. The file contents are still copied verbatim, with `</script` and `<!--` escaped so they cannot close the surrounding script.
+
+### Upgrade notes
+- Build Stimulus and the controllers you want with esbuild (see the README). Set `config.widget_script_path` to that file, for example `app/assets/builds/mcp_ui_widgets.js`. Leave it unset to keep the 0.2.0 script.
+- Mark each repeatable row with `data-mcp-row`. Add `data-mcp-restore-order` on the editor when a data refresh should restore the connect order before binding. `tr` and `li` are not rows.
+- TipTap, charts, remote search, and any `fetch()` inside a controller still cannot run: `connect-src` is `none`. Do not point `orderable_url` or `reorder_url` at the widget. Capture reorder in the DOM and send it on Save with `sections[][field]` names. Do not put those controllers in the bundle unless their imports are on disk.
+- `sections[id][heading]` stays a hash keyed by id. Use empty brackets (`sections[][heading]`) when Save should receive an array in DOM order. Mark each value you want saved with `data-mcp-field`; unmarked hidden inputs are ignored.
+- A name that previously relied on the last radio input winning, even when unchecked, now sends only the checked radio.
+
 ## [0.2.0] - 2026-10-12
 
 ### Added
@@ -49,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Ruby `action_executor`, `visibility_checker`, and `RecordingStudio::MCP_UI.execute`. Widget writes are ordinary MCP tool calls.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.1.1...v0.2.0
 [0.1.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/releases/tag/v0.1.0

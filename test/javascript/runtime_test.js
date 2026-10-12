@@ -268,19 +268,27 @@ test("preview data-mcp-text binds after a tool-result that arrives before boot f
   assert.equal(status.textContent, "active");
 });
 
-function inputField(name, value) {
+function inputField(name, value, options) {
+  options = options || {};
   const listeners = {};
   return {
-    type: "text",
+    type: options.type || "text",
     value: value == null ? "" : String(value),
-    getAttribute(attr) { return attr === "name" ? name : null; },
+    checked: !!options.checked,
+    disabled: !!options.disabled,
+    getAttribute(attr) {
+      if (attr === "name") return name;
+      if (attr === "data-mcp-type") return options.mcpType || null;
+      return null;
+    },
     addEventListener(type, fn) {
       (listeners[type] = listeners[type] || []).push(fn);
     },
     dispatch(type) {
       (listeners[type] || []).forEach((fn) => fn());
     },
-    dataset: {}
+    dataset: options.dataset || {},
+    closest: options.closest
   };
 }
 
@@ -542,4 +550,252 @@ test("execute maps the alias to the real tool name in callServerTool", async () 
   assert.equal(calls[0].arguments.revision, 1);
   assert.equal(result.data.title, "Saved");
   assert.equal(ctx.mcpUI.data().title, "Saved");
+});
+
+function listParent(rows) {
+  const parent = {
+    childNodes: rows.slice(),
+    insertBefore(node, ref) {
+      const nodes = this.childNodes;
+      const from = nodes.indexOf(node);
+      if (from >= 0) nodes.splice(from, 1);
+      const at = ref == null ? nodes.length : nodes.indexOf(ref);
+      nodes.splice(at < 0 ? nodes.length : at, 0, node);
+      node.parentNode = this;
+    },
+    ownerDocument: {
+      createComment() {
+        return { parentNode: null, nodeType: 8 };
+      }
+    }
+  };
+  rows.forEach((row) => { row.parentNode = parent; });
+  return parent;
+}
+
+function sectionRow(title, body, selector) {
+  const match = selector || "[data-mcp-row]";
+  const row = {
+    parentNode: null,
+    closest(asked) { return asked === match ? this : null; }
+  };
+  row.fields = [
+    inputField("sections[][title]", title, { closest: (selector) => row.closest(selector) }),
+    inputField("sections[][body]", body, { closest: (selector) => row.closest(selector) })
+  ];
+  return row;
+}
+
+function sectionRoot(parent, extras) {
+  extras = extras || {};
+  const root = editorRoot([], extras);
+  root.getAttribute = function (name) {
+    if (name === "data-mcp-restore-order") return extras.restoreOrder ? "" : null;
+    return null;
+  };
+  root.querySelectorAll = function (selector) {
+    if (selector === "[data-mcp-field]") {
+      return parent.childNodes.filter((node) => node.fields).flatMap((node) => node.fields);
+    }
+    if (selector === "[data-mcp-save]") return extras.saveButtons || [];
+    if (selector === "[data-mcp-reset]") return extras.resetButtons || [];
+    return [];
+  };
+  return root;
+}
+
+test("editor save collects repeated section fields in DOM order", async () => {
+  const opening = {
+    sections: [
+      { title: "Intro", body: "Hello" },
+      { title: "Close", body: "Goodbye" }
+    ]
+  };
+  const first = sectionRow("", "");
+  const second = sectionRow("", "");
+  const parent = listParent([first, second]);
+  const saveButton = actionButton("data-mcp-save", "save");
+  const resetButton = actionButton("data-mcp-reset", "reset");
+  const windowLike = windowStub(
+    { widgetId: "pages.editor", actions: { save: "pages.update" }, data: opening },
+    { editorRoots: [sectionRoot(parent, { saveButtons: [saveButton], resetButtons: [resetButton], restoreOrder: true })] }
+  );
+  const calls = [];
+  attachMockHost(windowLike, {
+    onToolCall(params) {
+      calls.push(params);
+      return { ok: true, data: opening };
+    }
+  });
+
+  loadEngine(windowLike, { sdk: true, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.equal(first.fields[0].value, "Intro");
+  assert.equal(second.fields[1].value, "Goodbye");
+
+  parent.insertBefore(second, first);
+  saveButton.dispatch("click");
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.equal(JSON.stringify(calls[0].arguments.sections), JSON.stringify([
+    { title: "Close", body: "Goodbye" },
+    { title: "Intro", body: "Hello" }
+  ]));
+
+  resetButton.dispatch("click");
+  assert.deepEqual(parent.childNodes.filter((node) => node.fields), [first, second]);
+  assert.equal(first.fields[0].value, "Intro");
+  assert.equal(second.fields[0].value, "Close");
+});
+
+test("editor save keeps string fields and reads json array checkbox and radio values", async () => {
+  const published = inputField("published", "", { type: "checkbox", checked: true });
+  const disabled = inputField("secret", "hidden", { disabled: true });
+  const red = inputField("color", "red", { type: "radio", checked: false });
+  const blue = inputField("color", "blue", { type: "radio", checked: true });
+  const tags = inputField("tags", '["a","b"]', { mcpType: "array" });
+  const meta = inputField("meta", '{"note":"hi"}', { mcpType: "json" });
+  const broken = inputField("raw", "{", { mcpType: "json" });
+  const heading = inputField("sections[10][heading]", "Stable");
+  const saveButton = actionButton("data-mcp-save", "save");
+  const windowLike = windowStub(
+    {
+      widgetId: "pages.editor",
+      actions: { save: "pages.update" },
+      data: { title: "Page", published: false, color: "red", tags: ["z"], meta: { note: "old" }, sections: {} }
+    },
+    {
+      editorRoots: [
+        editorRoot(
+          [published, disabled, red, blue, tags, meta, broken, heading],
+          { saveButtons: [saveButton] }
+        )
+      ]
+    }
+  );
+  const calls = [];
+  attachMockHost(windowLike, {
+    onToolCall(params) {
+      calls.push(params);
+      return { ok: true, data: { title: "Page" } };
+    }
+  });
+
+  loadEngine(windowLike, { sdk: true, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.equal(published.checked, false);
+  assert.equal(red.checked, true);
+  assert.equal(blue.checked, false);
+  assert.equal(tags.value, '["z"]');
+
+  published.checked = true;
+  red.checked = false;
+  blue.checked = true;
+  tags.value = '["a","b"]';
+  meta.value = '{"note":"hi"}';
+  broken.value = "{";
+  saveButton.dispatch("click");
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.equal(calls[0].arguments.published, true);
+  assert.equal(calls[0].arguments.secret, undefined);
+  assert.equal(calls[0].arguments.color, "blue");
+  assert.equal(JSON.stringify(calls[0].arguments.tags), JSON.stringify(["a", "b"]));
+  assert.equal(JSON.stringify(calls[0].arguments.meta), JSON.stringify({ note: "hi" }));
+  assert.equal(calls[0].arguments.raw, "{");
+  assert.equal(JSON.stringify(calls[0].arguments.sections), JSON.stringify({ 10: { heading: "Stable" } }));
+});
+
+test("editor save ignores prototype keys", async () => {
+  const proto = inputField("user[__proto__][polluted]", "yes");
+  const viaConstructor = inputField("constructor[prototype][polluted]", "yes");
+  const name = inputField("user[name]", "Ada");
+  const saveButton = actionButton("data-mcp-save", "save");
+  const windowLike = windowStub(
+    { widgetId: "pages.editor", actions: { save: "pages.update" }, data: { user: { name: "" } } },
+    { editorRoots: [editorRoot([proto, viaConstructor, name], { saveButtons: [saveButton] })] }
+  );
+  const calls = [];
+  attachMockHost(windowLike, {
+    onToolCall(params) {
+      calls.push(params);
+      return { ok: true, data: { user: { name: "Ada" } } };
+    }
+  });
+
+  try {
+    loadEngine(windowLike, { sdk: true, boot: true });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    name.value = "Ada";
+    saveButton.dispatch("click");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assert.equal({}.polluted, undefined);
+    assert.equal(Object.prototype.polluted, undefined);
+    assert.equal(calls[0].arguments.user.name, "Ada");
+    assert.equal(calls[0].arguments.user.polluted, undefined);
+  } finally {
+    delete Object.prototype.polluted;
+  }
+});
+
+test("editor reset restores only rows that opt in", async () => {
+  const opening = {
+    sections: [
+      { title: "Intro", body: "Hello" },
+      { title: "Close", body: "Goodbye" }
+    ]
+  };
+  const plain = sectionRow("", "", "tr");
+  const marked = sectionRow("", "", "li");
+  const parent = listParent([plain, marked]);
+  const resetButton = actionButton("data-mcp-reset", "reset");
+  const windowLike = windowStub(
+    { widgetId: "pages.editor", actions: { save: "pages.update" }, data: opening },
+    { editorRoots: [sectionRoot(parent, { resetButtons: [resetButton], restoreOrder: true })] }
+  );
+  attachMockHost(windowLike, { onToolCall() { return { ok: true, data: opening }; } });
+
+  loadEngine(windowLike, { sdk: true, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  parent.insertBefore(marked, plain);
+  resetButton.dispatch("click");
+  assert.deepEqual(parent.childNodes.filter((node) => node.fields), [marked, plain]);
+});
+
+test("editor reset leaves opted-in rows in place without data-mcp-restore-order", async () => {
+  const opening = {
+    sections: [
+      { title: "Intro", body: "Hello" },
+      { title: "Close", body: "Goodbye" }
+    ]
+  };
+  const first = sectionRow("", "");
+  const second = sectionRow("", "");
+  const parent = listParent([first, second]);
+  const resetButton = actionButton("data-mcp-reset", "reset");
+  const windowLike = windowStub(
+    { widgetId: "pages.editor", actions: { save: "pages.update" }, data: opening },
+    { editorRoots: [sectionRoot(parent, { resetButtons: [resetButton] })] }
+  );
+  attachMockHost(windowLike, { onToolCall() { return { ok: true, data: opening }; } });
+
+  loadEngine(windowLike, { sdk: true, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  parent.insertBefore(second, first);
+  resetButton.dispatch("click");
+  assert.deepEqual(parent.childNodes.filter((node) => node.fields), [second, first]);
 });

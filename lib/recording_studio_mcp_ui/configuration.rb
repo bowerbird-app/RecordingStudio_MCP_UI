@@ -3,18 +3,20 @@
 module RecordingStudio
   module McpUi
     class Configuration
-      attr_accessor :compiled_css_path
+      attr_accessor :compiled_css_path, :widget_script_path
       attr_reader :hooks, :registry
 
       def initialize
         @hooks = RecordingStudio::Hooks.new
         @registry = Registry.new
         @compiled_css_path = nil
+        @widget_script_path = nil
       end
 
       def to_h
         {
           compiled_css_path: compiled_css_path,
+          widget_script_path: widget_script_path,
           hooks_registered: hooks.registered_counts
         }
       end
