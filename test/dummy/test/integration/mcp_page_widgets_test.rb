@@ -51,7 +51,7 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
   test "resources read renders each page widget" do
     expectations = {
       "ui://pages/sections" => [ "flat-pack-collection-editor", "Add section", "pages.update", 'data-mcp-list="sections"', "data-mcp-list-item" ],
-      "ui://pages/links" => [ "Label", "Link", 'data-mcp-list="links"', "No data available", 'name="links[][label]"' ],
+      "ui://pages/links" => [ "Label", "Link", 'data-mcp-list="links"', "No data available", 'name="links[][label]"', 'data-mcp-reconnect="flat-pack--table-sortable"' ],
       "ui://pages/tabs" => [ "Story", "Outline", "flat-pack--tabs", 'data-mcp-list="sections"' ],
       "ui://pages/topics" => [ "No topics yet.", 'data-mcp-list="topics"', "data-mcp-list-item" ],
       "ui://pages/notes" => [ "flat-pack--accordion", "Nothing here yet.", 'data-mcp-list="sections"', 'data-mcp-text="heading"' ]
@@ -143,6 +143,7 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     assert_includes links, "data-mcp-field"
     assert_includes links, "data-mcp-attr-id"
     assert_includes links, "flat-pack--table-sortable"
+    assert_includes links, 'data-mcp-reconnect="flat-pack--table-sortable"'
     assert_includes links, "No data available"
     refute_match(/data-controller="mcp-editor"[^>]*data-mcp-restore-order/, links)
     body = links[/<tbody\b[^>]*>.*?<\/tbody>/m]
