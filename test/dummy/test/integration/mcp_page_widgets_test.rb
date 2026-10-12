@@ -79,6 +79,10 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     assert_includes sections, "flat-pack-collection-editor--orderable"
     assert_includes sections, "Open"
     assert_includes sections, "Say hello."
+    assert_match(/data-controller="mcp-editor"[^>]*data-mcp-restore-order/, sections)
+    section_rows = sections.scan(/<li\b[^>]*flat-pack-collection-editor-row[^>]*>/)
+    assert_equal 3, section_rows.size
+    section_rows.each { |row| assert_includes row, "data-mcp-row" }
     assert_includes sections, 'data-mcp-save="save"'
     assert_includes sections, 'data-mcp-error="title"'
     assert_includes sections, 'role="alert"'
@@ -106,6 +110,7 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
       assert_includes template, %(name="sections[][#{key}]"), key
       assert_includes template, "data-mcp-field"
     end
+    assert_includes template, "data-mcp-row"
     refute_includes sections, "sections[open][heading]"
     handles = sections.scan(%r{<button[^>]*flat-pack-collection-editor-handle[^>]*>.*?</button>}m)
     assert_equal 3, handles.size
@@ -129,6 +134,14 @@ class McpPageWidgetsTest < ActionDispatch::IntegrationTest
     assert_includes links, 'name="links[][id]"'
     assert_includes links, "data-mcp-field"
     assert_includes links, "flat-pack--table-sortable"
+    refute_match(/data-controller="mcp-editor"[^>]*data-mcp-restore-order/, links)
+    body = links[/<tbody\b[^>]*>.*?<\/tbody>/m]
+    assert body
+    body_rows = body.scan(/<tr\b[^>]*>/)
+    assert_equal 2, body_rows.size
+    body_rows.each { |row| assert_includes row, "data-mcp-row" }
+    header = links[/<thead\b[^>]*>.*?<\/thead>/m]
+    refute_includes header, "data-mcp-row"
     assert_includes links, 'data-mcp-save="save"'
     grips = links.scan(%r{<span[^>]*cursor-grab[^>]*>⋮</span>})
     assert_equal 2, grips.size

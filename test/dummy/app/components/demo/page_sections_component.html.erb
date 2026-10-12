@@ -8,7 +8,7 @@
     ) %>
   <% end %>
   <% card.body do %>
-    <div data-controller="mcp-editor" class="mcp-ui-form">
+    <div data-controller="mcp-editor" data-mcp-restore-order class="mcp-ui-form">
       <%= render FlatPack::TextInput::Component.new(
         name: "title",
         id: "page_title",
@@ -37,7 +37,7 @@
         orderable: true
       ) do |editor| %>
         <% sections.each do |section| %>
-          <% editor.with_row(form: section_form(section), record_id: section["id"], persisted: true) do |row| %>
+          <% editor.with_row(form: section_form(section), record_id: section["id"], persisted: true, data: { mcp_row: true }) do |row| %>
             <% row.with_field do %>
               <%= render heading_input(section, section["id"]) %>
             <% end %>
@@ -50,7 +50,8 @@
           <% template = FlatPack::CollectionEditor::Row::Component.new(
             form: section_form("id" => "", "heading" => "", "body" => ""),
             persisted: true,
-            record_id: "NEW_RECORD"
+            record_id: "NEW_RECORD",
+            data: { mcp_row: true }
           ) %>
           <% template.with_field do %>
             <%= render heading_input({ "heading" => "" }, "NEW_RECORD") %>

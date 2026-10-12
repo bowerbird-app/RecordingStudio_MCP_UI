@@ -5,7 +5,7 @@ module Demo
     include McpWidgetChrome
 
     def table
-      component = FlatPack::Table::Component.new(
+      component = PageLinksTable.new(
         data: sorted_links,
         sort: sort_key,
         direction: sort_direction,
