@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.0] - 2026-10-12
 
 ### Added
-- Display lists in the packaged runtime. A container uses `data-mcp-list`, one item lives in `<template data-mcp-list-item>`, and the empty state uses `data-mcp-list-empty`. An empty `data-mcp-text` fills a scalar. A named `data-mcp-text` fills that field on an object. Both reads use own properties only.
+- Display lists in the packaged runtime. A container uses `data-mcp-list`, one item lives in `<template data-mcp-list-item>`, and the empty state uses `data-mcp-list-empty`. An empty `data-mcp-text` fills a scalar. A named `data-mcp-text` fills that field on an object. Both reads use own properties only. Items that are not plain objects are skipped, except a string, number, or boolean in a scalar template, so nulls, arrays, and stray values do not become blank rows.
 - The same clone fills `[data-mcp-field]` through the editor's field writer and keeps the input `name`, so a template row can save `links[][label]` in DOM order. `[data-mcp-row]` marks that row. The name parser is the editor's `place` parser.
 - `data-mcp-attr-<name>` sets one allowlisted attribute from a field or from `$index` (`note-$index-content`). Allowed names are `id`, `class`, `title`, `value`, `data-*`, and `aria-*`. `href` and `src` are written only for `http:`, `https:`, `mailto:`, or a relative URL.
 

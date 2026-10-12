@@ -122,12 +122,14 @@ Host communication uses the official MCP Apps View SDK (`App` + `PostMessageTran
 | Attribute | Where | Meaning |
 | --- | --- | --- |
 | `data-mcp-list` | container | Key on the widget record whose value is the array |
-| `data-mcp-list-item` | `<template>` | One item. Cloned for each entry |
+| `data-mcp-list-item` | `<template>` | One item. Cloned for each plain object. A string, number, or boolean is cloned only when the template's text slot is empty |
 | `data-mcp-list-empty` | element | Shown when the array is missing or empty. Hidden when it has entries |
 | `data-mcp-text` | inside the item | Field name on an object. Leave it empty for a scalar such as a topic string |
 | `data-mcp-field` | input inside the item | Value is set from the item. The name stays. `links[][label]` reads the item's `label`. A missing key keeps the template value |
 | `data-mcp-row` | row inside the item | Opts the clone into save order. The binder does not remove a row it did not clone |
 | `data-mcp-attr-<name>` | element inside the item | Sets one allowlisted attribute. The value is a field name, or a string containing `$index` (`note-$index-content`) |
+
+Null, arrays, and other values that are not plain objects are skipped, so they do not become blank rows. A string, number, or boolean still clones when the template has an empty `data-mcp-text` and no named text field, which is how a topic chip renders. `$index` counts only the items that were cloned.
 
 A tool result removes only `[data-mcp-list-entry]` clones that belong to that list. A row a collection editor added stays. The empty element it toggles is the one whose list is that container, so a nested list keeps its own empty state. An item with an `id` reuses the clone from the previous result: text slots and allowlisted attributes refresh, and the inputs keep what the person typed. Items with no `id` are cloned again. `mcpUI.reset()` writes the opening record back into a reused row. `data-mcp-list-entry` and `data-mcp-list-key` are runtime markers; do not author them.
 

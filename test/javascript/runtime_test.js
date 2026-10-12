@@ -1039,6 +1039,47 @@ test("tool-result with 3 topics renders 3 chips and an empty list clears them", 
   assert.equal(topics.empty.hasAttribute("hidden"), false);
 });
 
+test("list binder skips items that are not plain objects", async () => {
+  const label = listElement("input", { type: "text", name: "links[][label]", "data-mcp-field": "true", value: "" });
+  const row = listElement("tr", { "data-mcp-row": "", "data-mcp-attr-id": "row-$index" }, [ label ]);
+  const linkTemplate = listElement("template", { "data-mcp-list-item": "" });
+  linkTemplate.content = new ListFragment([ row ]);
+  const linkEmpty = listElement("p", { "data-mcp-list-empty": "" });
+  const links = listElement("tbody", { "data-mcp-list": "links" }, [ linkTemplate, linkEmpty ]);
+  const topicLabel = listElement("span", { "data-mcp-text": "" });
+  const topicTemplate = listElement("template", { "data-mcp-list-item": "" });
+  topicTemplate.content = new ListFragment([ topicLabel ]);
+  const topicEmpty = listElement("p", { "data-mcp-list-empty": "" });
+  const topics = listElement("div", { "data-mcp-list": "topics" }, [ topicTemplate, topicEmpty ]);
+  const windowLike = windowStub({ widgetId: "pages.links", data: {} });
+  windowLike.document = listDocument({ widgetId: "pages.links", data: {} }, listElement("div", {}, [ links, topics ]));
+  attachFakeApp(windowLike, function (next) {
+    next({
+      content: [],
+      structuredContent: {
+        links: [ null, "blank", [ "nested" ], 4, { id: "notes", label: "Notes" } ],
+        topics: [ "Launch", null, [ "nope" ], "Story", { label: "Hidden" } ]
+      }
+    });
+  });
+
+  loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  const entries = links.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].getAttribute("id"), "row-0");
+  assert.equal(entries[0].querySelectorAll("[data-mcp-field]")[0].value, "Notes");
+  assert.equal(linkEmpty.hasAttribute("hidden"), true);
+
+  const chips = topics.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(chips.length, 3);
+  assert.equal(chips[0].textContent, "Launch");
+  assert.equal(chips[1].textContent, "Story");
+  assert.equal(chips[2].textContent, "");
+  assert.equal(topicEmpty.hasAttribute("hidden"), true);
+});
+
 test("list binder fills object fields and leaves them alone when the form is dirty", async () => {
   const heading = listElement("p", { "data-mcp-text": "heading" });
   const body = listElement("p", { "data-mcp-text": "body" });

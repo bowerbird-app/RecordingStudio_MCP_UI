@@ -43,6 +43,26 @@
     return !!item && typeof item === "object" && !Array.isArray(item);
   }
 
+  function scalarItem(item) {
+    var kind = typeof item;
+    return kind === "string" || kind === "number" || kind === "boolean";
+  }
+
+  // A scalar fills a chip. A named text field would stay blank, so only an
+  // empty data-mcp-text, with no named slot beside it, accepts one.
+  function templateAcceptsScalar(template) {
+    var bare = false;
+    var named = false;
+    clonedElements(template).forEach(function (node) {
+      elementsWithin(node).forEach(function (element) {
+        if (!element.hasAttribute("data-mcp-text")) return;
+        if (element.getAttribute("data-mcp-text")) named = true;
+        else bare = true;
+      });
+    });
+    return bare && !named;
+  }
+
   function fillText(node, item) {
     var slots = [];
     if (node.hasAttribute("data-mcp-text")) slots.push(node);
@@ -265,10 +285,15 @@
     var template = owned(list, "template[data-mcp-list-item]")[0];
     if (!template || !template.content || typeof template.content.cloneNode !== "function") return;
     var items = listItems(data, list.getAttribute("data-mcp-list") || "");
+    var scalars = templateAcceptsScalar(template);
+    var kept = [];
+    items.forEach(function (item) {
+      if (itemRecord(item) || (scalars && scalarItem(item))) kept.push(item);
+    });
     var pools = entryPools(owned(list, "[data-mcp-list-entry]"));
     var live = [];
     var reusedAny = false;
-    items.forEach(function (item, index) {
+    kept.forEach(function (item, index) {
       var taken = nodesFor(template, pools, item, index, refill);
       if (taken.reused) reusedAny = true;
       taken.nodes.forEach(function (node) {
@@ -279,7 +304,7 @@
     owned(list, "[data-mcp-list-entry]").forEach(function (node) {
       if (live.indexOf(node) === -1) node.remove();
     });
-    toggleEmpty(list, items.length === 0);
+    toggleEmpty(list, kept.length === 0);
     if (live.length && !reusedAny) refreshControllers(list, live);
   }
 
