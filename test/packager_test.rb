@@ -83,6 +83,8 @@ class PackagerTest < Minitest::Test
     assert_includes document.html, "--mcp-ui-surface-scheme: light"
     assert_includes document.html, "color-scheme: var(--mcp-ui-surface-scheme)"
     assert_includes document.html, "color-scheme: light dark"
+    assert_includes document.html, '[class*="card-background-color"] .mcp-ui-card'
+    assert_includes document.html, "#mcp-ui-root:not(:has("
     refute_includes document.html, "CanvasText"
     refute_includes document.html, "background: var(--surface-color, #f8f8f5)"
   end

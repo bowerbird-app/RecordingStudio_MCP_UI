@@ -40,8 +40,31 @@ html {
   --mcp-ui-field-border-color: color-mix(in srgb, var(--mcp-ui-surface-color) 22%, var(--mcp-ui-surface));
   --mcp-ui-status-loading-color: color-mix(in srgb, var(--mcp-ui-surface-color) 45%, var(--mcp-ui-surface));
   color-scheme: var(--mcp-ui-surface-scheme);
-  background: var(--mcp-ui-surface);
   color: var(--mcp-ui-surface-color);
+}
+
+#mcp-ui-root {
+  background: transparent;
+}
+
+#mcp-ui-root:not(:has([class*="card-background-color"], [class*="card-background-muted-color"])) {
+  background: var(--mcp-ui-surface);
+}
+
+.mcp-ui-card,
+.mcp-ui-form {
+  background: var(--mcp-ui-surface);
+}
+
+[class*="card-background-color"] .mcp-ui-card,
+[class*="card-background-color"] .mcp-ui-form,
+[class*="card-background-muted-color"] .mcp-ui-card,
+[class*="card-background-muted-color"] .mcp-ui-form,
+.mcp-ui-card .mcp-ui-card,
+.mcp-ui-form .mcp-ui-card,
+.mcp-ui-card .mcp-ui-form,
+.mcp-ui-form .mcp-ui-form {
+  background: transparent;
 }
 
 .mcp-ui-card,

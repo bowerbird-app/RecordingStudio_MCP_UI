@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `configuration.compiled_css_path` accepts one local path or an array of local paths. Files are inlined in order after the gem (and Flatpack) CSS.
 
 ### Changed
-- Packaged widget page (`html` / `body`) background defaults to transparent. The widget root is a light card (`--mcp-ui-surface: #fff`, `--mcp-ui-surface-color: #1f1f1f`).
+- Packaged widget page (`html` / `body`) background defaults to transparent. A bare widget paints a light card (`--mcp-ui-surface: #fff`, `--mcp-ui-surface-color: #1f1f1f`). Nested `.mcp-ui-card` / `.mcp-ui-form` inside a component card stay transparent so that card's colour shows through.
 - Widget documents declare `color-scheme: light dark` on `:root[data-theme]`. The page is transparent only when the OS/browser color preference matches the host's color scheme; otherwise the browser paints a solid canvas. Following the host theme is not implemented.
 - Installer comments and README document host CSS overrides.
 
