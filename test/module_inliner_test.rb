@@ -26,6 +26,22 @@ class ModuleInlinerTest < Minitest::Test
     assert_equal ["./parts", "./ns", "./side", "only", "./parts"], result.specifiers
   end
 
+  def test_keeps_an_escaped_character_class_inside_the_regex
+    result = RecordingStudio::MCP_UI::ModuleInliner.convert(<<~'JS')
+      export function tokens(value) {
+        return value.match(/[^\s]+/g) || [];
+      }
+      export function words(value) {
+        return value.split(/\s+/);
+      }
+    JS
+
+    refute_match(/(?<![\w.])export\b/, result.code)
+    assert_includes result.code, '/[^\s]+/g'
+    assert_includes result.code, '/\s+/'
+    assert_includes result.code, "exports.tokens = tokens;"
+  end
+
   def test_reads_an_escaped_module_specifier
     result = RecordingStudio::MCP_UI::ModuleInliner.convert("import foo from \"a\\nb\";\n")
 

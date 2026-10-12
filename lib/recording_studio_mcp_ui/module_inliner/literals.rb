@@ -86,8 +86,11 @@ module RecordingStudio
       def walk_regex_class
         advance
         until !more? || current == "]"
-          advance(2) if current == "\\"
-          advance
+          if current == "\\"
+            advance(2)
+          else
+            advance
+          end
         end
         advance if current == "]"
       end

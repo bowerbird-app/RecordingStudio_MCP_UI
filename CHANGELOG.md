@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Controllers whose static imports are remote URLs or missing from the import map are omitted, with a comment naming the import. Dynamic `import()` is left unchanged.
 - The editor collects repeated and nested `[data-mcp-field]` names (`sections[][title]`, `tags[]`, `user[name]`) into arrays and objects in DOM order, and reads `data-mcp-type` of `json`, `array`, or `object`.
 
+### Fixed
+- Regular expressions with an escaped character in a class (`/[^\s]+/g`) stay inside the regex. Stimulus can be inlined without leaving an `export` in the widget script.
+
 ### Changed
 - Unchecked radios are omitted from the save payload. A checked radio still sends its value. Checkboxes stay booleans, including inside nested names.
 - Reset puts dragged rows back in the order captured at connect when widget data is still the opening record, then binds by position.
