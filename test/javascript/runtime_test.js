@@ -312,7 +312,10 @@ function editorRoot(fields, extras) {
   extras = extras || {};
   return {
     classList: { toggle() {}, add() {} },
-    querySelector() { return null; },
+    querySelector(selector) {
+      if (selector === "[data-mcp-status]") return extras.statusNode || null;
+      return null;
+    },
     querySelectorAll(selector) {
       if (selector === "[data-mcp-field]") return fields;
       if (selector === "[data-mcp-save]") return extras.saveButtons || [];
@@ -798,6 +801,66 @@ test("editor reset leaves opted-in rows in place without data-mcp-restore-order"
   parent.insertBefore(second, first);
   resetButton.dispatch("click");
   assert.deepEqual(parent.childNodes.filter((node) => node.fields), [second, first]);
+});
+
+test("editor save status uses packaged i18n with english fallbacks", async () => {
+  const statusNode = { textContent: "", hidden: true, dataset: {} };
+  const saveButton = actionButton("data-mcp-save", "save");
+  const windowLike = windowStub(
+    {
+      widgetId: "projects.editor",
+      actions: { save: "projects.update" },
+      data: { title: "Beach House" },
+      i18n: {
+        editor: { saving: "HOST Saving…", saved: "HOST Saved", save_failed: "HOST Save failed" }
+      }
+    },
+    {
+      editorRoots: [
+        editorRoot([], { saveButtons: [saveButton], statusNode })
+      ]
+    }
+  );
+  const ctx = loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await ctx.mcpUI.start();
+  ctx.mcpUI.execute = function () { return Promise.reject({}); };
+
+  saveButton.dispatch("click");
+  assert.equal(statusNode.textContent, "HOST Saving…");
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.equal(statusNode.dataset.kind, "error");
+  assert.equal(statusNode.textContent, "HOST Save failed");
+});
+
+test("editor save status falls back to english when i18n blob is absent", async () => {
+  const statusNode = { textContent: "", hidden: true, dataset: {} };
+  const saveButton = actionButton("data-mcp-save", "save");
+  const windowLike = windowStub(
+    {
+      widgetId: "projects.editor",
+      actions: { save: "projects.update" },
+      data: { title: "Beach House" }
+    },
+    {
+      editorRoots: [
+        editorRoot([], { saveButtons: [saveButton], statusNode })
+      ]
+    }
+  );
+  const ctx = loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await ctx.mcpUI.start();
+  ctx.mcpUI.execute = function () { return Promise.reject({}); };
+
+  saveButton.dispatch("click");
+  assert.equal(statusNode.textContent, "Saving…");
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.equal(statusNode.textContent, "Save failed");
 });
 
 class ListNode {
@@ -1386,12 +1449,15 @@ test("list binder rejects javascript hrefs and event-handler attributes", async 
 });
 
 test("list binder refuses stimulus controller action and target attributes", async () => {
-  const controller = listElement("span", { "data-mcp-attr-data-controller": "controller" });
-  const action = listElement("span", { "data-mcp-attr-DATA-ACTION": "action" });
+  const planted = listElement("span", {
+    "data-controller": "flat-pack--table-sortable",
+    "data-mcp-attr-data-controller": "controller"
+  });
+  const action = listElement("span", { "data-mcp-attr-DATA-ACTION": "action", "data-action": "click->evil#run" });
   const target = listElement("span", { "data-mcp-attr-data-flat-pack--table-sortable-target": "target" });
   const mixedTarget = listElement("span", { "data-mcp-attr-Data-Other-Target": "target" });
   const kept = listElement("span", { "data-mcp-attr-data-id": "id" });
-  const row = listElement("div", {}, [ controller, action, target, mixedTarget, kept ]);
+  const row = listElement("div", {}, [ planted, action, target, mixedTarget, kept ]);
   const template = listElement("template", { "data-mcp-list-item": "" });
   template.content = new ListFragment([ row ]);
   const list = listElement("div", { "data-mcp-list": "links" }, [ template ]);
@@ -1550,108 +1616,122 @@ test("list binder ignores inherited keys and leaves a nested list alone", async 
   assert.equal(links.querySelectorAll("[data-mcp-list-entry]").length, 1);
 });
 
-test("list binder reuses keyed rows and refreshes a controller only for new clones", async () => {
+test("a new sortable row beside a kept row drags and saves in the new order", async () => {
+  function field(name, value) {
+    const input = listElement("input", { type: name === "links[][id]" ? "hidden" : "text", name, "data-mcp-field": "true" });
+    if (value != null) input.value = value;
+    return input;
+  }
   const row = listElement("tr", {
     "data-mcp-row": "",
     "data-mcp-attr-data-id": "id",
-    "data-mcp-attr-id": "row-$index",
     "data-flat-pack--table-sortable-target": "row"
   });
-  const label = listElement("input", { type: "text", name: "links[][label]", "data-mcp-field": "true" });
-  row.appendChild(label);
+  row.appendChild(field("links[][id]"));
+  row.appendChild(field("links[][label]"));
   const template = listElement("template", { "data-mcp-list-item": "" });
   template.content = new ListFragment([ row ]);
   const list = listElement("tbody", { "data-mcp-list": "links" }, [ template ]);
-  const shell = listElement("div", { "data-controller": "mcp-editor flat-pack--table-sortable" }, [ list ]);
-  const windowLike = windowStub({ widgetId: "pages.links", data: {} });
-  windowLike.document = listDocument({ widgetId: "pages.links", data: {} }, listElement("div", {}, [ shell ]));
-  let connected = true;
-  let cycles = 0;
-  const controller = {
-    connect() {
-      cycles += 1;
-      const found = [];
-      function walk(node) {
-        if (!node || node.nodeType !== 1 || node.tagName === "TEMPLATE") return;
-        if (node.getAttribute("data-flat-pack--table-sortable-target") === "row") found.push(node);
-        (node.childNodes || []).forEach(walk);
-      }
-      walk(shell);
-      found.forEach((entry) => {
-        entry._binds = (entry._binds || 0) + 1;
-        entry.setAttribute("draggable", "true");
-      });
-    }
-  };
-  const writeAttribute = shell.setAttribute.bind(shell);
-  shell.setAttribute = function (name, value) {
-    writeAttribute(name, value);
-    if (name !== "data-controller") return;
-    const present = String(value).split(/\s+/).indexOf("flat-pack--table-sortable") !== -1;
-    if (!present && connected) connected = false;
-    else if (present && !connected) {
-      connected = true;
-      controller.connect();
-    }
+  const save = listElement("button", { type: "button", "data-mcp-save": "save" });
+  const shell = listElement("div", { "data-controller": "mcp-editor flat-pack--table-sortable" }, [ list, save ]);
+  const calls = [];
+  const windowLike = windowStub({ widgetId: "pages.links", actions: { save: "pages.update" }, data: {} });
+  windowLike.document = listDocument(
+    { widgetId: "pages.links", actions: { save: "pages.update" }, data: {} },
+    listElement("div", {}, [ shell ])
+  );
+  windowLike.parent = { postMessage() {} };
+  windowLike.McpApps = {
+    App: function App() {
+      this.callServerTool = function (params) {
+        calls.push(params);
+        return Promise.resolve({
+          content: [],
+          structuredContent: { ok: true, data: params.arguments }
+        });
+      };
+    },
+    PostMessageTransport: function PostMessageTransport() {}
   };
   let handler;
-  attachFakeApp(windowLike, function (next) { handler = next; });
+  Object.defineProperty(windowLike.McpApps.App.prototype, "ontoolresult", {
+    configurable: true,
+    get() { return this._ontoolresult; },
+    set(fn) { this._ontoolresult = fn; handler = fn; }
+  });
+  windowLike.McpApps.App.prototype.connect = function connect() {
+    return Promise.resolve();
+  };
+  const place = list.insertBefore.bind(list);
+  list.insertBefore = function (node, ref) {
+    const fresh = node.parentNode !== list;
+    const placed = place(node, ref);
+    if (fresh && node.getAttribute("data-flat-pack--table-sortable-target") === "row") {
+      node._binds = (node._binds || 0) + 1;
+      node.setAttribute("draggable", "true");
+    }
+    return placed;
+  };
+  const controllerWrites = [];
+  const writeAttribute = shell.setAttribute.bind(shell);
+  shell.setAttribute = function (name, value) {
+    if (name === "data-controller") controllerWrites.push(value);
+    writeAttribute(name, value);
+  };
 
   loadEngine(windowLike, { sdk: false, boot: true });
   await new Promise((resolve) => setTimeout(resolve, 0));
   await new Promise((resolve) => setTimeout(resolve, 0));
-  assert.equal(cycles, 0);
 
   function deliver(links) {
-    handler({ content: [], structuredContent: { links: links } });
-    return new Promise((resolve) => setTimeout(resolve, 0));
+    handler({ content: [], structuredContent: { links } });
   }
 
-  await deliver([
+  deliver([
     { id: "notes", label: "Notes" },
-    { id: "press", label: "Press" },
-    { id: "site", label: "Site" }
+    { id: "press", label: "Press" }
   ]);
 
-  let entries = list.querySelectorAll("[data-mcp-list-entry]");
-  assert.equal(entries.length, 3);
-  assert.equal(cycles, 1);
-  assert.deepEqual(entries.map((entry) => entry._binds), [ 1, 1, 1 ]);
-  assert.deepEqual(entries.map((entry) => entry.getAttribute("draggable")), [ "true", "true", "true" ]);
-  assert.equal(shell.getAttribute("data-controller"), "mcp-editor flat-pack--table-sortable");
   const labelOf = (entry) => entry.querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][label]");
+  let entries = list.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(entries.length, 2);
+  assert.deepEqual(entries.map((entry) => entry._binds), [ 1, 1 ]);
+  assert.deepEqual(entries.map((entry) => entry.getAttribute("draggable")), [ "true", "true" ]);
   const notes = entries[0];
   labelOf(notes).value = "Draft notes";
 
-  // A later result that keeps a row must not cycle the controller. FlatPack
-  // table sortable binds drag listeners in connect with .bind(this), and
-  // removeDragListeners does not remove them. A new row beside a kept row
-  // stays unbound until that controller implements rowTargetConnected.
-  await deliver([
-    { id: "site", label: "Server site" },
-    { id: "notes", label: "Server notes" }
+  deliver([
+    { id: "notes", label: "Server notes" },
+    { id: "site", label: "Site" }
   ]);
 
   entries = list.querySelectorAll("[data-mcp-list-entry]");
-  assert.equal(cycles, 1);
   assert.equal(entries.length, 2);
-  assert.equal(entries[1], notes);
-  assert.equal(labelOf(entries[1]).value, "Draft notes");
-  assert.deepEqual(entries.map((entry) => entry.getAttribute("data-id")), [ "site", "notes" ]);
-  assert.deepEqual(entries.map((entry) => entry.getAttribute("id")), [ "row-0", "row-1" ]);
-  assert.deepEqual(entries.map((entry) => entry._binds), [ 1, 1 ]);
+  assert.equal(entries[0], notes);
+  assert.equal(notes._binds, 1);
+  assert.equal(labelOf(notes).value, "Draft notes");
+  const site = entries[1];
+  assert.equal(site._binds, 1);
+  assert.equal(site.getAttribute("draggable"), "true");
+  assert.equal(site.getAttribute("data-flat-pack--table-sortable-target"), "row");
+  assert.deepEqual(controllerWrites, []);
+  assert.equal(shell.getAttribute("data-controller"), "mcp-editor flat-pack--table-sortable");
 
-  await deliver([
-    { id: "alpha", label: "Alpha" },
-    { id: "beta", label: "Beta" }
-  ]);
+  list.insertBefore(site, notes);
+  entries = list.querySelectorAll("[data-mcp-list-entry]");
+  assert.deepEqual(entries.map((entry) => entry.getAttribute("data-id")), [ "site", "notes" ]);
+  save.dispatchEvent({ type: "click" });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
 
   entries = list.querySelectorAll("[data-mcp-list-entry]");
-  assert.equal(cycles, 2);
-  assert.deepEqual(entries.map((entry) => entry.getAttribute("data-id")), [ "alpha", "beta" ]);
-  assert.deepEqual(entries.map((entry) => entry._binds), [ 1, 1 ]);
-  assert.deepEqual(entries.map((entry) => labelOf(entry).value), [ "Alpha", "Beta" ]);
-  assert.equal(notes.parentNode, null);
+  assert.deepEqual(entries.map((entry) => entry.getAttribute("data-id")), [ "site", "notes" ]);
+  assert.equal(site._binds, 1);
+  assert.equal(notes._binds, 1);
+  assert.equal(JSON.stringify(calls[0].arguments.links), JSON.stringify([
+    { id: "site", label: "Site" },
+    { id: "notes", label: "Draft notes" }
+  ]));
 });
 
 function elementWithTag(root, tag) {

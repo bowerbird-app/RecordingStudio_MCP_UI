@@ -43,6 +43,11 @@ class McpUiDemoTest < ActionDispatch::IntegrationTest
     refute_nil config
     parsed = JSON.parse(config)
     assert_equal "projects.update", parsed.fetch("actions").fetch("save")
+    assert_equal "Saving…", parsed.dig("i18n", "editor", "saving")
+    assert_equal "Saved", parsed.dig("i18n", "editor", "saved")
+    # Boot-order host override covers the rarely shown save_failed key.
+    assert_equal "HOST Save failed", parsed.dig("i18n", "editor", "save_failed")
+    refute parsed.fetch("i18n").key?("runtime")
     gem_css_index = response.body.index("--mcp-ui-background: transparent")
     host_css_index = response.body.index("--mcp-ui-padding: 1.25rem")
     refute_nil gem_css_index

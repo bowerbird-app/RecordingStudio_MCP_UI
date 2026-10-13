@@ -22,7 +22,7 @@ See [docs/api_mcp_integration.md](docs/api_mcp_integration.md) for the exact API
 ## Installation
 
 ```ruby
-gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.4.0"
+gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.5.0"
 ```
 
 ```bash
@@ -30,7 +30,7 @@ bundle install
 bin/rails generate recording_studio_mcp_ui:install
 ```
 
-The engine keeps Recording Studio conventions: `RecordingStudio::Hooks`, default layout in host apps, and strict recordable declarations. Pins: dummy GitHub tag `v4.5.0`, dummy GitHub tag `v0.15.0`, dummy GitHub tag `v0.8.0`, dummy GitHub tag `v0.1.213`.
+The engine keeps Recording Studio conventions: `RecordingStudio::Hooks`, default layout in host apps, and strict recordable declarations. Pins: dummy GitHub tag `v4.5.0`, dummy GitHub tag `v0.15.0`, dummy GitHub tag `v0.8.0`, dummy GitHub tag `v0.1.229`.
 
 ## Public Ruby API
 
@@ -133,9 +133,9 @@ Null, arrays, and other values that are not plain objects are skipped, so they d
 
 A tool result removes only `[data-mcp-list-entry]` clones that belong to that list. A row a collection editor added stays. The empty element it toggles is the one whose list is that container, so a nested list keeps its own empty state. An item with an `id` reuses the clone from the previous result: text slots and allowlisted attributes refresh, and the inputs keep what the person typed. Items with no `id` are cloned again. `mcpUI.reset()` writes the opening record back into a reused row. `data-mcp-list-entry` and `data-mcp-list-key` are runtime markers; do not author them.
 
-`data-mcp-attr-*` may set `id`, `class`, `title`, `value`, `data-*`, and `aria-*`. `href` and `src` are set only for `http:`, `https:`, `mailto:`, or a relative URL. Names starting with `on`, plus `style`, `srcdoc`, `data-controller`, `data-action`, any name ending in `-target`, and every other name, are left unset. The check is case-insensitive. `javascript:` is not written. The runtime uses `textContent`, the input `value` property, and `setAttribute`. It does not use `innerHTML`.
+`data-mcp-attr-*` may set `id`, `class`, `title`, `value`, `data-*`, and `aria-*`. `href` and `src` are set only for `http:`, `https:`, `mailto:`, or a relative URL. Names starting with `on`, plus `style`, `srcdoc`, `data-controller`, `data-action`, any name ending in `-target`, and every other name, are left unset. A marker for one of those Stimulus names also removes that attribute from the element, so the tool result cannot leave a planted controller, action, or target. A target the template writes itself, such as `data-flat-pack--table-sortable-target="row"`, stays. The check is case-insensitive. `javascript:` is not written. The runtime uses `textContent`, the input `value` property, and `setAttribute`. It does not use `innerHTML`.
 
-Boot builds the list before the editor rebinds fields outside the list. The editor does not write inputs inside a list clone; the binder does. `markDirty` does not rebuild the list. When every row in a result is a new clone, and a clone carries `data-<identifier>-target`, the runtime removes that identifier from `data-controller` on the list or an ancestor and puts the original token list back on the next microtask. Stimulus disconnects and connects that controller, so it binds the new rows. A result that reuses a row leaves `data-controller` alone. A new row beside a reused row is not bound by that refresh. FlatPack's table sortable attaches drag listeners in `connect` with bound functions, and `removeDragListeners` only clears `draggable`, so a second connect would stack listeners on the rows that were kept. Binding one new target belongs on that controller as `rowTargetConnected`. There is no `data-mcp-reconnect` attribute. `data-mcp-restore-order` still puts other repeatable rows back in connect order. List clones stay in the order the binder just placed.
+Boot builds the list before the editor rebinds fields outside the list. The editor does not write inputs inside a list clone. The binder does. `markDirty` does not rebuild the list. FlatPack `0.1.229` binds a table row added after connect in `rowTargetConnected`, and a grid item in `itemTargetConnected`. The runtime does not remove or restore `data-controller`. `data-mcp-restore-order` still puts other repeatable rows back in connect order. List clones stay in the order the binder just placed.
 
 ## How Flatpack CSS and Stimulus get into widget HTML
 
@@ -248,6 +248,10 @@ config.compiled_css_path = [
   Rails.root.join("app/assets/stylesheets/mcp_ui_widget.css")
 ]
 ```
+
+## Internationalization
+
+The gem ships English only under `recording_studio.mcp_ui.editor.*` in `config/locales/en.yml` for editor status copy. Packaged documents copy those strings into `#mcp-ui-config` as `i18n.editor` so the CSP-isolated editor controller can read them. Hosts override by defining the same keys in their own `config/locales`. JS keeps the previous English literals as fallbacks when a key is missing. Runtime `Error` messages from `mcpUI.execute` stay English literals.
 
 ## Data, editing, and security
 

@@ -31,10 +31,10 @@ GIT
 
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio_admin.git
-  revision: 78c13a7df6e69e0d2b05e7c0218572b7a6296134
-  tag: v2.1.0
+  revision: 3568969c82cd393fce38c2f788785fa42aa188bc
+  tag: v2.2.0
   specs:
-    recording_studio_admin (2.1.0)
+    recording_studio_admin (2.2.0)
       flat_pack (~> 0.1.207)
       rails (~> 8.1.0)
       recording_studio_accessible (~> 0.6)
@@ -131,10 +131,10 @@ GIT
 
 GIT
   remote: https://github.com/bowerbird-app/flatpack.git
-  revision: 9606a6f24717e8f98c22c73e7ed40b30523fdd3f
-  tag: v0.1.213
+  revision: 32207ca7b9db3ce9849f872fc8cb38b5d9c31986
+  tag: v0.1.229
   specs:
-    flat_pack (0.1.213)
+    flat_pack (0.1.229)
       pagy (~> 9.0)
       rails (>= 7.1, < 9)
       tailwind_merge (~> 0.13)
@@ -143,7 +143,8 @@ GIT
 PATH
   remote: ../..
   specs:
-    recording_studio_mcp_ui (0.4.0)
+    recording_studio_mcp_ui (0.5.0)
+      flat_pack (>= 0.1.229)
       rails (~> 8.1.0)
       recording_studio (~> 4.2)
       view_component (>= 3.0)
@@ -722,7 +723,7 @@ CHECKSUMS
   ffi (1.17.4-x86_64-darwin) sha256=aa70390523cf3235096cf64962b709b4cfbd5c082a2cb2ae714eb0fe2ccda496
   ffi (1.17.4-x86_64-linux-gnu) sha256=9d3db14c2eae074b382fa9c083fe95aec6e0a1451da249eab096c34002bc752d
   ffi (1.17.4-x86_64-linux-musl) sha256=3fdf9888483de005f8ef8d1cf2d3b20d86626af206cbf780f6a6a12439a9c49e
-  flat_pack (0.1.213)
+  flat_pack (0.1.229)
   fugit (1.14.0) sha256=e311a9cc85a54bb67649df45060e721282a1e2c8ebad40e41874a3a7d576f37e
   globalid (1.4.0) sha256=037f12fbf1d9d7a014d501c2d5c77356fd4ddd96d7a7991d6700bba96706f427
   hashie (5.1.0) sha256=c266471896f323c446ea8207f8ffac985d2718df0a0ba98651a3057096ca3870
@@ -806,11 +807,11 @@ CHECKSUMS
   rdoc (8.1.0) sha256=befc37880a5cfd36dcb176c748b5fd5ee39dd3536a75e81824e4972ce230f60a
   recording_studio (4.5.0)
   recording_studio_accessible (0.15.0)
-  recording_studio_admin (2.1.0)
+  recording_studio_admin (2.2.0)
   recording_studio_api (0.6.11)
   recording_studio_attachable (0.15.0)
   recording_studio_mcp (0.11.0)
-  recording_studio_mcp_ui (0.4.0)
+  recording_studio_mcp_ui (0.5.0)
   recording_studio_metrics (0.2.0)
   recording_studio_oauth (0.7.0)
   recording_studio_root_switchable (0.8.0)

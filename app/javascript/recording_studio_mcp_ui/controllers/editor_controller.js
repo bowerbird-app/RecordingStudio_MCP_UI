@@ -300,6 +300,17 @@
     return payload;
   }
 
+  function i18nText(root, path, fallback) {
+    var cfg = root && root.mcpUI && typeof root.mcpUI.config === "function" ? root.mcpUI.config() : null;
+    var node = cfg && cfg.i18n;
+    var parts = String(path || "").split(".");
+    var i;
+    for (i = 0; i < parts.length && node; i += 1) {
+      node = node[parts[i]];
+    }
+    return typeof node === "string" ? node : fallback;
+  }
+
   function setStatus(rootEl, kind, message) {
     var node = q(rootEl, "[data-mcp-status]");
     if (!node) return;
@@ -407,12 +418,16 @@
       button.addEventListener("click", function () {
         setBusy(rootEl, true);
         setErrors(rootEl, {});
-        setStatus(rootEl, "loading", "Saving…");
+        setStatus(rootEl, "loading", i18nText(root, "editor.saving", "Saving…"));
         root.mcpUI.execute(button.getAttribute("data-mcp-save") || "save", collect(rootEl)).then(function () {
-          setStatus(rootEl, "success", "Saved");
+          setStatus(rootEl, "success", i18nText(root, "editor.saved", "Saved"));
         }).catch(function (error) {
           setErrors(rootEl, (error && error.errors) || {});
-          setStatus(rootEl, "error", (error && (error.error || error.message)) || "Save failed");
+          setStatus(
+            rootEl,
+            "error",
+            (error && (error.error || error.message)) || i18nText(root, "editor.save_failed", "Save failed")
+          );
         }).then(function () {
           setBusy(rootEl, false);
         });
@@ -438,8 +453,6 @@
   }
 
   root.McpEditorController = { connect: connect };
-  // Shared with boot.js. The packaged runtime loads this file first
-  // (Assets::RUNTIME_JS), then boot.js reads window.McpFields.
   root.McpFields = {
     own: own,
     inputType: inputType,

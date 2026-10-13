@@ -3,8 +3,6 @@
 
   var fieldsWarned = false;
 
-  // editor_controller.js assigns window.McpFields before this file runs.
-  // Assets::RUNTIME_JS concatenates the files in that order.
   function fieldsApi() {
     var api = root.McpFields;
     if (fieldsReady(api)) return api;
@@ -70,8 +68,6 @@
     return kind === "string" || kind === "number" || kind === "boolean";
   }
 
-  // A scalar fills a chip. A named text field would stay blank, so only an
-  // empty data-mcp-text, with no named slot beside it, accepts one.
   function templateAcceptsScalar(template) {
     var bare = false;
     var named = false;
@@ -167,7 +163,10 @@
   function assignAttribute(element, htmlName, value) {
     var name = String(htmlName || "").toLowerCase();
     if (!name || name.indexOf("on") === 0 || name === "style" || name === "srcdoc") return;
-    if (stimulusAttribute(name)) return;
+    if (stimulusAttribute(name)) {
+      element.removeAttribute(name);
+      return;
+    }
     var url = name === "href" || name === "src";
     var plain = name === "id" || name === "class" || name === "title" || name === "value" ||
       name.indexOf("data-") === 0 || name.indexOf("aria-") === 0;
@@ -247,65 +246,14 @@
         fillAttributes(node, item, index);
         if (refill) fillFields(node, item);
       });
-      return { nodes: reused, reused: true };
+      return reused;
     }
     clones.forEach(function (node) {
       node.setAttribute("data-mcp-list-entry", "");
       if (key) node.setAttribute("data-mcp-list-key", key);
       fillItem(node, item, index);
     });
-    return { nodes: clones, reused: false };
-  }
-
-  function schedule(fn) {
-    var queue = typeof root.queueMicrotask === "function" ? root.queueMicrotask : function (callback) {
-      setTimeout(callback, 0);
-    };
-    queue(fn);
-  }
-
-  function targetIdentifiers(nodes) {
-    var found = [];
-    nodes.forEach(function (node) {
-      elementsWithin(node).forEach(function (element) {
-        attributeNames(element).forEach(function (name) {
-          var suffix = "-target";
-          if (name.indexOf("data-") !== 0 || name.length <= "data-".length + suffix.length) return;
-          if (name.lastIndexOf(suffix) !== name.length - suffix.length) return;
-          var identifier = name.slice("data-".length, name.length - suffix.length);
-          if (!identifier || found.indexOf(identifier) !== -1) return;
-          found.push(identifier);
-        });
-      });
-    });
-    return found;
-  }
-
-  function refreshControllerToken(element, identifiers) {
-    var original = element.getAttribute("data-controller");
-    if (!original) return;
-    var tokens = original.split(/\s+/).filter(function (token) { return token; });
-    var remove = false;
-    var kept = [];
-    tokens.forEach(function (token) {
-      if (identifiers.indexOf(token) === -1) kept.push(token);
-      else remove = true;
-    });
-    if (!remove) return;
-    element.setAttribute("data-controller", kept.join(" "));
-    schedule(function () {
-      element.setAttribute("data-controller", original);
-    });
-  }
-
-  function refreshControllers(list, nodes) {
-    var identifiers = targetIdentifiers(nodes);
-    if (!identifiers.length) return;
-    var node = list;
-    while (node && node.nodeType === 1) {
-      refreshControllerToken(node, identifiers);
-      node = node.parentNode;
-    }
+    return clones;
   }
 
   function bindList(list, data, refill) {
@@ -319,11 +267,8 @@
     });
     var pools = entryPools(owned(list, "[data-mcp-list-entry]"));
     var live = [];
-    var reusedAny = false;
     kept.forEach(function (item, index) {
-      var taken = nodesFor(template, pools, item, index, refill);
-      if (taken.reused) reusedAny = true;
-      taken.nodes.forEach(function (node) {
+      nodesFor(template, pools, item, index, refill).forEach(function (node) {
         if (template.parentNode) template.parentNode.insertBefore(node, template);
         live.push(node);
       });
@@ -332,7 +277,6 @@
       if (live.indexOf(node) === -1) node.remove();
     });
     toggleEmpty(list, kept.length === 0);
-    if (live.length && !reusedAny) refreshControllers(list, live);
   }
 
   function bindLists(data, meta) {

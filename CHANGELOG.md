@@ -7,26 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.4.0] - 2026-10-12
+## [0.5.0] - 2026-10-13
 
 ### Added
 - Display lists in the packaged runtime. A container uses `data-mcp-list`, one item lives in `<template data-mcp-list-item>`, and the empty state uses `data-mcp-list-empty`. An empty `data-mcp-text` fills a scalar. A named `data-mcp-text` fills that field on an object. Both reads use own properties only. Items that are not plain objects are skipped, except a string, number, or boolean in a scalar template, so nulls, arrays, and stray values do not become blank rows.
 - The same clone fills `[data-mcp-field]` through the editor's field writer and keeps the input `name`, so a template row can save `links[][label]` in DOM order. `[data-mcp-row]` marks that row. The name parser is the editor's `place` parser.
-- `data-mcp-attr-<name>` sets one allowlisted attribute from a field or from `$index` (`note-$index-content`). Allowed names are `id`, `class`, `title`, `value`, `data-*`, and `aria-*`. `href` and `src` are written only for `http:`, `https:`, `mailto:`, or a relative URL. `data-controller`, `data-action`, and any name ending in `-target` are not written. The name check is case-insensitive.
+- `data-mcp-attr-<name>` sets one allowlisted attribute from a field or from `$index` (`note-$index-content`). Allowed names are `id`, `class`, `title`, `value`, `data-*`, and `aria-*`. `href` and `src` are written only for `http:`, `https:`, `mailto:`, or a relative URL. `data-controller`, `data-action`, and any name ending in `-target` are not written. A `data-mcp-attr-*` marker for one of those names also removes that attribute from the element. The name check is case-insensitive.
 - `editor_controller.js` assigns `window.McpFields` (`own`, `inputType`, `writeField`, `inputFieldKey`). `boot.js` reads it. `Assets::RUNTIME_JS` concatenates the editor file before `boot.js`. A missing export logs one error and still starts the host connection.
+- The gem depends on `flat_pack` `>= 0.1.229`.
 
 ### Changed
 - `mcpUI.reset()` restores the first non-blank record. An empty `resources/read` package resets to the tool result that opened the widget. A package that already had data still resets to that data. `onData` receives `reset: true` for that call, and a reused list row is filled from that record again.
 - `data-mcp-restore-order` moves only rows that are still in their parent and are not list clones. List clones stay in the order the binder placed them.
 - A later tool result removes only `[data-mcp-list-entry]` clones for that list. Rows a collection editor added stay. The empty toggle ignores a nested list. An item `id` reuses the previous clone, keeps unsaved input values, and refreshes text and allowlisted attributes.
-- When every row in a result is a new clone, a clone that carries `data-<identifier>-target` causes that identifier's `data-controller` token to be removed and restored on the next microtask. Stimulus disconnects and connects the controller. A result that reuses a row does not touch the token, so listeners are not added again.
 
 ### Upgrade notes
 - Put repeating rows in the list template. `resources/read` packages with no data, so a Ruby loop cannot show the tool result. Keep `data-mcp-field` names such as `sections[][heading]` and mark the row `data-mcp-row`. Give items an `id` when a later result should keep unsaved edits on that row.
-- A later tool result removes binder clones for that list only. It does not remove `[data-mcp-row]` elements the binder did not create. Do not set `data-mcp-reconnect`; the runtime does not read it.
-- The runtime writes text with `textContent`, input values with the shared field writer, and attributes with `setAttribute` after the allowlist. It does not assign `innerHTML`. `$index` in a `data-mcp-attr-*` value is the zero-based clone index. `javascript:` URLs, `on*` attributes, `data-controller`, `data-action`, and names ending in `-target` are not written.
-- Stimulus sees inserted nodes, so actions on those nodes work. A controller that binds targets only inside `connect` picks up a batch of new clones because its token is removed and restored. It is left alone when any of those rows is reused, including when a new row is added beside a kept row. FlatPack table sortable needs `rowTargetConnected` before that new row can listen. Refreshing the controller would stack listeners, because `removeDragListeners` does not remove the bound functions.
+- A later tool result removes binder clones for that list only. It does not remove `[data-mcp-row]` elements the binder did not create.
+- The runtime writes text with `textContent`, input values with the shared field writer, and attributes with `setAttribute` after the allowlist. It does not assign `innerHTML`. `$index` in a `data-mcp-attr-*` value is the zero-based clone index. `javascript:` URLs, `on*` attributes, `data-controller`, `data-action`, and names ending in `-target` are not written. A marker for a refused Stimulus name removes that attribute from the clone. A target attribute the template authors itself stays, so FlatPack can bind it.
+- Require FlatPack `0.1.229` or newer. Table sortable binds a row added after `connect` in `rowTargetConnected`. Grid sortable does the same in `itemTargetConnected`. The runtime does not remove and restore `data-controller`.
 - `window.McpFields` is the shared field helper. Keep `controllers/editor_controller.js` ahead of `boot.js` in the packaged runtime.
+
+## [0.4.0] - 2026-10-13
+
+### Added
+- English locale keys under `recording_studio.mcp_ui.editor.*` for editor status copy (`Saving…`, `Saved`, `Save failed`) in `config/locales/en.yml`.
+- Packaged `#mcp-ui-config` includes an `i18n.editor` blob so the editor controller can show host-overridden status strings. JS keeps the previous English literals as fallbacks when the blob is absent.
+- Hosts override editor status copy by defining the same keys in their own `config/locales`.
+
+### Changed
+- Editor status (`Saving…` / `Saved` / `Save failed`) resolves through I18n at package time and is read from the packaged `i18n` blob at render. English output stays byte-identical to 0.3.0.
+- Runtime `Error` messages (`Tool call failed`, `Unknown action alias: …`, `No action transport`) stay main’s English literals; they are public API for host widget code.
+
+### Upgrade notes
+- No code changes required for English hosts. To translate editor status strings, add matching `recording_studio.mcp_ui.editor.*` keys in the host locale files. Packaged documents pick up the active locale when `RecordingStudio::MCP_UI.package` runs.
+- Do not translate runtime `execute` / tool-error `Error` messages via locale keys; keep those English literals.
 
 ## [0.3.0] - 2026-10-12
 
@@ -89,7 +104,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Ruby `action_executor`, `visibility_checker`, and `RecordingStudio::MCP_UI.execute`. Widget writes are ordinary MCP tool calls.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.1.1...v0.2.0
