@@ -30,7 +30,7 @@ bundle install
 bin/rails generate recording_studio_mcp_ui:install
 ```
 
-The engine keeps Recording Studio conventions: `RecordingStudio::Hooks`, default layout in host apps, and strict recordable declarations. Pins: dummy GitHub tag `v4.5.0`, dummy GitHub tag `v2.3.0`, dummy GitHub tag `v0.17.0`, dummy GitHub tag `v0.15.0`, dummy GitHub tag `v0.10.0`, dummy GitHub tag `v0.9.0`, dummy GitHub tag `v0.2.0`, dummy GitHub tag `v0.1.213`.
+The engine keeps Recording Studio conventions: `RecordingStudio::Hooks`, default layout in host apps, and strict recordable declarations. Pins: dummy GitHub tag `v4.5.0`, dummy GitHub tag `v2.3.0`, dummy GitHub tag `v0.17.0`, dummy GitHub tag `v0.15.0`, dummy GitHub tag `v0.13.1`, dummy GitHub tag `v0.10.1`, dummy GitHub tag `v0.10.0`, dummy GitHub tag `v0.9.0`, dummy GitHub tag `v0.7.0`, dummy GitHub tag `v0.2.3`, dummy GitHub tag `v0.1.213`.
 
 ## Public Ruby API
 
