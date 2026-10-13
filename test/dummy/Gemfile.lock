@@ -8,16 +8,18 @@ GIT
 
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio_Oauth.git
-  revision: 982899ec1d292f0e14ba43820a43e1c2cf4ace3a
-  tag: v0.7.0
+  revision: aa7a008f3dc316d96c721773c43fc386d5ba5729
+  tag: v0.9.0
   specs:
-    recording_studio_oauth (0.7.0)
+    recording_studio_oauth (0.9.0)
       flat_pack (~> 0.1.198)
       rails (~> 8.1.0)
       recording_studio (~> 4.2)
       recording_studio_accessible (~> 0.11)
       recording_studio_admin (~> 2.0)
       recording_studio_api (>= 0.5.2, < 0.7)
+      recording_studio_cache (~> 0.5)
+      recording_studio_metrics (~> 0.2)
       recording_studio_site_settings (~> 0.1)
 
 GIT
@@ -62,6 +64,15 @@ GIT
       recording_studio_metrics (~> 0.2)
 
 GIT
+  remote: https://github.com/bowerbird-app/RecordingStudio_cache.git
+  revision: ffadfbd2a804104e1146c835aaf1bdb8068596ff
+  tag: v0.5.0
+  specs:
+    recording_studio_cache (0.5.0)
+      rails (~> 8.1.0)
+      recording_studio (~> 4.2)
+
+GIT
   remote: https://github.com/bowerbird-app/RecordingStudio_mcp.git
   revision: a52747ebdb842cdb9c5d515c7a3838969f941995
   tag: v0.11.0
@@ -84,14 +95,15 @@ GIT
 
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio_root_switchable.git
-  revision: 6f4ebe13d8021cc2097d4d93ab89d0dfb03e2c8c
-  tag: v0.8.0
+  revision: 9cc759ea3290724f349269a437a5e284ddd4b30a
+  tag: v0.9.0
   specs:
-    recording_studio_root_switchable (0.8.0)
+    recording_studio_root_switchable (0.9.0)
       flat_pack
       rails (~> 8.1.0)
       recording_studio (~> 4.1)
-      recording_studio_accessible (~> 0.13)
+      recording_studio_accessible (~> 0.15)
+      recording_studio_cache (~> 0.5)
       recording_studio_metrics (~> 0.2)
 
 GIT
@@ -109,10 +121,10 @@ GIT
 
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio_users.git
-  revision: 79ef46559bb2d32b0cab65ef67168ca6190478f1
-  tag: v0.17.0
+  revision: 208aaeff7a2cec103a1f8068bef17d7aefcc8295
+  tag: v0.21.0
   specs:
-    recording_studio_user (0.17.0)
+    recording_studio_user (0.21.0)
       devise (~> 5.0)
       flat_pack (>= 0.1.144)
       omniauth (~> 2.1)
@@ -127,6 +139,7 @@ GIT
       recording_studio_accessible (~> 0.11)
       recording_studio_admin (~> 2.0)
       recording_studio_attachable (~> 0.7)
+      recording_studio_cache (~> 0.5)
       recording_studio_metrics (~> 0.2)
 
 GIT
@@ -651,6 +664,7 @@ DEPENDENCIES
   recording_studio_admin!
   recording_studio_api!
   recording_studio_attachable!
+  recording_studio_cache!
   recording_studio_mcp!
   recording_studio_mcp_ui!
   recording_studio_metrics!
@@ -809,13 +823,14 @@ CHECKSUMS
   recording_studio_admin (2.2.0)
   recording_studio_api (0.6.11)
   recording_studio_attachable (0.15.0)
+  recording_studio_cache (0.5.0)
   recording_studio_mcp (0.11.0)
   recording_studio_mcp_ui (0.4.0)
   recording_studio_metrics (0.2.0)
-  recording_studio_oauth (0.7.0)
-  recording_studio_root_switchable (0.8.0)
+  recording_studio_oauth (0.9.0)
+  recording_studio_root_switchable (0.9.0)
   recording_studio_site_settings (0.1.0)
-  recording_studio_user (0.17.0)
+  recording_studio_user (0.21.0)
   redis (5.4.1) sha256=b5e675b57ad22b15c9bcc765d5ac26f60b675408af916d31527af9bd5a81faae
   redis-client (0.31.0) sha256=6820cb2a21e6795a823141f50fd25e655de2b8dc8ff833b43509a27b0263fd75
   regexp_parser (2.13.1) sha256=5aedb6b7c35688f51e86eef17a15374dfd287c83f4ca644b2c5f3ec50a33b44b
