@@ -1385,6 +1385,122 @@ test("list binder rejects javascript hrefs and event-handler attributes", async 
   assert.equal(elementWithTag(entry, "SPAN").getAttribute("title"), "Notes");
 });
 
+test("list binder refuses stimulus controller action and target attributes", async () => {
+  const controller = listElement("span", { "data-mcp-attr-data-controller": "controller" });
+  const action = listElement("span", { "data-mcp-attr-DATA-ACTION": "action" });
+  const target = listElement("span", { "data-mcp-attr-data-flat-pack--table-sortable-target": "target" });
+  const mixedTarget = listElement("span", { "data-mcp-attr-Data-Other-Target": "target" });
+  const kept = listElement("span", { "data-mcp-attr-data-id": "id" });
+  const row = listElement("div", {}, [ controller, action, target, mixedTarget, kept ]);
+  const template = listElement("template", { "data-mcp-list-item": "" });
+  template.content = new ListFragment([ row ]);
+  const list = listElement("div", { "data-mcp-list": "links" }, [ template ]);
+  const windowLike = windowStub({ widgetId: "pages.links", data: {} });
+  windowLike.document = listDocument({ widgetId: "pages.links", data: {} }, listElement("div", {}, [ list ]));
+  attachFakeApp(windowLike, function (next) {
+    next({
+      content: [],
+      structuredContent: {
+        links: [ {
+          id: "notes",
+          controller: "flat-pack--table-sortable",
+          action: "click->flat-pack--table-sortable#disconnect",
+          target: "row"
+        } ]
+      }
+    });
+  });
+
+  loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  const spans = [];
+  function walk(node) {
+    if (!node || node.nodeType !== 1) return;
+    if (node.tagName === "SPAN") spans.push(node);
+    (node.childNodes || []).forEach(walk);
+  }
+  walk(list.querySelectorAll("[data-mcp-list-entry]")[0]);
+  assert.equal(spans[0].getAttribute("data-controller"), null);
+  assert.equal(spans[1].getAttribute("data-action"), null);
+  assert.equal(spans[1].getAttribute("DATA-ACTION"), null);
+  assert.equal(spans[2].getAttribute("data-flat-pack--table-sortable-target"), null);
+  assert.equal(spans[3].getAttribute("data-other-target"), null);
+  assert.equal(spans[4].getAttribute("data-id"), "notes");
+});
+
+test("list binder ignores a list that lives only on the prototype", async () => {
+  const label = listElement("span", { "data-mcp-text": "label" });
+  const row = listElement("div", {}, [ label ]);
+  const template = listElement("template", { "data-mcp-list-item": "" });
+  template.content = new ListFragment([ row ]);
+  const empty = listElement("p", { "data-mcp-list-empty": "" });
+  const list = listElement("div", { "data-mcp-list": "links" }, [ template, empty ]);
+  const title = listElement("h1", { "data-mcp-text": "title" });
+  const windowLike = windowStub({ widgetId: "pages.links", data: {} });
+  windowLike.document = listDocument(
+    { widgetId: "pages.links", data: {} },
+    listElement("div", {}, [ title, list ])
+  );
+  attachFakeApp(windowLike, function (next) {
+    const record = Object.create({ links: [ { id: "hidden", label: "Hidden" } ] });
+    record.title = "Launch notes";
+    next({ content: [], structuredContent: record });
+  });
+
+  loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.equal(title.textContent, "Launch notes");
+  assert.equal(list.querySelectorAll("[data-mcp-list-entry]").length, 0);
+  assert.equal(empty.hasAttribute("hidden"), false);
+});
+
+test("boot warns when McpFields is missing and still starts", async () => {
+  const errors = [];
+  const windowLike = windowStub({ widgetId: "pages.links", data: { title: "Launch notes" } });
+  windowLike.console = { error(message) { errors.push(String(message)); } };
+  const title = listElement("h1", { "data-mcp-text": "title" });
+  windowLike.document = listDocument(
+    { widgetId: "pages.links", data: { title: "Launch notes" } },
+    listElement("div", {}, [ title ])
+  );
+  const context = loadEngine(windowLike, { sdk: false, boot: false });
+  let started = 0;
+  const start = context.mcpUI.start;
+  context.mcpUI.start = function () {
+    started += 1;
+    return start.call(context.mcpUI);
+  };
+  vm.runInContext(
+    fs.readFileSync(path.join(ENGINE_JS, "boot.js"), "utf8"),
+    context,
+    { filename: "boot.js" }
+  );
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.equal(started, 1);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /window\.McpFields is missing/);
+  assert.match(errors[0], /editor_controller\.js before boot\.js/);
+  assert.equal(title.textContent, "");
+});
+
+test("boot stays quiet when the editor controller loaded first", async () => {
+  const errors = [];
+  const windowLike = windowStub({ widgetId: "pages.links", data: {} });
+  windowLike.console = { error(message) { errors.push(String(message)); } };
+  windowLike.document = listDocument({ widgetId: "pages.links", data: {} }, listElement("div", {}, []));
+  const context = loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.deepEqual(errors, []);
+  assert.equal(typeof context.McpFields.own, "function");
+  assert.equal(typeof context.McpFields.inputType, "function");
+  assert.equal(typeof context.McpFields.writeField, "function");
+  assert.equal(typeof context.McpFields.inputFieldKey, "function");
+});
+
 test("list binder ignores inherited keys and leaves a nested list alone", async () => {
   const title = listElement("h1", { "data-mcp-text": "title" });
   const summary = listElement("p", { "data-mcp-text": "summary" });
@@ -1507,6 +1623,10 @@ test("list binder reuses keyed rows and refreshes a controller only for new clon
   const notes = entries[0];
   labelOf(notes).value = "Draft notes";
 
+  // A later result that keeps a row must not cycle the controller. FlatPack
+  // table sortable binds drag listeners in connect with .bind(this), and
+  // removeDragListeners does not remove them. A new row beside a kept row
+  // stays unbound until that controller implements rowTargetConnected.
   await deliver([
     { id: "site", label: "Server site" },
     { id: "notes", label: "Server notes" }

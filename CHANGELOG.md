@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Display lists in the packaged runtime. A container uses `data-mcp-list`, one item lives in `<template data-mcp-list-item>`, and the empty state uses `data-mcp-list-empty`. An empty `data-mcp-text` fills a scalar. A named `data-mcp-text` fills that field on an object. Both reads use own properties only. Items that are not plain objects are skipped, except a string, number, or boolean in a scalar template, so nulls, arrays, and stray values do not become blank rows.
 - The same clone fills `[data-mcp-field]` through the editor's field writer and keeps the input `name`, so a template row can save `links[][label]` in DOM order. `[data-mcp-row]` marks that row. The name parser is the editor's `place` parser.
-- `data-mcp-attr-<name>` sets one allowlisted attribute from a field or from `$index` (`note-$index-content`). Allowed names are `id`, `class`, `title`, `value`, `data-*`, and `aria-*`. `href` and `src` are written only for `http:`, `https:`, `mailto:`, or a relative URL.
+- `data-mcp-attr-<name>` sets one allowlisted attribute from a field or from `$index` (`note-$index-content`). Allowed names are `id`, `class`, `title`, `value`, `data-*`, and `aria-*`. `href` and `src` are written only for `http:`, `https:`, `mailto:`, or a relative URL. `data-controller`, `data-action`, and any name ending in `-target` are not written. The name check is case-insensitive.
+- `editor_controller.js` assigns `window.McpFields` (`own`, `inputType`, `writeField`, `inputFieldKey`). `boot.js` reads it. `Assets::RUNTIME_JS` concatenates the editor file before `boot.js`. A missing export logs one error and still starts the host connection.
 
 ### Changed
 - `mcpUI.reset()` restores the first non-blank record. An empty `resources/read` package resets to the tool result that opened the widget. A package that already had data still resets to that data. `onData` receives `reset: true` for that call, and a reused list row is filled from that record again.
@@ -23,8 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Upgrade notes
 - Put repeating rows in the list template. `resources/read` packages with no data, so a Ruby loop cannot show the tool result. Keep `data-mcp-field` names such as `sections[][heading]` and mark the row `data-mcp-row`. Give items an `id` when a later result should keep unsaved edits on that row.
 - A later tool result removes binder clones for that list only. It does not remove `[data-mcp-row]` elements the binder did not create. Do not set `data-mcp-reconnect`; the runtime does not read it.
-- The runtime writes text with `textContent`, input values with the shared field writer, and attributes with `setAttribute` after the allowlist. It does not assign `innerHTML`. `$index` in a `data-mcp-attr-*` value is the zero-based clone index. `javascript:` URLs and `on*` attributes are not written.
-- Stimulus sees inserted nodes, so actions on those nodes work. A controller that binds targets only inside `connect` picks up a batch of new clones because its token is removed and restored. It is left alone when any of those rows is reused.
+- The runtime writes text with `textContent`, input values with the shared field writer, and attributes with `setAttribute` after the allowlist. It does not assign `innerHTML`. `$index` in a `data-mcp-attr-*` value is the zero-based clone index. `javascript:` URLs, `on*` attributes, `data-controller`, `data-action`, and names ending in `-target` are not written.
+- Stimulus sees inserted nodes, so actions on those nodes work. A controller that binds targets only inside `connect` picks up a batch of new clones because its token is removed and restored. It is left alone when any of those rows is reused, including when a new row is added beside a kept row. FlatPack table sortable needs `rowTargetConnected` before that new row can listen. Refreshing the controller would stack listeners, because `removeDragListeners` does not remove the bound functions.
+- `window.McpFields` is the shared field helper. Keep `controllers/editor_controller.js` ahead of `boot.js` in the packaged runtime.
 
 ## [0.3.0] - 2026-10-12
 

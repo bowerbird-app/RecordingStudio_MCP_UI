@@ -438,6 +438,8 @@
   }
 
   root.McpEditorController = { connect: connect };
+  // Shared with boot.js. The packaged runtime loads this file first
+  // (Assets::RUNTIME_JS), then boot.js reads window.McpFields.
   root.McpFields = {
     own: own,
     inputType: inputType,

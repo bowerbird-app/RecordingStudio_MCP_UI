@@ -6,6 +6,7 @@ module RecordingStudio
   module McpUi
     class Assets
       SDK_JS = "vendor/ext-apps.iife.js"
+      # editor_controller.js assigns window.McpFields. boot.js reads it, so the editor file stays first.
       RUNTIME_JS = %w[
         runtime.js
         controllers/editor_controller.js

@@ -1,8 +1,30 @@
 (function (root) {
   "use strict";
 
+  var fieldsWarned = false;
+
+  // editor_controller.js assigns window.McpFields before this file runs.
+  // Assets::RUNTIME_JS concatenates the files in that order.
   function fieldsApi() {
-    return root.McpFields;
+    var api = root.McpFields;
+    if (fieldsReady(api)) return api;
+    if (!fieldsWarned) {
+      fieldsWarned = true;
+      if (root.console && typeof root.console.error === "function") {
+        root.console.error(
+          "Recording Studio MCP UI: window.McpFields is missing. Load controllers/editor_controller.js before boot.js."
+        );
+      }
+    }
+    return null;
+  }
+
+  function fieldsReady(api) {
+    return !!api &&
+      typeof api.own === "function" &&
+      typeof api.inputType === "function" &&
+      typeof api.writeField === "function" &&
+      typeof api.inputFieldKey === "function";
   }
 
   function bindText(data) {
@@ -138,9 +160,14 @@
     return scheme === "http" || scheme === "https" || scheme === "mailto";
   }
 
+  function stimulusAttribute(name) {
+    return name === "data-controller" || name === "data-action" || name.slice(-7) === "-target";
+  }
+
   function assignAttribute(element, htmlName, value) {
     var name = String(htmlName || "").toLowerCase();
     if (!name || name.indexOf("on") === 0 || name === "style" || name === "srcdoc") return;
+    if (stimulusAttribute(name)) return;
     var url = name === "href" || name === "src";
     var plain = name === "id" || name === "class" || name === "title" || name === "value" ||
       name.indexOf("data-") === 0 || name.indexOf("aria-") === 0;
@@ -322,6 +349,7 @@
 
   function boot() {
     if (!root.mcpUI) return;
+    fieldsApi();
     root.mcpUI.onData(function (data, meta) {
       bindText(data);
       if (!meta || meta.dataChanged) bindLists(data, meta);

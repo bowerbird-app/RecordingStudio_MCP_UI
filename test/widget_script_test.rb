@@ -72,6 +72,18 @@ class WidgetScriptTest < Minitest::Test
     end
   end
 
+  def test_editor_controller_is_concatenated_before_boot
+    runtime = RecordingStudio::McpUi::Assets.runtime
+    editor_at = runtime.index("root.McpFields = {")
+    boot_at = runtime.index("function fieldsApi()")
+
+    assert_equal %w[runtime.js controllers/editor_controller.js boot.js], RecordingStudio::McpUi::Assets::RUNTIME_JS
+    refute_nil editor_at
+    refute_nil boot_at
+    assert_operator editor_at, :<, boot_at
+    assert_includes runtime, "window.McpFields is missing"
+  end
+
   def test_widget_script_is_copied_before_the_editor_runtime
     Dir.mktmpdir do |dir|
       script = File.join(dir, "mcp_ui_widgets.js")
