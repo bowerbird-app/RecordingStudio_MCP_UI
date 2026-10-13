@@ -33,10 +33,26 @@
     return first && typeof first.text === "string" ? first.text : "";
   }
 
+  function i18nText(path, fallback, vars) {
+    var node = config && config.i18n;
+    var parts = String(path || "").split(".");
+    var i;
+    for (i = 0; i < parts.length && node; i += 1) {
+      node = node[parts[i]];
+    }
+    var text = typeof node === "string" ? node : fallback;
+    if (vars) {
+      Object.keys(vars).forEach(function (key) {
+        text = text.split("%{" + key + "}").join(String(vars[key]));
+      });
+    }
+    return text;
+  }
+
   function mcpToolError(result) {
     if (result.structuredContent) return result.structuredContent;
     var text = textContent(result);
-    return new Error(text || "Tool call failed");
+    return new Error(text || i18nText("runtime.tool_call_failed", "Tool call failed"));
   }
 
   function toolNameFor(aliasName) {
@@ -150,10 +166,14 @@
     execute: function (aliasName, payload) {
       var toolName = toolNameFor(aliasName);
       if (!toolName) {
-        return Promise.reject(new Error("Unknown action alias: " + aliasName));
+        return Promise.reject(new Error(
+          i18nText("runtime.unknown_action_alias", "Unknown action alias: %{alias}", { alias: aliasName })
+        ));
       }
       if (!app || typeof app.callServerTool !== "function") {
-        return Promise.reject(new Error("No action transport"));
+        return Promise.reject(new Error(
+          i18nText("runtime.no_action_transport", "No action transport")
+        ));
       }
 
       var body = argumentsForCall(payload);

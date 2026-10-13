@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-13
+
+### Added
+- English locale keys under `recording_studio.mcp_ui.*` for editor status and runtime error copy (`config/locales/en.yml`).
+- Packaged `#mcp-ui-config` includes an `i18n` blob so widget JS can show host-overridden strings. JS keeps the previous English literals as fallbacks when the blob is absent.
+- Hosts override copy by defining the same keys in their own `config/locales`.
+
+### Changed
+- Editor status (`Saving…` / `Saved` / `Save failed`) and runtime errors (`Tool call failed`, `Unknown action alias: …`, `No action transport`) resolve through I18n at package time. English output stays byte-identical to 0.3.0.
+
+### Upgrade notes
+- No code changes required for English hosts. To translate widget status and runtime errors, add matching `recording_studio.mcp_ui.*` keys in the host locale files. Packaged documents pick up the active locale when `RecordingStudio::MCP_UI.package` runs.
+
 ## [0.3.0] - 2026-10-12
 
 ### Added
@@ -68,7 +81,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Ruby `action_executor`, `visibility_checker`, and `RecordingStudio::MCP_UI.execute`. Widget writes are ordinary MCP tool calls.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.1.1...v0.2.0
 [0.1.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/releases/tag/v0.1.0

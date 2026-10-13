@@ -61,6 +61,26 @@ class PackagerTest < Minitest::Test
     assert_equal "projects.editor", config.fetch("widgetId")
   end
 
+  def test_package_includes_english_i18n_blob_for_js_runtime
+    RecordingStudio::MCP_UI.register(
+      "projects.editor",
+      component: UnsafeComponent,
+      mode: :edit,
+      actions: { save: "projects.update" }
+    )
+
+    document = RecordingStudio::MCP_UI.package("projects.editor", data: { title: "Beach House" })
+    config = JSON.parse(document.html[%r{id="mcp-ui-config">(?<json>.*?)</script>}m, :json])
+    i18n = config.fetch("i18n")
+
+    assert_equal "Saving…", i18n.dig("editor", "saving")
+    assert_equal "Saved", i18n.dig("editor", "saved")
+    assert_equal "Save failed", i18n.dig("editor", "save_failed")
+    assert_equal "Tool call failed", i18n.dig("runtime", "tool_call_failed")
+    assert_equal "Unknown action alias: %{alias}", i18n.dig("runtime", "unknown_action_alias")
+    assert_equal "No action transport", i18n.dig("runtime", "no_action_transport")
+  end
+
   def test_missing_identifier_raises
     assert_raises(RecordingStudio::MCP_UI::UnknownWidgetError) do
       RecordingStudio::MCP_UI.package("missing.widget", data: {})

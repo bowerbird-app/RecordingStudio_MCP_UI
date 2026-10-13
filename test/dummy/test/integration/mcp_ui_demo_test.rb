@@ -43,6 +43,12 @@ class McpUiDemoTest < ActionDispatch::IntegrationTest
     refute_nil config
     parsed = JSON.parse(config)
     assert_equal "projects.update", parsed.fetch("actions").fetch("save")
+    assert_equal "Saving…", parsed.dig("i18n", "editor", "saving")
+    assert_equal "Saved", parsed.dig("i18n", "editor", "saved")
+    assert_equal "Save failed", parsed.dig("i18n", "editor", "save_failed")
+    assert_equal "No action transport", parsed.dig("i18n", "runtime", "no_action_transport")
+    # Boot-order host override covers the rarely shown tool_call_failed key.
+    assert_equal "HOST Tool call failed", parsed.dig("i18n", "runtime", "tool_call_failed")
     gem_css_index = response.body.index("--mcp-ui-background: transparent")
     host_css_index = response.body.index("--mcp-ui-padding: 1.25rem")
     refute_nil gem_css_index

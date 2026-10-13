@@ -115,6 +115,48 @@ test("execute rejects when no host is connected", async () => {
   });
 });
 
+test("execute uses packaged i18n strings when present", async () => {
+  const windowLike = windowStub({
+    widgetId: "projects.editor",
+    actions: { save: "projects.update" },
+    data: { title: "Old" },
+    i18n: {
+      runtime: {
+        unknown_action_alias: "HOST Unknown action alias: %{alias}",
+        no_action_transport: "HOST No action transport"
+      }
+    }
+  });
+  const ctx = loadEngine(windowLike, { sdk: false });
+  await ctx.mcpUI.start();
+  await assert.rejects(() => ctx.mcpUI.execute("destroy", {}), (error) => {
+    assert.equal(error.message, "HOST Unknown action alias: destroy");
+    return true;
+  });
+  await assert.rejects(() => ctx.mcpUI.execute("save", {}), (error) => {
+    assert.equal(error.message, "HOST No action transport");
+    return true;
+  });
+});
+
+test("execute keeps english fallbacks when i18n blob is absent", async () => {
+  const windowLike = windowStub({
+    widgetId: "projects.editor",
+    actions: { save: "projects.update" },
+    data: { title: "Old" }
+  });
+  const ctx = loadEngine(windowLike, { sdk: false });
+  await ctx.mcpUI.start();
+  await assert.rejects(() => ctx.mcpUI.execute("destroy", {}), (error) => {
+    assert.equal(error.message, "Unknown action alias: destroy");
+    return true;
+  });
+  await assert.rejects(() => ctx.mcpUI.execute("save", {}), (error) => {
+    assert.equal(error.message, "No action transport");
+    return true;
+  });
+});
+
 test("dirty tracking resets", async () => {
   const windowLike = windowStub({ actions: { save: "projects.update" }, data: { title: "A" } });
   const ctx = loadEngine(windowLike, { sdk: false });
@@ -312,7 +354,10 @@ function editorRoot(fields, extras) {
   extras = extras || {};
   return {
     classList: { toggle() {}, add() {} },
-    querySelector() { return null; },
+    querySelector(selector) {
+      if (selector === "[data-mcp-status]") return extras.statusNode || null;
+      return null;
+    },
     querySelectorAll(selector) {
       if (selector === "[data-mcp-field]") return fields;
       if (selector === "[data-mcp-save]") return extras.saveButtons || [];
@@ -798,4 +843,61 @@ test("editor reset leaves opted-in rows in place without data-mcp-restore-order"
   parent.insertBefore(second, first);
   resetButton.dispatch("click");
   assert.deepEqual(parent.childNodes.filter((node) => node.fields), [second, first]);
+});
+
+test("editor save status uses packaged i18n with english fallbacks", async () => {
+  const statusNode = { textContent: "", hidden: true, dataset: {} };
+  const saveButton = actionButton("data-mcp-save", "save");
+  const windowLike = windowStub(
+    {
+      widgetId: "projects.editor",
+      actions: { save: "projects.update" },
+      data: { title: "Beach House" },
+      i18n: {
+        editor: { saving: "HOST Saving…", saved: "HOST Saved", save_failed: "HOST Save failed" },
+        runtime: { no_action_transport: "HOST No action transport" }
+      }
+    },
+    {
+      editorRoots: [
+        editorRoot([], { saveButtons: [saveButton], statusNode })
+      ]
+    }
+  );
+  const ctx = loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await ctx.mcpUI.start();
+
+  saveButton.dispatch("click");
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.equal(statusNode.dataset.kind, "error");
+  assert.equal(statusNode.textContent, "HOST No action transport");
+});
+
+test("editor save status falls back to english when i18n blob is absent", async () => {
+  const statusNode = { textContent: "", hidden: true, dataset: {} };
+  const saveButton = actionButton("data-mcp-save", "save");
+  const windowLike = windowStub(
+    {
+      widgetId: "projects.editor",
+      actions: { save: "projects.update" },
+      data: { title: "Beach House" }
+    },
+    {
+      editorRoots: [
+        editorRoot([], { saveButtons: [saveButton], statusNode })
+      ]
+    }
+  );
+  const ctx = loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await ctx.mcpUI.start();
+
+  saveButton.dispatch("click");
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.equal(statusNode.textContent, "No action transport");
 });
