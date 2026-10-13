@@ -1,0 +1,7 @@
+en:
+  recording_studio:
+    mcp_ui:
+      editor:
+        saving: "Saving…"
+        saved: "Saved"
+        save_failed: "Save failed"

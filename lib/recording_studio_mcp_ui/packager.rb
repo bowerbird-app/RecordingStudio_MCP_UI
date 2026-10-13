@@ -72,7 +72,8 @@ module RecordingStudio
           mode: @widget.mode,
           version: @widget.version,
           actions: action_map,
-          data: data
+          data: data,
+          i18n: WidgetI18n.for_config
         }
       end
 

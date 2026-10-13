@@ -1,0 +1,7 @@
+# Test-only host override fixture (not under config/locales). Appended last in
+# the host-override integration test, then removed so other tests stay on gem English.
+en:
+  recording_studio:
+    mcp_ui:
+      editor:
+        saved: "HOST Saved"

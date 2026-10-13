@@ -22,7 +22,7 @@ See [docs/api_mcp_integration.md](docs/api_mcp_integration.md) for the exact API
 ## Installation
 
 ```ruby
-gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.3.0"
+gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.4.0"
 ```
 
 ```bash
@@ -206,6 +206,10 @@ config.compiled_css_path = [
   Rails.root.join("app/assets/stylesheets/mcp_ui_widget.css")
 ]
 ```
+
+## Internationalization
+
+The gem ships English only under `recording_studio.mcp_ui.editor.*` in `config/locales/en.yml` for editor status copy. Packaged documents copy those strings into `#mcp-ui-config` as `i18n.editor` so the CSP-isolated editor controller can read them. Hosts override by defining the same keys in their own `config/locales`. JS keeps the previous English literals as fallbacks when a key is missing. Runtime `Error` messages from `mcpUI.execute` stay English literals.
 
 ## Data, editing, and security
 

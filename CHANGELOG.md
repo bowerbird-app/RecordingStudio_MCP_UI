@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-13
+
+### Added
+- English locale keys under `recording_studio.mcp_ui.editor.*` for editor status copy (`Saving…`, `Saved`, `Save failed`) in `config/locales/en.yml`.
+- Packaged `#mcp-ui-config` includes an `i18n.editor` blob so the editor controller can show host-overridden status strings. JS keeps the previous English literals as fallbacks when the blob is absent.
+- Hosts override editor status copy by defining the same keys in their own `config/locales`.
+
+### Changed
+- Editor status (`Saving…` / `Saved` / `Save failed`) resolves through I18n at package time and is read from the packaged `i18n` blob at render. English output stays byte-identical to 0.3.0.
+- Runtime `Error` messages (`Tool call failed`, `Unknown action alias: …`, `No action transport`) stay main’s English literals; they are public API for host widget code.
+
+### Upgrade notes
+- No code changes required for English hosts. To translate editor status strings, add matching `recording_studio.mcp_ui.editor.*` keys in the host locale files. Packaged documents pick up the active locale when `RecordingStudio::MCP_UI.package` runs.
+- Do not translate runtime `execute` / tool-error `Error` messages via locale keys; keep those English literals.
+
 ## [0.3.0] - 2026-10-12
 
 ### Added
@@ -68,7 +83,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Ruby `action_executor`, `visibility_checker`, and `RecordingStudio::MCP_UI.execute`. Widget writes are ordinary MCP tool calls.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.1.1...v0.2.0
 [0.1.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/releases/tag/v0.1.0
