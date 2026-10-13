@@ -14,6 +14,7 @@ class RecordingStudioMcpUiTest < Minitest::Test
   def test_gemspec_pins_recording_studio_4_2
     gemspec = File.read(File.expand_path("../recording_studio_mcp_ui.gemspec", __dir__))
 
+    assert_includes gemspec, 'spec.add_dependency "flat_pack", ">= 0.1.229"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio", "~> 4.2"'
     assert_includes gemspec, 'spec.add_dependency "view_component"'
   end
