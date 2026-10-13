@@ -1,7 +1,7 @@
-# Host override for a rarely shown MCP UI runtime key (tool-call failure fallback).
+# Host override for a rarely shown MCP UI editor key (save-failed status fallback).
 # Kept out of the default happy-path UI so other dummy tests still see gem English.
 en:
   recording_studio:
     mcp_ui:
-      runtime:
-        tool_call_failed: "HOST Tool call failed"
+      editor:
+        save_failed: "HOST Save failed"

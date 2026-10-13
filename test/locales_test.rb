@@ -4,15 +4,10 @@ require "test_helper"
 require "yaml"
 
 class LocalesTest < Minitest::Test
-  # I18n template tokens use %{name}; RuboCop prefers %<name>s for Kernel#sprintf.
-  # rubocop:disable-next Style/FormatStringToken
   EXPECTED_KEYS = {
     "editor.saving" => "Saving…",
     "editor.saved" => "Saved",
-    "editor.save_failed" => "Save failed",
-    "runtime.tool_call_failed" => "Tool call failed",
-    "runtime.unknown_action_alias" => "Unknown action alias: %{alias}",
-    "runtime.no_action_transport" => "No action transport"
+    "editor.save_failed" => "Save failed"
   }.freeze
 
   RESERVED_YAML_TOKENS = %w[yes no on off true false null].freeze
@@ -69,11 +64,6 @@ class LocalesTest < Minitest::Test
         assert_equal english, translation, "#{full_key} should resolve to #{english.inspect}"
         assert_equal english, I18n.t(full_key, raise: true)
       end
-
-      assert_equal(
-        "Unknown action alias: destroy",
-        I18n.t("recording_studio.mcp_ui.runtime.unknown_action_alias", alias: "destroy")
-      )
     end
   end
 
@@ -83,7 +73,7 @@ class LocalesTest < Minitest::Test
            .fetch("mcp_ui")
 
     assert tree.key?("editor")
-    assert tree.key?("runtime")
+    refute tree.key?("runtime")
   end
 
   def test_gem_does_not_ship_a_legacy_recording_studio_mcp_ui_locale_namespace

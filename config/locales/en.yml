@@ -5,7 +5,3 @@ en:
         saving: "Saving…"
         saved: "Saved"
         save_failed: "Save failed"
-      runtime:
-        tool_call_failed: "Tool call failed"
-        unknown_action_alias: "Unknown action alias: %{alias}"
-        no_action_transport: "No action transport"

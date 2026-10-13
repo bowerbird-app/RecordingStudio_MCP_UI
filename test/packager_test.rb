@@ -76,10 +76,7 @@ class PackagerTest < Minitest::Test
     assert_equal "Saving…", i18n.dig("editor", "saving")
     assert_equal "Saved", i18n.dig("editor", "saved")
     assert_equal "Save failed", i18n.dig("editor", "save_failed")
-    assert_equal "Tool call failed", i18n.dig("runtime", "tool_call_failed")
-    # rubocop:disable-next Style/FormatStringToken -- I18n template token
-    assert_equal "Unknown action alias: %{alias}", i18n.dig("runtime", "unknown_action_alias")
-    assert_equal "No action transport", i18n.dig("runtime", "no_action_transport")
+    refute i18n.key?("runtime")
   end
 
   def test_missing_identifier_raises
