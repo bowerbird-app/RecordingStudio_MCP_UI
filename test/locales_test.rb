@@ -5,7 +5,7 @@ require "yaml"
 
 class LocalesTest < Minitest::Test
   # I18n template tokens use %{name}; RuboCop prefers %<name>s for Kernel#sprintf.
-  # rubocop:disable Style/FormatStringToken
+  # rubocop:disable-next Style/FormatStringToken
   EXPECTED_KEYS = {
     "editor.saving" => "Saving…",
     "editor.saved" => "Saved",
@@ -14,7 +14,6 @@ class LocalesTest < Minitest::Test
     "runtime.unknown_action_alias" => "Unknown action alias: %{alias}",
     "runtime.no_action_transport" => "No action transport"
   }.freeze
-  # rubocop:enable Style/FormatStringToken
 
   RESERVED_YAML_TOKENS = %w[yes no on off true false null].freeze
 

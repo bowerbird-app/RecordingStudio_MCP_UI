@@ -73,31 +73,8 @@ module RecordingStudio
           version: @widget.version,
           actions: action_map,
           data: data,
-          i18n: widget_i18n
+          i18n: WidgetI18n.for_config
         }
-      end
-
-      def widget_i18n
-        {
-          "editor" => {
-            "saving" => translate("editor.saving", "Saving…"),
-            "saved" => translate("editor.saved", "Saved"),
-            "save_failed" => translate("editor.save_failed", "Save failed")
-          },
-          "runtime" => {
-            "tool_call_failed" => translate("runtime.tool_call_failed", "Tool call failed"),
-            "unknown_action_alias" => translate(
-              "runtime.unknown_action_alias",
-              "Unknown action alias: %{alias}",
-              alias: "%{alias}"
-            ),
-            "no_action_transport" => translate("runtime.no_action_transport", "No action transport")
-          }
-        }
-      end
-
-      def translate(key, english, **interpolations)
-        I18n.t("recording_studio.mcp_ui.#{key}", default: english, **interpolations)
       end
 
       def action_map
