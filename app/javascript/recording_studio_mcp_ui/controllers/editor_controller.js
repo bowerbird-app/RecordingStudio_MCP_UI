@@ -18,7 +18,18 @@
   }
 
   function inputType(input) {
-    return String(input.type || "").toLowerCase();
+    var typed = input.type || (input.getAttribute && input.getAttribute("type")) || "";
+    return String(typed).toLowerCase();
+  }
+
+  function inputValue(input) {
+    if (input.value != null && String(input.value) !== "") return String(input.value);
+    var attr = input.getAttribute && input.getAttribute("value");
+    return attr == null ? "" : String(attr);
+  }
+
+  function checkedValue(value) {
+    return value === true || value === 1 || value === "1" || value === "true";
   }
 
   function mcpType(input) {
@@ -218,14 +229,34 @@
     return current;
   }
 
+  function fieldKeyFromName(name) {
+    if (!name) return "";
+    var token = { path: null };
+    place(blankObject(), name, token, 0, [], "path");
+    var path = token.path;
+    if (!path || !path.length) return "";
+    var index = path.length - 1;
+    while (index >= 0 && typeof path[index] !== "string") index -= 1;
+    return index >= 0 ? path[index] : "";
+  }
+
+  function inputFieldKey(input) {
+    var named = (input.getAttribute && input.getAttribute("name")) || "";
+    if (named) return fieldKeyFromName(named);
+    var marked = (input.getAttribute && input.getAttribute("data-mcp-field")) || "";
+    if (!marked || marked === "true") return "";
+    return fieldKeyFromName(marked);
+  }
+
   function writeField(input, value) {
     var type = inputType(input);
+    if (type === "button" || type === "submit" || type === "reset" || type === "file") return;
     if (type === "checkbox") {
-      input.checked = !!value;
+      input.checked = checkedValue(value);
       return;
     }
     if (type === "radio") {
-      input.checked = value != null && String(input.value) === String(value);
+      input.checked = value != null && inputValue(input) === String(value);
       return;
     }
     if (mcpType(input)) {
@@ -243,8 +274,14 @@
     writeField(input, value);
   }
 
+  function listEntryField(input) {
+    return !!(input.closest && input.closest("[data-mcp-list-entry]"));
+  }
+
   function bindFields(rootEl, data) {
-    var fields = all(rootEl, "[data-mcp-field]").filter(bindable);
+    var fields = all(rootEl, "[data-mcp-field]").filter(bindable).filter(function (input) {
+      return !listEntryField(input);
+    });
     var paths = trackPaths(fields);
     fields.forEach(function (input, index) {
       bindField(input, data, paths[index]);
@@ -341,6 +378,9 @@
       var marker = group.marker;
       if (!parent || !parent.insertBefore || !marker || marker.parentNode !== parent) return;
       group.rows.forEach(function (row) {
+        if (!row || row.parentNode !== parent) return;
+        if (row.closest && row.closest("[data-mcp-list-entry]")) return;
+        if (row.hasAttribute && row.hasAttribute("data-mcp-list-entry")) return;
         parent.insertBefore(row, marker);
       });
     });
@@ -413,4 +453,10 @@
   }
 
   root.McpEditorController = { connect: connect };
+  root.McpFields = {
+    own: own,
+    inputType: inputType,
+    writeField: writeField,
+    inputFieldKey: inputFieldKey
+  };
 })(window);

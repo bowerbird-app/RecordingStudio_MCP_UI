@@ -22,7 +22,7 @@ See [docs/api_mcp_integration.md](docs/api_mcp_integration.md) for the exact API
 ## Installation
 
 ```ruby
-gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.4.0"
+gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.5.0"
 ```
 
 ```bash
@@ -30,7 +30,7 @@ bundle install
 bin/rails generate recording_studio_mcp_ui:install
 ```
 
-The engine keeps Recording Studio conventions: `RecordingStudio::Hooks`, default layout in host apps, and strict recordable declarations. Pins: dummy GitHub tag `v4.5.0`, dummy GitHub tag `v0.15.0`, dummy GitHub tag `v0.8.0`, dummy GitHub tag `v0.1.213`.
+The engine keeps Recording Studio conventions: `RecordingStudio::Hooks`, default layout in host apps, and strict recordable declarations. Pins: dummy GitHub tag `v4.5.0`, dummy GitHub tag `v0.15.0`, dummy GitHub tag `v0.8.0`, dummy GitHub tag `v0.1.229`.
 
 ## Public Ruby API
 
@@ -90,12 +90,52 @@ The packaged document carries that alias-to-tool-name map. MCP treats the call a
 Packaged documents define `window.mcpUI`:
 
 - `mcpUI.start()`
-- `mcpUI.data()` / `mcpUI.applyData(data)` / `mcpUI.reset()`
+- `mcpUI.data()` / `mcpUI.applyData(data)` / `mcpUI.reset()` — reset restores the first non-blank record. That is the packaged `data` when `resources/read` sent some, or the first tool result when the package was empty.
 - `mcpUI.markDirty()` / `mcpUI.isDirty()`
-- `mcpUI.onData(listener)` — listener receives `(data, { dirty, dataChanged })`. `dataChanged` is true for `applyData`, `reset`, start, and accepted tool results. `markDirty` only flips `dirty`.
+- `mcpUI.onData(listener)` — listener receives `(data, { dirty, dataChanged, reset })`. `dataChanged` is true for `applyData`, `reset`, start, and accepted tool results. `reset` is true only for `mcpUI.reset()`. `markDirty` only flips `dirty`.
 - `mcpUI.execute(alias, payload)` — looks up the real tool name and calls `app.callServerTool`; rejects unknown aliases without sending; rejects with `No action transport` when no host is connected
 
-Host communication uses the official MCP Apps View SDK (`App` + `PostMessageTransport` from `@modelcontextprotocol/ext-apps`). The packaged document vendors that SDK, registers `ontoolresult` before `app.connect()`, and calls `app.callServerTool()` / `app.updateModelContext()`. The tool-result notification that opened the widget, and the result of `mcpUI.execute`, share one unwrap: use `structuredContent` when present, then `data` when that object has a `data` object. That is the widget record. A successful write may also include `contextUpdate` (camelCase) for `app.updateModelContext`. Boot writes widget data into every `[data-mcp-text]` node after start and on each `onData`. The editor writes `[data-mcp-field]` values only when `dataChanged` is true, so typing then blurring Save does not restore the opening record. `execute` fills blank `id` and `revision` from current widget data so hidden fields that have not bound yet do not wipe the record. There is no per-client protocol, sniffing, or host-specific metadata. Clients that cannot load the UI keep the structured tool result.
+Host communication uses the official MCP Apps View SDK (`App` + `PostMessageTransport` from `@modelcontextprotocol/ext-apps`). The packaged document vendors that SDK, registers `ontoolresult` before `app.connect()`, and calls `app.callServerTool()` / `app.updateModelContext()`. The tool-result notification that opened the widget, and the result of `mcpUI.execute`, share one unwrap: use `structuredContent` when present, then `data` when that object has a `data` object. That is the widget record. A successful write may also include `contextUpdate` (camelCase) for `app.updateModelContext`. Boot writes widget data into every `[data-mcp-text]` node after start and on each `onData`, skipping nodes inside a rendered list row. The editor writes `[data-mcp-field]` values only when `dataChanged` is true, so typing then blurring Save does not restore the opening record. `execute` fills blank `id` and `revision` from current widget data so hidden fields that have not bound yet do not wipe the record. There is no per-client protocol, sniffing, or host-specific metadata. Clients that cannot load the UI keep the structured tool result.
+
+### Lists
+
+`resources/read` packages the widget with empty data. A Ruby loop has already taken the empty branch by the time `ui/notifications/tool-result` arrives. Repeating content, including editable rows, is a template the runtime clones. Put `data-mcp-row` and `data-mcp-field` on that template when Save should collect the row. The editor keeps each input's `name`, so `links[][label]` still becomes an array in DOM order.
+
+```html
+<div data-mcp-list="topics">
+  <template data-mcp-list-item>
+    <span data-mcp-text></span>
+  </template>
+  <p data-mcp-list-empty>No topics yet.</p>
+</div>
+
+<tbody data-mcp-list="links">
+  <template data-mcp-list-item>
+    <tr data-mcp-row data-mcp-attr-data-id="id">
+      <td><input name="links[][label]" data-mcp-field></td>
+    </tr>
+  </template>
+  <tr data-mcp-list-empty><td>No data available</td></tr>
+</tbody>
+```
+
+| Attribute | Where | Meaning |
+| --- | --- | --- |
+| `data-mcp-list` | container | Key on the widget record whose value is the array |
+| `data-mcp-list-item` | `<template>` | One item. Cloned for each plain object. A string, number, or boolean is cloned only when the template's text slot is empty |
+| `data-mcp-list-empty` | element | Shown when the array is missing or empty. Hidden when it has entries |
+| `data-mcp-text` | inside the item | Field name on an object. Leave it empty for a scalar such as a topic string |
+| `data-mcp-field` | input inside the item | Value is set from the item. The name stays. `links[][label]` reads the item's `label`. A missing key keeps the template value |
+| `data-mcp-row` | row inside the item | Opts the clone into save order. The binder does not remove a row it did not clone |
+| `data-mcp-attr-<name>` | element inside the item | Sets one allowlisted attribute. The value is a field name, or a string containing `$index` (`note-$index-content`) |
+
+Null, arrays, and other values that are not plain objects are skipped, so they do not become blank rows. A string, number, or boolean still clones when the template has an empty `data-mcp-text` and no named text field, which is how a topic chip renders. `$index` counts only the items that were cloned.
+
+A tool result removes only `[data-mcp-list-entry]` clones that belong to that list. A row a collection editor added stays. The empty element it toggles is the one whose list is that container, so a nested list keeps its own empty state. An item with an `id` reuses the clone from the previous result: text slots and allowlisted attributes refresh, and the inputs keep what the person typed. Items with no `id` are cloned again. `mcpUI.reset()` writes the opening record back into a reused row. `data-mcp-list-entry` and `data-mcp-list-key` are runtime markers; do not author them.
+
+`data-mcp-attr-*` may set `id`, `class`, `title`, `value`, `data-*`, and `aria-*`. `href` and `src` are set only for `http:`, `https:`, `mailto:`, or a relative URL. Names starting with `on`, plus `style`, `srcdoc`, `data-controller`, `data-action`, any name ending in `-target`, and every other name, are left unset. A marker for one of those Stimulus names also removes that attribute from the element, so the tool result cannot leave a planted controller, action, or target. A target the template writes itself, such as `data-flat-pack--table-sortable-target="row"`, stays. The check is case-insensitive. `javascript:` is not written. The runtime uses `textContent`, the input `value` property, and `setAttribute`. It does not use `innerHTML`.
+
+Boot builds the list before the editor rebinds fields outside the list. The editor does not write inputs inside a list clone. The binder does. `markDirty` does not rebuild the list. FlatPack `0.1.229` binds a table row added after connect in `rowTargetConnected`, and a grid item in `itemTargetConnected`. The runtime does not remove or restore `data-controller`. `data-mcp-restore-order` still puts other repeatable rows back in connect order. List clones stay in the order the binder just placed.
 
 ## How Flatpack CSS and Stimulus get into widget HTML
 
@@ -106,7 +146,9 @@ Host communication uses the official MCP Apps View SDK (`App` + `PostMessageTran
 3. Optional host CSS from `configuration.compiled_css_path` — one local path or an array of local paths, in order (dummy uses Tailwind then `app/assets/stylesheets/mcp_ui_widget.css`)
 4. The official SDK IIFE (`vendor/ext-apps.iife.js`)
 5. The host's prebuilt widget script from `configuration.widget_script_path`, when that file exists
-6. `runtime.js`, `controllers/editor_controller.js`, and `boot.js`
+6. `runtime.js`, then `controllers/editor_controller.js`, then `boot.js`
+
+`editor_controller.js` assigns `window.McpFields` with `own`, `inputType`, `writeField`, and `inputFieldKey`. `boot.js` reads that object for list text, list fields, and the own-property check. The packaged runtime concatenates the files in that order. If `window.McpFields` is missing, or is missing one of those functions, `boot.js` logs one error and still calls `mcpUI.start()`. List and field binding does nothing until the editor file has run.
 
 Host CSS and the widget script are read from disk at package time. A missing CSS path is skipped. A configured `widget_script_path` that is not a file logs a warning and is skipped. `nil` leaves the script out and stays quiet. Do not pass URLs; CSP allows only inline style and script.
 

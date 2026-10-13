@@ -862,3 +862,885 @@ test("editor save status falls back to english when i18n blob is absent", async 
 
   assert.equal(statusNode.textContent, "Save failed");
 });
+
+class ListNode {
+  constructor() {
+    this.childNodes = [];
+    this.parentNode = null;
+    this._text = "";
+  }
+
+  appendChild(child) {
+    if (child.parentNode) child.remove();
+    child.parentNode = this;
+    this.childNodes.push(child);
+    return child;
+  }
+
+  insertBefore(node, ref) {
+    if (node.parentNode) node.remove();
+    node.parentNode = this;
+    const index = ref ? this.childNodes.indexOf(ref) : -1;
+    if (index < 0) this.childNodes.push(node);
+    else this.childNodes.splice(index, 0, node);
+    return node;
+  }
+
+  remove() {
+    if (!this.parentNode) return;
+    const index = this.parentNode.childNodes.indexOf(this);
+    if (index >= 0) this.parentNode.childNodes.splice(index, 1);
+    this.parentNode = null;
+  }
+
+  get textContent() {
+    if (this.childNodes.length === 0) return this._text;
+    return this.childNodes.map((node) => node.textContent).join("");
+  }
+
+  set textContent(value) {
+    this._text = String(value);
+    this.childNodes = [];
+  }
+}
+
+class ListFragment extends ListNode {
+  constructor(children) {
+    super();
+    this.nodeType = 11;
+    (children || []).forEach((child) => this.appendChild(child));
+  }
+
+  cloneNode(deep) {
+    const copy = new ListFragment();
+    if (deep) this.childNodes.forEach((child) => copy.appendChild(child.cloneNode(true)));
+    return copy;
+  }
+}
+
+class ListElement extends ListNode {
+  constructor(tag, attrs) {
+    super();
+    this.nodeType = 1;
+    this.tagName = String(tag).toUpperCase();
+    this.attrs = Object.assign({}, attrs);
+    this.classList = { toggle() {}, add() {}, remove() {}, contains() { return false; } };
+    this._listeners = {};
+  }
+
+  get value() {
+    return Object.prototype.hasOwnProperty.call(this, "_value") ? this._value : (this.getAttribute("value") || "");
+  }
+
+  set value(next) {
+    this._value = next == null ? "" : String(next);
+  }
+
+  addEventListener(type, fn) {
+    (this._listeners[type] = this._listeners[type] || []).push(fn);
+  }
+
+  dispatchEvent(event) {
+    (this._listeners[event.type] || []).forEach((fn) => fn(event));
+  }
+
+  getAttribute(name) {
+    return Object.prototype.hasOwnProperty.call(this.attrs, name) ? this.attrs[name] : null;
+  }
+
+  setAttribute(name, value) {
+    this.attrs[name] = String(value);
+  }
+
+  hasAttribute(name) {
+    return Object.prototype.hasOwnProperty.call(this.attrs, name);
+  }
+
+  removeAttribute(name) {
+    delete this.attrs[name];
+  }
+
+  set innerHTML(_value) {
+    throw new Error("innerHTML is not allowed");
+  }
+
+  matches(selector) {
+    if (selector.indexOf("template[") === 0 && selector.endsWith("]")) {
+      return this.tagName === "TEMPLATE" && this.hasAttribute(selector.slice("template[".length, -1));
+    }
+    const token = /^\[([^\]~]+)~=["']([^"']+)["']\]$/.exec(selector);
+    if (token) {
+      return (this.getAttribute(token[1]) || "").split(/\s+/).indexOf(token[2]) !== -1;
+    }
+    if (selector.indexOf("[") === 0 && selector.endsWith("]") && selector.indexOf("~=") === -1 && selector.indexOf("=") === -1) {
+      return this.hasAttribute(selector.slice(1, -1));
+    }
+    return false;
+  }
+
+  closest(selector) {
+    let node = this;
+    while (node) {
+      if (node.nodeType === 1 && node.matches(selector)) return node;
+      node = node.parentNode;
+    }
+    return null;
+  }
+
+  querySelector(selector) {
+    return this.querySelectorAll(selector)[0] || null;
+  }
+
+  querySelectorAll(selector) {
+    const found = [];
+    collectElements(this, selector, found);
+    return found;
+  }
+
+  cloneNode(deep) {
+    const copy = new ListElement(this.tagName.toLowerCase(), this.attrs);
+    copy._text = this._text;
+    if (deep) this.childNodes.forEach((child) => copy.appendChild(child.cloneNode(true)));
+    if (this.content) copy.content = this.content.cloneNode(true);
+    return copy;
+  }
+}
+
+function collectElements(root, selector, found) {
+  root.childNodes.forEach((node) => {
+    if (node.nodeType !== 1) return;
+    if (node.matches(selector)) found.push(node);
+    if (node.tagName === "TEMPLATE") return;
+    collectElements(node, selector, found);
+  });
+}
+
+function listElement(tag, attrs, children) {
+  const node = new ListElement(tag, attrs);
+  (children || []).forEach((child) => node.appendChild(child));
+  return node;
+}
+
+function listDocument(config, body) {
+  const configNode = listElement("script", { id: "mcp-ui-config" });
+  configNode.textContent = JSON.stringify(config);
+  return {
+    readyState: "complete",
+    documentElement: body,
+    body,
+    head: { appendChild() {} },
+    getElementById(id) {
+      if (id === "mcp-ui-config") return configNode;
+      return null;
+    },
+    querySelector(selector) {
+      return this.querySelectorAll(selector)[0] || null;
+    },
+    querySelectorAll(selector) {
+      const found = [];
+      collectElements(body, selector, found);
+      return found;
+    },
+    addEventListener() {},
+    createElement(tag) {
+      return listElement(tag);
+    }
+  };
+}
+
+function topicsList() {
+  const label = listElement("span", { "data-mcp-text": "" });
+  const chip = listElement("span", { class: "chip" }, [ label ]);
+  const template = listElement("template", { "data-mcp-list-item": "" });
+  template.content = new ListFragment([ chip ]);
+  const group = listElement("div", {}, [ template ]);
+  const empty = listElement("p", { "data-mcp-list-empty": "" });
+  empty.textContent = "No topics yet.";
+  const list = listElement("div", { "data-mcp-list": "topics" }, [ group, empty ]);
+  return { list, empty, body: listElement("div", {}, [ list ]) };
+}
+
+test("tool-result with 3 topics renders 3 chips and an empty list clears them", async () => {
+  const topics = topicsList();
+  const windowLike = windowStub({ widgetId: "pages.topics", data: {} });
+  windowLike.document = listDocument({ widgetId: "pages.topics", data: {} }, topics.body);
+  let handler;
+  attachFakeApp(windowLike, function (next) {
+    handler = next;
+    next({
+      content: [],
+      structuredContent: { topics: [ "Launch", "Story", "Press <kit>" ] }
+    });
+  });
+
+  const ctx = loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise(function (resolve) { setTimeout(resolve, 0); });
+
+  let chips = topics.list.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(chips.length, 3);
+  assert.deepEqual(chips.map((chip) => chip.textContent), [ "Launch", "Story", "Press <kit>" ]);
+  assert.equal(elementWithTag(topics.list, "IMG"), null);
+  assert.equal(topics.empty.hasAttribute("hidden"), true);
+  assert.equal(topics.empty.textContent, "No topics yet.");
+
+  ctx.mcpUI.markDirty();
+  assert.equal(topics.list.querySelectorAll("[data-mcp-list-entry]").length, 3);
+
+  handler({
+    isError: true,
+    structuredContent: { topics: [] }
+  });
+  assert.equal(topics.list.querySelectorAll("[data-mcp-list-entry]").length, 3);
+
+  handler({ content: [], structuredContent: { topics: [] } });
+  chips = topics.list.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(chips.length, 0);
+  assert.equal(topics.empty.hasAttribute("hidden"), false);
+
+  handler({ content: [], structuredContent: { topics: "Launch" } });
+  assert.equal(topics.list.querySelectorAll("[data-mcp-list-entry]").length, 0);
+  assert.equal(topics.empty.hasAttribute("hidden"), false);
+});
+
+test("list binder skips items that are not plain objects", async () => {
+  const label = listElement("input", { type: "text", name: "links[][label]", "data-mcp-field": "true", value: "" });
+  const row = listElement("tr", { "data-mcp-row": "", "data-mcp-attr-id": "row-$index" }, [ label ]);
+  const linkTemplate = listElement("template", { "data-mcp-list-item": "" });
+  linkTemplate.content = new ListFragment([ row ]);
+  const linkEmpty = listElement("p", { "data-mcp-list-empty": "" });
+  const links = listElement("tbody", { "data-mcp-list": "links" }, [ linkTemplate, linkEmpty ]);
+  const topicLabel = listElement("span", { "data-mcp-text": "" });
+  const topicTemplate = listElement("template", { "data-mcp-list-item": "" });
+  topicTemplate.content = new ListFragment([ topicLabel ]);
+  const topicEmpty = listElement("p", { "data-mcp-list-empty": "" });
+  const topics = listElement("div", { "data-mcp-list": "topics" }, [ topicTemplate, topicEmpty ]);
+  const windowLike = windowStub({ widgetId: "pages.links", data: {} });
+  windowLike.document = listDocument({ widgetId: "pages.links", data: {} }, listElement("div", {}, [ links, topics ]));
+  attachFakeApp(windowLike, function (next) {
+    next({
+      content: [],
+      structuredContent: {
+        links: [ null, "blank", [ "nested" ], 4, { id: "notes", label: "Notes" } ],
+        topics: [ "Launch", null, [ "nope" ], "Story", { label: "Hidden" } ]
+      }
+    });
+  });
+
+  loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  const entries = links.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].getAttribute("id"), "row-0");
+  assert.equal(entries[0].querySelectorAll("[data-mcp-field]")[0].value, "Notes");
+  assert.equal(linkEmpty.hasAttribute("hidden"), true);
+
+  const chips = topics.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(chips.length, 3);
+  assert.equal(chips[0].textContent, "Launch");
+  assert.equal(chips[1].textContent, "Story");
+  assert.equal(chips[2].textContent, "");
+  assert.equal(topicEmpty.hasAttribute("hidden"), true);
+});
+
+test("list binder fills object fields and leaves them alone when the form is dirty", async () => {
+  const heading = listElement("p", { "data-mcp-text": "heading" });
+  const body = listElement("p", { "data-mcp-text": "body" });
+  const item = listElement("div", {}, [ heading, body ]);
+  const template = listElement("template", { "data-mcp-list-item": "" });
+  template.content = new ListFragment([ item ]);
+  const empty = listElement("p", { "data-mcp-list-empty": "" });
+  const list = listElement("div", { "data-mcp-list": "sections" }, [ template, empty ]);
+  const title = listElement("h3", { "data-mcp-text": "title" });
+  const root = listElement("div", {}, [ title, list ]);
+  const windowLike = windowStub({ widgetId: "pages.tabs", data: {} });
+  windowLike.document = listDocument({ widgetId: "pages.tabs", data: {} }, root);
+  attachFakeApp(windowLike, function (next) {
+    next({
+      content: [],
+      structuredContent: {
+        title: "Launch notes",
+        heading: "WRONG",
+        sections: [ { heading: "Open", body: "Say hello." } ]
+      }
+    });
+  });
+
+  const ctx = loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise(function (resolve) { setTimeout(resolve, 0); });
+
+  function slotText(entry, field) {
+    const slot = entry.querySelectorAll("[data-mcp-text]").find((node) => node.getAttribute("data-mcp-text") === field);
+    return slot ? slot.textContent : null;
+  }
+
+  const entries = list.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(entries.length, 1);
+  assert.equal(slotText(entries[0], "heading"), "Open");
+  assert.equal(slotText(entries[0], "body"), "Say hello.");
+  assert.equal(title.textContent, "Launch notes");
+
+  ctx.mcpUI.markDirty();
+  const live = list.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(live.length, 1);
+  assert.equal(slotText(live[0], "heading"), "Open");
+});
+
+test("list binder fills fields and attributes on each clone and keeps input names", async () => {
+  const row = listElement("tr", {
+    "data-mcp-row": "",
+    "data-mcp-attr-data-id": "id"
+  });
+  const id = listElement("input", { type: "hidden", name: "links[][id]", "data-mcp-field": "true", value: "" });
+  const label = listElement("input", { type: "text", name: "links[][label]", "data-mcp-field": "true", value: "" });
+  const url = listElement("input", { type: "text", name: "links[][url]", "data-mcp-field": "true", value: "" });
+  const destroy = listElement("input", { type: "hidden", name: "links[][_destroy]", "data-mcp-field": "true", value: "0" });
+  const picked = listElement("input", { type: "checkbox", name: "links[][picked]", "data-mcp-field": "true" });
+  const meta = listElement("input", { type: "text", name: "links[][meta]", "data-mcp-field": "true", "data-mcp-type": "json" });
+  const extra = listElement("input", { type: "text", name: "links[][extra]", "data-mcp-field": "true" });
+  const trigger = listElement("button", {
+    type: "button",
+    "data-mcp-attr-id": "note-$index-trigger",
+    "data-mcp-attr-aria-controls": "note-$index-content"
+  });
+  const panel = listElement("div", {
+    "data-mcp-attr-id": "note-$index-content",
+    "data-mcp-attr-aria-labelledby": "id"
+  });
+  const visible = listElement("span", { "data-mcp-text": "label" });
+  row.appendChild(id);
+  row.appendChild(label);
+  row.appendChild(url);
+  row.appendChild(destroy);
+  row.appendChild(picked);
+  row.appendChild(meta);
+  row.appendChild(extra);
+  row.appendChild(trigger);
+  row.appendChild(panel);
+  row.appendChild(visible);
+  const template = listElement("template", { "data-mcp-list-item": "" });
+  template.content = new ListFragment([ row ]);
+  const empty = listElement("p", { "data-mcp-list-empty": "" });
+  const list = listElement("div", { "data-mcp-list": "links" }, [ template, empty ]);
+  const added = listElement("tr", { "data-mcp-row": "" });
+  const windowLike = windowStub({ widgetId: "pages.links", data: {} });
+  windowLike.document = listDocument({ widgetId: "pages.links", data: {} }, listElement("div", {}, [ list ]));
+  let handler;
+  attachFakeApp(windowLike, function (next) { handler = next; });
+
+  loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  handler({
+    content: [],
+    structuredContent: {
+      links: [
+        { id: "notes", label: "Notes", url: "https://example.com/notes", picked: true, meta: { a: 1 }, extra: { b: 2 } },
+        { id: "press", label: "Press <kit>", url: "https://example.com/press", picked: "false" }
+      ]
+    }
+  });
+
+  const entries = list.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(entries.length, 2);
+  assert.equal(entries[0].getAttribute("data-mcp-row"), "");
+  assert.equal(entries[0].getAttribute("data-id"), "notes");
+  assert.equal(entries[1].getAttribute("data-id"), "press");
+  const firstLabel = entries[0].querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][label]");
+  const secondLabel = entries[1].querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][label]");
+  assert.equal(firstLabel.value, "Notes");
+  assert.equal(firstLabel.getAttribute("name"), "links[][label]");
+  assert.equal(secondLabel.value, "Press <kit>");
+  assert.equal(elementWithTag(list, "IMG"), null);
+  assert.equal(entries[0].querySelectorAll("[data-mcp-text]")[0].textContent, "Notes");
+  const firstUrl = entries[0].querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][url]");
+  const firstDestroy = entries[0].querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][_destroy]");
+  const firstPicked = entries[0].querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][picked]");
+  const secondPicked = entries[1].querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][picked]");
+  const firstMeta = entries[0].querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][meta]");
+  const firstExtra = entries[0].querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][extra]");
+  assert.equal(firstUrl.value, "https://example.com/notes");
+  assert.equal(firstDestroy.value, "0");
+  assert.equal(firstPicked.checked, true);
+  assert.equal(secondPicked.checked, false);
+  assert.equal(firstMeta.value, '{"a":1}');
+  assert.equal(firstExtra.value, "[object Object]");
+  assert.equal(elementWithTag(entries[0], "BUTTON").getAttribute("id"), "note-0-trigger");
+  assert.equal(elementWithTag(entries[0], "BUTTON").getAttribute("aria-controls"), "note-0-content");
+  assert.equal(elementWithTag(entries[1], "BUTTON").getAttribute("id"), "note-1-trigger");
+  assert.equal(elementWithTag(entries[1], "DIV").getAttribute("id"), "note-1-content");
+  assert.equal(elementWithTag(entries[0], "DIV").getAttribute("aria-labelledby"), "notes");
+
+  list.appendChild(added);
+  handler({ content: [], structuredContent: { links: [] } });
+  assert.equal(list.querySelectorAll("[data-mcp-list-entry]").length, 0);
+  assert.equal(added.parentNode, list);
+  assert.equal(list.querySelectorAll("[data-mcp-row]").length, 1);
+  assert.equal(empty.hasAttribute("hidden"), false);
+});
+
+test("cloned rows save in DOM order and reset restores the opening tool result", async () => {
+  const id = listElement("input", { type: "hidden", name: "links[][id]", "data-mcp-field": "true" });
+  const label = listElement("input", { type: "text", name: "links[][label]", "data-mcp-field": "true" });
+  const row = listElement("tr", { "data-mcp-row": "" }, [ id, label ]);
+  const template = listElement("template", { "data-mcp-list-item": "" });
+  template.content = new ListFragment([ row ]);
+  const list = listElement("tbody", { "data-mcp-list": "links" }, [ template ]);
+  const title = listElement("input", { name: "title", "data-mcp-field": "true" });
+  const save = listElement("button", { type: "button", "data-mcp-save": "save" });
+  const reset = listElement("button", { type: "button", "data-mcp-reset": "reset" });
+  const editor = listElement("div", { "data-controller": "mcp-editor", "data-mcp-restore-order": "" }, [ title, list, save, reset ]);
+  const windowLike = windowStub({ widgetId: "pages.links", actions: { save: "pages.update" }, data: {} });
+  windowLike.document = listDocument(
+    { widgetId: "pages.links", actions: { save: "pages.update" }, data: {} },
+    listElement("div", {}, [ editor ])
+  );
+  const calls = [];
+  let toolResult;
+  windowLike.parent = { postMessage() {} };
+  windowLike.McpApps = {
+    App: function App() {
+      this.callServerTool = function (params) {
+        calls.push(params);
+        return Promise.resolve({
+          content: [],
+          structuredContent: {
+            ok: true,
+            data: {
+              title: "Launch notes",
+              links: [
+                { id: "press", label: "Press desk" },
+                { id: "notes", label: "Notes" }
+              ]
+            }
+          }
+        });
+      };
+    },
+    PostMessageTransport: function PostMessageTransport() {}
+  };
+  Object.defineProperty(windowLike.McpApps.App.prototype, "ontoolresult", {
+    configurable: true,
+    get() { return this._ontoolresult; },
+    set(fn) { this._ontoolresult = fn; toolResult = fn; }
+  });
+  windowLike.McpApps.App.prototype.connect = function connect() {
+    return Promise.resolve();
+  };
+
+  loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  toolResult({
+    content: [],
+    structuredContent: {
+      title: "Launch notes",
+      links: [
+        { id: "notes", label: "Notes" },
+        { id: "press", label: "Press" }
+      ]
+    }
+  });
+
+  let rows = list.querySelectorAll("[data-mcp-row]");
+  assert.equal(rows.length, 2);
+  assert.equal(title.value, "Launch notes");
+  const first = rows[0];
+  const second = rows[1];
+  const labelOf = (entry) => entry.querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][label]");
+  labelOf(second).value = "Press desk";
+  list.insertBefore(second, first);
+  save.dispatchEvent({ type: "click" });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.equal(JSON.stringify(calls[0].arguments.links), JSON.stringify([
+    { id: "press", label: "Press desk" },
+    { id: "notes", label: "Notes" }
+  ]));
+
+  rows = list.querySelectorAll("[data-mcp-row]");
+  assert.equal(labelOf(rows[0]).value, "Press desk");
+  reset.dispatchEvent({ type: "click" });
+  rows = list.querySelectorAll("[data-mcp-row]");
+  assert.equal(rows.length, 2);
+  assert.equal(labelOf(rows[0]).value, "Notes");
+  assert.equal(labelOf(rows[1]).value, "Press");
+  assert.equal(title.value, "Launch notes");
+});
+
+test("list binder rejects javascript hrefs and event-handler attributes", async () => {
+  function anchor(field) {
+    return listElement("a", { "data-mcp-attr-href": field });
+  }
+  const scriptUrl = anchor("url");
+  const paddedUrl = anchor("padded");
+  const brokenUrl = anchor("proto");
+  const safeUrl = anchor("safe");
+  const mailUrl = anchor("mail");
+  const relativeUrl = anchor("rel");
+  const indexed = listElement("a", { "data-mcp-attr-href": "javascript:alert($index)" });
+  const relativeIndex = listElement("a", { "data-mcp-attr-href": "/files/$index" });
+  const click = listElement("a", { "data-mcp-attr-onclick": "id" });
+  const styled = listElement("a", { "data-mcp-attr-style": "label" });
+  const frame = listElement("iframe", { "data-mcp-attr-srcdoc": "label" });
+  const action = listElement("form", { "data-mcp-attr-formaction": "safe" });
+  const image = listElement("img", { "data-mcp-attr-src": "url" });
+  const safeImage = listElement("img", { "data-mcp-attr-src": "safe" });
+  const titled = listElement("span", { "data-mcp-attr-title": "label" });
+  const row = listElement("div", {}, [
+    scriptUrl, paddedUrl, brokenUrl, safeUrl, mailUrl, relativeUrl, indexed, relativeIndex,
+    click, styled, frame, action, image, safeImage, titled
+  ]);
+  const template = listElement("template", { "data-mcp-list-item": "" });
+  template.content = new ListFragment([ row ]);
+  const list = listElement("div", { "data-mcp-list": "links" }, [ template ]);
+  const windowLike = windowStub({ widgetId: "pages.links", data: {} });
+  windowLike.document = listDocument({ widgetId: "pages.links", data: {} }, listElement("div", {}, [ list ]));
+  attachFakeApp(windowLike, function (next) {
+    next({
+      content: [],
+      structuredContent: {
+        links: [
+          {
+            id: "notes",
+            label: "Notes",
+            url: "javascript:alert(1)",
+            padded: " java\nscript:alert(1)",
+            proto: "//evil.example/a",
+            safe: "https://example.com/a",
+            mail: "mailto:ed@example.com",
+            rel: "/notes"
+          }
+        ]
+      }
+    });
+  });
+
+  loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  const entry = list.querySelectorAll("[data-mcp-list-entry]")[0];
+  const anchors = [];
+  const images = [];
+  function walk(node) {
+    if (!node || node.nodeType !== 1) return;
+    if (node.tagName === "A") anchors.push(node);
+    if (node.tagName === "IMG") images.push(node);
+    (node.childNodes || []).forEach(walk);
+  }
+  walk(entry);
+  assert.equal(anchors[0].getAttribute("href"), null);
+  assert.equal(anchors[1].getAttribute("href"), null);
+  assert.equal(anchors[2].getAttribute("href"), null);
+  assert.equal(anchors[3].getAttribute("href"), "https://example.com/a");
+  assert.equal(anchors[4].getAttribute("href"), "mailto:ed@example.com");
+  assert.equal(anchors[5].getAttribute("href"), "/notes");
+  assert.equal(anchors[6].getAttribute("href"), null);
+  assert.equal(anchors[7].getAttribute("href"), "/files/0");
+  assert.equal(anchors[8].getAttribute("onclick"), null);
+  assert.equal(anchors[9].getAttribute("style"), null);
+  assert.equal(elementWithTag(entry, "IFRAME").getAttribute("srcdoc"), null);
+  assert.equal(elementWithTag(entry, "FORM").getAttribute("formaction"), null);
+  assert.equal(images[0].getAttribute("src"), null);
+  assert.equal(images[1].getAttribute("src"), "https://example.com/a");
+  assert.equal(elementWithTag(entry, "SPAN").getAttribute("title"), "Notes");
+});
+
+test("list binder refuses stimulus controller action and target attributes", async () => {
+  const planted = listElement("span", {
+    "data-controller": "flat-pack--table-sortable",
+    "data-mcp-attr-data-controller": "controller"
+  });
+  const action = listElement("span", { "data-mcp-attr-DATA-ACTION": "action", "data-action": "click->evil#run" });
+  const target = listElement("span", { "data-mcp-attr-data-flat-pack--table-sortable-target": "target" });
+  const mixedTarget = listElement("span", { "data-mcp-attr-Data-Other-Target": "target" });
+  const kept = listElement("span", { "data-mcp-attr-data-id": "id" });
+  const row = listElement("div", {}, [ planted, action, target, mixedTarget, kept ]);
+  const template = listElement("template", { "data-mcp-list-item": "" });
+  template.content = new ListFragment([ row ]);
+  const list = listElement("div", { "data-mcp-list": "links" }, [ template ]);
+  const windowLike = windowStub({ widgetId: "pages.links", data: {} });
+  windowLike.document = listDocument({ widgetId: "pages.links", data: {} }, listElement("div", {}, [ list ]));
+  attachFakeApp(windowLike, function (next) {
+    next({
+      content: [],
+      structuredContent: {
+        links: [ {
+          id: "notes",
+          controller: "flat-pack--table-sortable",
+          action: "click->flat-pack--table-sortable#disconnect",
+          target: "row"
+        } ]
+      }
+    });
+  });
+
+  loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  const spans = [];
+  function walk(node) {
+    if (!node || node.nodeType !== 1) return;
+    if (node.tagName === "SPAN") spans.push(node);
+    (node.childNodes || []).forEach(walk);
+  }
+  walk(list.querySelectorAll("[data-mcp-list-entry]")[0]);
+  assert.equal(spans[0].getAttribute("data-controller"), null);
+  assert.equal(spans[1].getAttribute("data-action"), null);
+  assert.equal(spans[1].getAttribute("DATA-ACTION"), null);
+  assert.equal(spans[2].getAttribute("data-flat-pack--table-sortable-target"), null);
+  assert.equal(spans[3].getAttribute("data-other-target"), null);
+  assert.equal(spans[4].getAttribute("data-id"), "notes");
+});
+
+test("list binder ignores a list that lives only on the prototype", async () => {
+  const label = listElement("span", { "data-mcp-text": "label" });
+  const row = listElement("div", {}, [ label ]);
+  const template = listElement("template", { "data-mcp-list-item": "" });
+  template.content = new ListFragment([ row ]);
+  const empty = listElement("p", { "data-mcp-list-empty": "" });
+  const list = listElement("div", { "data-mcp-list": "links" }, [ template, empty ]);
+  const title = listElement("h1", { "data-mcp-text": "title" });
+  const windowLike = windowStub({ widgetId: "pages.links", data: {} });
+  windowLike.document = listDocument(
+    { widgetId: "pages.links", data: {} },
+    listElement("div", {}, [ title, list ])
+  );
+  attachFakeApp(windowLike, function (next) {
+    const record = Object.create({ links: [ { id: "hidden", label: "Hidden" } ] });
+    record.title = "Launch notes";
+    next({ content: [], structuredContent: record });
+  });
+
+  loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.equal(title.textContent, "Launch notes");
+  assert.equal(list.querySelectorAll("[data-mcp-list-entry]").length, 0);
+  assert.equal(empty.hasAttribute("hidden"), false);
+});
+
+test("boot warns when McpFields is missing and still starts", async () => {
+  const errors = [];
+  const windowLike = windowStub({ widgetId: "pages.links", data: { title: "Launch notes" } });
+  windowLike.console = { error(message) { errors.push(String(message)); } };
+  const title = listElement("h1", { "data-mcp-text": "title" });
+  windowLike.document = listDocument(
+    { widgetId: "pages.links", data: { title: "Launch notes" } },
+    listElement("div", {}, [ title ])
+  );
+  const context = loadEngine(windowLike, { sdk: false, boot: false });
+  let started = 0;
+  const start = context.mcpUI.start;
+  context.mcpUI.start = function () {
+    started += 1;
+    return start.call(context.mcpUI);
+  };
+  vm.runInContext(
+    fs.readFileSync(path.join(ENGINE_JS, "boot.js"), "utf8"),
+    context,
+    { filename: "boot.js" }
+  );
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.equal(started, 1);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /window\.McpFields is missing/);
+  assert.match(errors[0], /editor_controller\.js before boot\.js/);
+  assert.equal(title.textContent, "");
+});
+
+test("boot stays quiet when the editor controller loaded first", async () => {
+  const errors = [];
+  const windowLike = windowStub({ widgetId: "pages.links", data: {} });
+  windowLike.console = { error(message) { errors.push(String(message)); } };
+  windowLike.document = listDocument({ widgetId: "pages.links", data: {} }, listElement("div", {}, []));
+  const context = loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.deepEqual(errors, []);
+  assert.equal(typeof context.McpFields.own, "function");
+  assert.equal(typeof context.McpFields.inputType, "function");
+  assert.equal(typeof context.McpFields.writeField, "function");
+  assert.equal(typeof context.McpFields.inputFieldKey, "function");
+});
+
+test("list binder ignores inherited keys and leaves a nested list alone", async () => {
+  const title = listElement("h1", { "data-mcp-text": "title" });
+  const summary = listElement("p", { "data-mcp-text": "summary" });
+  const inheritedLabel = listElement("input", { type: "text", name: "links[][label]", "data-mcp-field": "true", value: "" });
+  const inheritedRow = listElement("div", {}, [ inheritedLabel ]);
+  const linkTemplate = listElement("template", { "data-mcp-list-item": "" });
+  linkTemplate.content = new ListFragment([ inheritedRow ]);
+  const linkEmpty = listElement("p", { "data-mcp-list-empty": "" });
+  linkEmpty.setAttribute("hidden", "");
+  const links = listElement("div", { "data-mcp-list": "links" }, [ linkTemplate, linkEmpty ]);
+  const heading = listElement("span", { "data-mcp-text": "heading" });
+  const sectionTemplate = listElement("template", { "data-mcp-list-item": "" });
+  sectionTemplate.content = new ListFragment([ listElement("div", {}, [ heading ]) ]);
+  const sectionEmpty = listElement("p", { "data-mcp-list-empty": "" });
+  const sections = listElement("div", { "data-mcp-list": "sections" }, [ links, sectionTemplate, sectionEmpty ]);
+  const windowLike = windowStub({ widgetId: "pages.tabs", data: {} });
+  windowLike.document = listDocument({ widgetId: "pages.tabs", data: {} }, listElement("div", {}, [ title, summary, sections ]));
+  let handler;
+  attachFakeApp(windowLike, function (next) { handler = next; });
+
+  loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  const inherited = Object.create({ title: "Hidden", topics: [ "Hidden" ], links: [ { label: "Hidden" } ] });
+  inherited.summary = "Shown";
+  const link = Object.create({ label: "Hidden" });
+  link.id = "notes";
+  handler({
+    content: [],
+    structuredContent: Object.assign(inherited, {
+      sections: [ { heading: "Open" } ],
+      links: [ link ]
+    })
+  });
+
+  assert.equal(title.textContent, "");
+  assert.equal(summary.textContent, "Shown");
+  assert.equal(sections.querySelectorAll("[data-mcp-list-entry]").filter((node) => node.closest("[data-mcp-list]") === sections).length, 1);
+  const linkEntry = links.querySelectorAll("[data-mcp-list-entry]")[0];
+  assert.equal(linkEntry.querySelectorAll("[data-mcp-field]")[0].value, "");
+  assert.equal(sectionEmpty.hasAttribute("hidden"), true);
+  assert.equal(linkEmpty.hasAttribute("hidden"), true);
+
+  handler({ content: [], structuredContent: { sections: [], links: [ link ] } });
+  assert.equal(sectionEmpty.hasAttribute("hidden"), false);
+  assert.equal(linkEmpty.hasAttribute("hidden"), true);
+  assert.equal(links.querySelectorAll("[data-mcp-list-entry]").length, 1);
+});
+
+test("a new sortable row beside a kept row drags and saves in the new order", async () => {
+  function field(name, value) {
+    const input = listElement("input", { type: name === "links[][id]" ? "hidden" : "text", name, "data-mcp-field": "true" });
+    if (value != null) input.value = value;
+    return input;
+  }
+  const row = listElement("tr", {
+    "data-mcp-row": "",
+    "data-mcp-attr-data-id": "id",
+    "data-flat-pack--table-sortable-target": "row"
+  });
+  row.appendChild(field("links[][id]"));
+  row.appendChild(field("links[][label]"));
+  const template = listElement("template", { "data-mcp-list-item": "" });
+  template.content = new ListFragment([ row ]);
+  const list = listElement("tbody", { "data-mcp-list": "links" }, [ template ]);
+  const save = listElement("button", { type: "button", "data-mcp-save": "save" });
+  const shell = listElement("div", { "data-controller": "mcp-editor flat-pack--table-sortable" }, [ list, save ]);
+  const calls = [];
+  const windowLike = windowStub({ widgetId: "pages.links", actions: { save: "pages.update" }, data: {} });
+  windowLike.document = listDocument(
+    { widgetId: "pages.links", actions: { save: "pages.update" }, data: {} },
+    listElement("div", {}, [ shell ])
+  );
+  windowLike.parent = { postMessage() {} };
+  windowLike.McpApps = {
+    App: function App() {
+      this.callServerTool = function (params) {
+        calls.push(params);
+        return Promise.resolve({
+          content: [],
+          structuredContent: { ok: true, data: params.arguments }
+        });
+      };
+    },
+    PostMessageTransport: function PostMessageTransport() {}
+  };
+  let handler;
+  Object.defineProperty(windowLike.McpApps.App.prototype, "ontoolresult", {
+    configurable: true,
+    get() { return this._ontoolresult; },
+    set(fn) { this._ontoolresult = fn; handler = fn; }
+  });
+  windowLike.McpApps.App.prototype.connect = function connect() {
+    return Promise.resolve();
+  };
+  const place = list.insertBefore.bind(list);
+  list.insertBefore = function (node, ref) {
+    const fresh = node.parentNode !== list;
+    const placed = place(node, ref);
+    if (fresh && node.getAttribute("data-flat-pack--table-sortable-target") === "row") {
+      node._binds = (node._binds || 0) + 1;
+      node.setAttribute("draggable", "true");
+    }
+    return placed;
+  };
+  const controllerWrites = [];
+  const writeAttribute = shell.setAttribute.bind(shell);
+  shell.setAttribute = function (name, value) {
+    if (name === "data-controller") controllerWrites.push(value);
+    writeAttribute(name, value);
+  };
+
+  loadEngine(windowLike, { sdk: false, boot: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  function deliver(links) {
+    handler({ content: [], structuredContent: { links } });
+  }
+
+  deliver([
+    { id: "notes", label: "Notes" },
+    { id: "press", label: "Press" }
+  ]);
+
+  const labelOf = (entry) => entry.querySelectorAll("[data-mcp-field]").find((node) => node.getAttribute("name") === "links[][label]");
+  let entries = list.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(entries.length, 2);
+  assert.deepEqual(entries.map((entry) => entry._binds), [ 1, 1 ]);
+  assert.deepEqual(entries.map((entry) => entry.getAttribute("draggable")), [ "true", "true" ]);
+  const notes = entries[0];
+  labelOf(notes).value = "Draft notes";
+
+  deliver([
+    { id: "notes", label: "Server notes" },
+    { id: "site", label: "Site" }
+  ]);
+
+  entries = list.querySelectorAll("[data-mcp-list-entry]");
+  assert.equal(entries.length, 2);
+  assert.equal(entries[0], notes);
+  assert.equal(notes._binds, 1);
+  assert.equal(labelOf(notes).value, "Draft notes");
+  const site = entries[1];
+  assert.equal(site._binds, 1);
+  assert.equal(site.getAttribute("draggable"), "true");
+  assert.equal(site.getAttribute("data-flat-pack--table-sortable-target"), "row");
+  assert.deepEqual(controllerWrites, []);
+  assert.equal(shell.getAttribute("data-controller"), "mcp-editor flat-pack--table-sortable");
+
+  list.insertBefore(site, notes);
+  entries = list.querySelectorAll("[data-mcp-list-entry]");
+  assert.deepEqual(entries.map((entry) => entry.getAttribute("data-id")), [ "site", "notes" ]);
+  save.dispatchEvent({ type: "click" });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  entries = list.querySelectorAll("[data-mcp-list-entry]");
+  assert.deepEqual(entries.map((entry) => entry.getAttribute("data-id")), [ "site", "notes" ]);
+  assert.equal(site._binds, 1);
+  assert.equal(notes._binds, 1);
+  assert.equal(JSON.stringify(calls[0].arguments.links), JSON.stringify([
+    { id: "site", label: "Site" },
+    { id: "notes", label: "Draft notes" }
+  ]));
+});
+
+function elementWithTag(root, tag) {
+  if (root.tagName === tag) return root;
+  const children = root.childNodes || [];
+  for (const child of children) {
+    if (child.nodeType !== 1) continue;
+    const found = elementWithTag(child, tag);
+    if (found) return found;
+  }
+  return null;
+}

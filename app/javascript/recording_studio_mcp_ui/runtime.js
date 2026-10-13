@@ -3,6 +3,7 @@
 
   var config = {};
   var data = {};
+  var openedRecord = null;
   var dirty = false;
   var listeners = [];
   var app = null;
@@ -17,15 +18,26 @@
     }
   }
 
-  function notify(dataChanged) {
+  function notify(dataChanged, extra) {
+    var meta = { dirty: dirty, dataChanged: !!dataChanged };
+    if (extra && typeof extra === "object") {
+      Object.keys(extra).forEach(function (key) {
+        meta[key] = extra[key];
+      });
+    }
     listeners.slice().forEach(function (listener) {
-      listener(data, { dirty: dirty, dataChanged: !!dataChanged });
+      listener(data, meta);
     });
   }
 
-  function setData(next) {
+  function blankRecord(value) {
+    return !value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length === 0;
+  }
+
+  function setData(next, extra) {
     data = next && typeof next === "object" ? next : {};
-    notify(true);
+    if (openedRecord == null && !blankRecord(data)) openedRecord = data;
+    notify(true, extra);
   }
 
   function textContent(result) {
@@ -145,7 +157,7 @@
     },
     reset: function () {
       dirty = false;
-      setData(config.data || {});
+      setData(openedRecord || config.data || {}, { reset: true });
     },
     execute: function (aliasName, payload) {
       var toolName = toolNameFor(aliasName);

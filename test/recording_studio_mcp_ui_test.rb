@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioMcpUiTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.4.0", RecordingStudio::MCP_UI::VERSION
+    assert_equal "0.5.0", RecordingStudio::MCP_UI::VERSION
   end
 
   def test_engine_exists
@@ -14,6 +14,7 @@ class RecordingStudioMcpUiTest < Minitest::Test
   def test_gemspec_pins_recording_studio_4_2
     gemspec = File.read(File.expand_path("../recording_studio_mcp_ui.gemspec", __dir__))
 
+    assert_includes gemspec, 'spec.add_dependency "flat_pack", ">= 0.1.229"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio", "~> 4.2"'
     assert_includes gemspec, 'spec.add_dependency "view_component"'
   end
@@ -49,7 +50,7 @@ class RecordingStudioMcpUiTest < Minitest::Test
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.15.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_attachable", tag: "v0.15.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.8.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.213"'
+    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.229"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_api", tag: "v0.6.11"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_mcp", tag: "v0.11.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_Oauth", tag: "v0.7.0"'
@@ -117,7 +118,7 @@ class RecordingStudioMcpUiTest < Minitest::Test
 
     assert_includes readme, "RecordingStudio::MCP_UI"
     assert_includes readme, "dummy GitHub tag `v4.5.0`"
-    assert_includes readme, "dummy GitHub tag `v0.1.213`"
+    assert_includes readme, "dummy GitHub tag `v0.1.229`"
     refute_includes readme, "ExampleService"
     refute_includes readme, "RecordingStudio v3"
   end
