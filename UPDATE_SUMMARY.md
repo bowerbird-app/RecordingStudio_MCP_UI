@@ -24,3 +24,8 @@ Read from `recording_studio_mcp_ui.gemspec`, `Gemfile`, and `test/dummy/Gemfile`
 | dummy Gemfile | recording_studio_site_settings | GitHub tag `v0.2.0` |
 | dummy Gemfile | recording_studio_root_switchable | GitHub tag `v0.9.0` |
 | dummy Gemfile | flat_pack | GitHub tag `v0.1.213` |
+
+- Authenticated dummy layout: `RecordingStudio::UsesDefaultLayout` plus FlatPack CSS/JS
+- Hooks and BaseService come from core; do not copy them into a new addon
+- Recordable declarations remain required
+- Optional example mixin: `include RecordingStudio::Capabilities::Example.to(**opts)` wraps `RecordingStudio::Capabilities.include_for`. Installing the gem does not enable it globally.
