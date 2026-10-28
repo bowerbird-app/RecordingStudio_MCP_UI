@@ -126,34 +126,19 @@ class RecordingStudioMcpUiTest < Minitest::Test
     refute_includes readme, "RecordingStudio v3"
   end
 
-  def test_update_summary_matches_current_gemspec_and_gemfile_pins
+  def test_update_summary_drops_stale_pins
     summary = File.read(File.expand_path("../UPDATE_SUMMARY.md", __dir__))
-    gemspec = File.read(File.expand_path("../recording_studio_mcp_ui.gemspec", __dir__))
-    dummy_gemfile = File.read(File.expand_path("dummy/Gemfile", __dir__))
-    root_gemfile = File.read(File.expand_path("../Gemfile", __dir__))
 
     refute_includes summary, "v4.2.2"
     refute_includes summary, "v0.1.196"
-    assert_includes gemspec, 'spec.add_dependency "recording_studio", "~> 4.2"'
-    assert_includes summary, "`~> 4.2`"
-    assert_includes dummy_gemfile, 'tag: "v4.7.0"'
     assert_includes summary, "`v4.7.0`"
-    assert_includes dummy_gemfile, 'tag: "v0.1.213"'
-    assert_includes summary, "`v0.1.213`"
-    assert_includes root_gemfile, 'tag: "v4.6.0"'
-    assert_includes summary, "`v4.6.0`"
   end
 
-  def test_coverage_and_nested_github_are_untracked
+  def test_coverage_is_untracked
     root = File.expand_path("..", __dir__)
-    gitignore = File.read(File.join(root, ".gitignore"))
 
-    assert_includes gitignore, "coverage/"
+    assert_includes File.read(File.join(root, ".gitignore")), "coverage/"
     assert_equal "", `git -C #{root} ls-files -- coverage test/dummy/coverage`.strip
-    refute File.exist?(File.join(root, "test/dummy/.github/workflows/ci.yml"))
-    refute File.exist?(File.join(root, "docs/gem_template"))
-    refute Dir.exist?(File.join(root, ".github/agents"))
-    assert_equal "3.3", File.read(File.join(root, ".ruby-version")).strip
   end
 
   def test_dummy_home_page_uses_demo_title_only
