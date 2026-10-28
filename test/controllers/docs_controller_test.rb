@@ -101,15 +101,14 @@ class DocsControllerTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "app/views/gem_template/home/index.html.erb"
   end
 
-  test "methods page renders successfully" do
-    get docs_methods_path
-    assert_response :success
-    assert_select "h1", text: "Methods"
-    assert_includes response.body, "Document the public methods your addon exposes."
-    assert_includes response.body, "Example method"
-    assert_includes response.body, "recordingstudio_addon.example_method"
-    assert_includes response.body, "# Explain what this method does before the example."
-    assert_includes response.body, "Provide one section title and codeblock for each method"
+  test "template methods leftovers are gone" do
+    dummy_root = File.expand_path("../dummy", __dir__)
+    routes = File.read(File.join(dummy_root, "config/routes.rb"))
+    controller = File.read(File.join(dummy_root, "app/controllers/docs_controller.rb"))
+
+    refute File.exist?(File.join(dummy_root, "app/views/docs/methods.html.erb"))
+    refute_includes routes, "docs/methods"
+    refute_includes controller, "def methods"
   end
 
   test "authenticated docs pages use the recording studio default layout" do
