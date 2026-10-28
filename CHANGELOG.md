@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-10-28
+
+### Changed
+- Audit cleanup: untrack SimpleCov output, drop nested dummy GitHub config and leftover template docs/agents/docs-methods page, refresh kit pin docs from the current gemspec and Gemfiles, and set `.ruby-version` to `3.3` so Security CI can install Ruby.
+
+### Upgrade notes
+- No library or public API change. Hosts do not need to change application code.
+
+## [0.4.1] - 2026-10-14
+
+### Changed
+- Dependency-only bump (tag `v0.4.1`; no prior CHANGELOG entry). Root `recording_studio` GitHub tag `v4.5.0` → `v4.6.0`. Dummy GitHub tags: Recording Studio `v4.5.0` → `v4.6.0`, Accessible `v0.15.0` → `v0.17.0`, Admin `v2.1.0` → `v2.3.0`, API `v0.6.11` → `v0.7.0`, MCP `v0.11.0` → `v0.13.1`, Oauth `v0.7.0` → `v0.10.1`, Users `v0.17.0` → `v0.21.0`, Metrics `v0.2.0` → `v0.2.3`, Site Settings `v0.1.3` → `v0.2.0`, Root Switchable `v0.8.0` → `v0.9.0`. Added dummy pins for Trashable `v0.10.0` and Cache `v0.5.0`. Dummy admin resolver uses `recording_studio_trashable_kept_sql` instead of `trashed_at: nil`.
+
+### Upgrade notes
+- No MCP UI library or public API change. Refresh host kit pins if you track this gem's dummy/root Gemfiles.
+
 ## [0.4.0] - 2026-10-13
 
 ### Added
@@ -83,7 +99,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Ruby `action_executor`, `visibility_checker`, and `RecordingStudio::MCP_UI.execute`. Widget writes are ordinary MCP tool calls.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.4.1...v0.4.2
+[0.4.1]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.1.1...v0.2.0
