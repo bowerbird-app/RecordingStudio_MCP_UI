@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioMcpUiTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.4.0", RecordingStudio::MCP_UI::VERSION
+    assert_equal "0.4.2", RecordingStudio::MCP_UI::VERSION
   end
 
   def test_engine_exists
@@ -50,7 +50,7 @@ class RecordingStudioMcpUiTest < Minitest::Test
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_admin", tag: "v2.3.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_attachable", tag: "v0.15.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.9.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.213"'
+    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.329"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_api", tag: "v0.7.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_mcp", tag: "v0.13.1"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_Oauth", tag: "v0.10.1"'
@@ -121,9 +121,24 @@ class RecordingStudioMcpUiTest < Minitest::Test
 
     assert_includes readme, "RecordingStudio::MCP_UI"
     assert_includes readme, "dummy GitHub tag `v4.7.0`"
-    assert_includes readme, "dummy GitHub tag `v0.1.213`"
+    assert_includes readme, "dummy GitHub tag `v0.1.329`"
     refute_includes readme, "ExampleService"
     refute_includes readme, "RecordingStudio v3"
+  end
+
+  def test_update_summary_drops_stale_pins
+    summary = File.read(File.expand_path("../UPDATE_SUMMARY.md", __dir__))
+
+    refute_includes summary, "v4.2.2"
+    refute_includes summary, "v0.1.196"
+    assert_includes summary, "`v4.7.0`"
+  end
+
+  def test_coverage_is_untracked
+    root = File.expand_path("..", __dir__)
+
+    assert_includes File.read(File.join(root, ".gitignore")), "coverage/"
+    assert_equal "", `git -C #{root} ls-files -- coverage test/dummy/coverage`.strip
   end
 
   def test_dummy_home_page_uses_demo_title_only

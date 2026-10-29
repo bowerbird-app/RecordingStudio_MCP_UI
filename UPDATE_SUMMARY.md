@@ -1,10 +1,30 @@
-# Recording Studio kit pin update
+# Recording Studio kit pins
 
-Copied addons now start on the Support host-kit floor.
+Read from `recording_studio_mcp_ui.gemspec`, `Gemfile`, and `test/dummy/Gemfile`.
 
-- Gemspec: `add_dependency "recording_studio", "~> 4.2"`
-- Dummy GitHub tags: Recording Studio `v4.2.2`, Accessible `v0.10.1`, Root Switchable `v0.5.1`, FlatPack `v0.1.196`
-- Root and dummy Rails locks both `8.1.4`
+| Source | Gem | Pin |
+| --- | --- | --- |
+| gemspec | rails | `~> 8.1.0` |
+| gemspec | recording_studio | `~> 4.2` |
+| gemspec | view_component | `>= 3.0` |
+| gemspec | required Ruby | `>= 3.3.0` |
+| root Gemfile | recording_studio | GitHub tag `v4.6.0` |
+| dummy Gemfile | rails | `~> 8.1.1` |
+| dummy Gemfile | recording_studio | GitHub tag `v4.7.0` |
+| dummy Gemfile | recording_studio_accessible | GitHub tag `v0.18.0` |
+| dummy Gemfile | recording_studio_admin | GitHub tag `v2.3.0` |
+| dummy Gemfile | recording_studio_api | GitHub tag `v0.7.0` |
+| dummy Gemfile | recording_studio_mcp | GitHub tag `v0.13.1` |
+| dummy Gemfile | recording_studio_oauth | GitHub tag `v0.10.1` |
+| dummy Gemfile | recording_studio_user | GitHub tag `v0.21.0` |
+| dummy Gemfile | recording_studio_attachable | GitHub tag `v0.15.0` |
+| dummy Gemfile | recording_studio_metrics | GitHub tag `v0.2.3` |
+| dummy Gemfile | recording_studio_trashable | GitHub tag `v0.11.0` |
+| dummy Gemfile | recording_studio_cache | GitHub tag `v0.5.0` |
+| dummy Gemfile | recording_studio_site_settings | GitHub tag `v0.2.0` |
+| dummy Gemfile | recording_studio_root_switchable | GitHub tag `v0.9.0` |
+| dummy Gemfile | flat_pack | GitHub tag `v0.1.329` |
+
 - Authenticated dummy layout: `RecordingStudio::UsesDefaultLayout` plus FlatPack CSS/JS
 - Hooks and BaseService come from core; do not copy them into a new addon
 - Recordable declarations remain required
