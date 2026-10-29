@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Audit cleanup: untrack SimpleCov output, drop nested dummy GitHub config, leftover template docs, Copilot agent files, and the dummy docs-methods page. Refresh kit pin docs from the current gemspec and Gemfiles. Set `.ruby-version` to `3.3` so Security CI can install Ruby. `bin/rename_gem` is unchanged.
+- Dummy FlatPack GitHub pin `v0.1.213` → `v0.1.329` so Bundler Audit can resolve `view_component` `>= 4.14`.
 
 ### Upgrade notes
 - No library or public API change. Hosts do not need to change application code.

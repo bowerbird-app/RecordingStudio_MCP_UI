@@ -50,7 +50,7 @@ class RecordingStudioMcpUiTest < Minitest::Test
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_admin", tag: "v2.3.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_attachable", tag: "v0.15.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.9.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.213"'
+    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.329"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_api", tag: "v0.7.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_mcp", tag: "v0.13.1"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_Oauth", tag: "v0.10.1"'
@@ -121,7 +121,7 @@ class RecordingStudioMcpUiTest < Minitest::Test
 
     assert_includes readme, "RecordingStudio::MCP_UI"
     assert_includes readme, "dummy GitHub tag `v4.7.0`"
-    assert_includes readme, "dummy GitHub tag `v0.1.213`"
+    assert_includes readme, "dummy GitHub tag `v0.1.329`"
     refute_includes readme, "ExampleService"
     refute_includes readme, "RecordingStudio v3"
   end
