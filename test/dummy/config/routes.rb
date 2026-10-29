@@ -39,6 +39,7 @@ Rails.application.routes.draw do
   get "docs/recordable_types", to: "docs#recordable_types", as: :docs_recordable_types
   get "docs/recordings_tree", to: "docs#recordings_tree", as: :docs_recordings_tree
   get "docs/gem_views", to: "docs#gem_views", as: :docs_gem_views
+  get "docs/methods", to: "docs#methods", as: :docs_methods
 
   resources :demos, only: %i[show edit] do
     member do

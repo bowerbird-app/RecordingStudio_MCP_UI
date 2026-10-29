@@ -68,7 +68,7 @@ Sign in at `/users/sign_in`, then Connect **Seed MCP App** in Oauth so the clien
 - `/demos/:id/edit` - project editor
 - `/recording_studio` - redirects to `/` while the mounted Recording Studio engine stays available under that prefix for non-root routes
 - `/users/sign_in` - Devise sign-in page
-- `/docs/install`, `/docs/config`, `/docs/recordable_types`, `/docs/recordings_tree`, `/docs/gem_views` - dummy-only starter pages
+- `/docs/install`, `/docs/config`, `/docs/recordable_types`, `/docs/recordings_tree`, `/docs/gem_views`, `/docs/methods` - dummy-only starter pages
 - `/up` - Rails health check
 - `/recording_studio_mcp` - Streamable HTTP MCP endpoint
 - `/recording_studio_oauth` - Oauth Connect

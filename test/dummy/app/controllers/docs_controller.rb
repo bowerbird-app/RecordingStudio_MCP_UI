@@ -33,6 +33,9 @@ class DocsController < ApplicationController
       .map { |path| path.delete_prefix(prefix) }
   end
 
+  def methods
+  end
+
   private
 
   def normalize_recordable_declaration(declaration)
