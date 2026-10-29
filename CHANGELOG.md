@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Untrack SimpleCov output under `coverage/` and `test/dummy/coverage/`. Ignore `coverage/` in `.gitignore`. Refresh kit pin docs from the current gemspec and Gemfiles.
 - Dummy FlatPack GitHub pin `v0.1.213` → `v0.1.329` so Bundler Audit can resolve `view_component` `>= 4.14`. Dummy views drop removed Card `style:` and PageNav constructor kwargs so the dummy app still renders on that pin.
+- Set `.ruby-version` to `3.3` so GitHub `ubuntu-latest` (26.04) can install Ruby (`3.3.6` is not published for that runner).
 
 ### Upgrade notes
 - No library or public API change. Hosts do not need to change application code.
