@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 RecordingStudio::MCP_UI.configure do |config|
+  # nil uses RecordingStudio.configuration.layout, then recording_studio/default_layout.
+  # config.layout = RecordingStudio::DEFAULT_LAYOUT
+
   # Local CSS file(s) inlined after the gem's widget.css (and Flatpack CSS, when
   # Flatpack is installed). Later files win. Missing paths are skipped. Never a URL.
   #

@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 RecordingStudio::McpUi::Engine.routes.draw do
-  root "home#index"
+  # Widget HTML is packaged in-process. This engine has no browser screens.
 end

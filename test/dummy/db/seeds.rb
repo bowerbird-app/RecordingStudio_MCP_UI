@@ -21,23 +21,29 @@ grant_or_find_access = lambda do |recording, actor, role|
   ).first
   return existing if existing.present?
 
-  if role.to_s == "admin"
-    bootstrap = RecordingStudioAccessible.bootstrap_owner_access!(
+  original_authorizer = RecordingStudioAccessible.configuration.access_management_authorizer
+  RecordingStudioAccessible.configuration.access_management_authorizer = ->(**) { true }
+  begin
+    if role.to_s == "admin"
+      bootstrap = RecordingStudioAccessible.bootstrap_owner_access!(
+        recording: recording,
+        actor: actor
+      )
+      return bootstrap.value if bootstrap.success?
+    end
+
+    result = RecordingStudioAccessible.grant_access(
       recording: recording,
-      actor: actor
+      actor: actor,
+      role: role.to_s,
+      manager_actor: actor
     )
-    return bootstrap.value if bootstrap.success?
+    return result.value if result.success?
+
+    raise result.error
+  ensure
+    RecordingStudioAccessible.configuration.access_management_authorizer = original_authorizer
   end
-
-  result = RecordingStudioAccessible.grant_access(
-    recording: recording,
-    actor: actor,
-    role: role.to_s,
-    manager_actor: actor
-  )
-  return result.value if result.success?
-
-  raise result.error
 end
 
 admin_email = ENV.fetch("DUMMY_ADMIN_EMAIL", "admin@admin.com")

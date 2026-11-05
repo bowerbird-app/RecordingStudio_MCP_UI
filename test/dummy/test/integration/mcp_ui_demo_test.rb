@@ -126,4 +126,18 @@ class McpUiDemoTest < ActionDispatch::IntegrationTest
     assert_includes response.body, demo_path(@project)
     assert_includes response.body, edit_demo_path(@project)
   end
+
+  test "packaged document requires a signed-in user" do
+    sign_out @user
+
+    get document_demo_path(@project, widget: "projects.preview")
+
+    assert_response :redirect
+  end
+
+  test "unknown widget id is not found" do
+    get document_demo_path(@project, widget: "projects.secret")
+
+    assert_response :not_found
+  end
 end

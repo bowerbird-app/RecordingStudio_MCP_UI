@@ -4,13 +4,18 @@ module RecordingStudio
   module McpUi
     class Configuration
       attr_accessor :compiled_css_path, :widget_script_path
-      attr_reader :hooks, :registry
+      attr_reader :hooks, :registry, :layout
 
       def initialize
         @hooks = RecordingStudio::Hooks.new
         @registry = Registry.new
         @compiled_css_path = nil
         @widget_script_path = nil
+        @layout = nil
+      end
+
+      def layout=(value)
+        @layout = RecordingStudio::Layout.accept(value)
       end
 
       def to_h

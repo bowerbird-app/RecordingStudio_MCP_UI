@@ -160,7 +160,7 @@ class FetchSkillsTest < Minitest::Test
     assert_includes gitignore, ".cursor/rules/"
     assert_includes gitignore, ".cursor/skills/"
     assert_includes gitignore, "coverage/"
-    assert_equal "0.4.2", RecordingStudio::MCP_UI::VERSION
+    assert_equal "0.5.0", RecordingStudio::MCP_UI::VERSION
 
     tracked, status = Open3.capture2("git", "-C", root, "ls-files", "--", ".cursor/rules")
     assert_equal 0, status.exitstatus

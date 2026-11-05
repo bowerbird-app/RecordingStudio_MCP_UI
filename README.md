@@ -22,7 +22,7 @@ See [docs/api_mcp_integration.md](docs/api_mcp_integration.md) for the exact API
 ## Installation
 
 ```ruby
-gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.4.0"
+gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.5.0"
 ```
 
 ```bash
@@ -30,7 +30,7 @@ bundle install
 bin/rails generate recording_studio_mcp_ui:install
 ```
 
-The engine keeps Recording Studio conventions: `RecordingStudio::Hooks`, default layout in host apps, and strict recordable declarations. Pins from the gemspec and Gemfiles: gemspec `recording_studio` `~> 4.2`, `rails` `~> 8.1.0`, `view_component` `>= 3.0`; root Recording Studio GitHub tag `v4.6.0`; dummy GitHub tag `v4.7.0` (Recording Studio), dummy GitHub tag `v2.3.0` (Admin), dummy GitHub tag `v0.21.0` (Users), dummy GitHub tag `v0.18.0` (Accessible), dummy GitHub tag `v0.15.0` (Attachable), dummy GitHub tag `v0.13.1` (MCP), dummy GitHub tag `v0.11.0` (Trashable), dummy GitHub tag `v0.10.1` (Oauth), dummy GitHub tag `v0.9.0` (Root Switchable), dummy GitHub tag `v0.7.0` (API), dummy GitHub tag `v0.5.0` (Cache), dummy GitHub tag `v0.2.3` (Metrics), dummy GitHub tag `v0.2.0` (Site Settings), dummy GitHub tag `v0.1.329` (FlatPack). See [UPDATE_SUMMARY.md](UPDATE_SUMMARY.md).
+The engine keeps Recording Studio conventions: `RecordingStudio::Hooks`, core Default Layout via `recording_studio_layout`, and strict recordable declarations. Pins from the gemspec and Gemfiles: gemspec `recording_studio` `>= 6.3.0`, `rails` `~> 8.1.0`, `view_component` `>= 3.0`; root Recording Studio GitHub tag `v6.3.0` and FlatPack GitHub tag `v0.1.341`; dummy GitHub tag `v6.3.0` (Recording Studio), dummy GitHub tag `v2.9.1` (Admin), dummy GitHub tag `v0.27.0` (Users), dummy GitHub tag `v0.24.1` (Accessible), dummy GitHub tag `v0.22.1` (Attachable), dummy GitHub tag `v0.23.2` (MCP), dummy GitHub tag `v0.12.2` (Trashable), dummy GitHub tag `v0.21.0` (Oauth), dummy GitHub tag `v0.11.5` (Root Switchable), dummy GitHub tag `v0.17.1` (API), dummy GitHub tag `v0.6.2` (Cache), dummy GitHub tag `v0.7.3` (Logs), dummy GitHub tag `v0.7.2` (Metrics), dummy GitHub tag `v0.5.4` (Site Settings), dummy GitHub tag `v0.1.341` (FlatPack). API stays on `v0.17.1` so the dummy does not need `recording_studio_moveable`.
 
 ## Public Ruby API
 
