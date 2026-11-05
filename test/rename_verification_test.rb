@@ -24,7 +24,7 @@ class RenameVerificationTest < Minitest::Test
     routes = File.read(File.join(@root, "config", "routes.rb"))
 
     assert_includes version, "module McpUi"
-    assert_includes version, 'VERSION = "0.4.2"'
+    assert_includes version, 'VERSION = "0.5.0"'
     assert_includes File.read(File.join(@root, "lib", "#{@gem_name}.rb")), "MCP_UI = McpUi"
     assert_includes engine, "isolate_namespace RecordingStudio::McpUi"
     assert_includes routes, "RecordingStudio::McpUi::Engine.routes.draw"
@@ -35,8 +35,9 @@ class RenameVerificationTest < Minitest::Test
     home = File.join(@root, "app/controllers/recording_studio/mcp_ui/home_controller.rb")
 
     assert File.exist?(application)
-    assert File.exist?(home)
+    refute File.exist?(home)
     assert_includes File.read(application), "module McpUi"
+    assert_includes File.read(application), "recording_studio_layout"
   end
 
   def test_no_old_gem_template_directories
@@ -59,6 +60,6 @@ class RenameVerificationTest < Minitest::Test
   def test_version_file_is_loadable
     $LOAD_PATH.unshift(File.join(@root, "lib")) unless $LOAD_PATH.include?(File.join(@root, "lib"))
     require "recording_studio_mcp_ui/version"
-    assert_equal "0.4.2", RecordingStudio::MCP_UI::VERSION
+    assert_equal "0.5.0", RecordingStudio::MCP_UI::VERSION
   end
 end

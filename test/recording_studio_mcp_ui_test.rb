@@ -4,18 +4,19 @@ require "test_helper"
 
 class RecordingStudioMcpUiTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.4.2", RecordingStudio::MCP_UI::VERSION
+    assert_equal "0.5.0", RecordingStudio::MCP_UI::VERSION
   end
 
   def test_engine_exists
     assert_kind_of Class, RecordingStudio::MCP_UI::Engine
   end
 
-  def test_gemspec_pins_recording_studio_4_2
+  def test_gemspec_pins_recording_studio_6_3
     gemspec = File.read(File.expand_path("../recording_studio_mcp_ui.gemspec", __dir__))
 
-    assert_includes gemspec, 'spec.add_dependency "recording_studio", "~> 4.2"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio", ">= 6.3.0"'
     assert_includes gemspec, 'spec.add_dependency "view_component"'
+    refute_includes gemspec, 'spec.add_dependency "view_component", "4'
   end
 
   def test_gemspec_excludes_cursor_config
@@ -42,22 +43,25 @@ class RecordingStudioMcpUiTest < Minitest::Test
     assert_includes install_script, "fetch-skills.sh"
   end
 
-  def test_dummy_gemfile_pins_verified_4x_github_tags
+  def test_dummy_gemfile_pins_verified_6x_github_tags
     gemfile = File.read(File.expand_path("dummy/Gemfile", __dir__))
 
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v4.7.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.18.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_admin", tag: "v2.3.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_attachable", tag: "v0.15.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.9.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.329"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_api", tag: "v0.7.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_mcp", tag: "v0.13.1"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_Oauth", tag: "v0.10.1"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_users", tag: "v0.21.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.2.3"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.11.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_site_settings", tag: "v0.2.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v6.3.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.24.1"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_admin", tag: "v2.9.1"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_attachable", tag: "v0.22.1"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.11.5"'
+    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.341"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_api", tag: "v0.17.1"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_mcp", tag: "v0.23.2"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_Oauth", tag: "v0.21.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_users", tag: "v0.27.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.7.2"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.12.2"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_cache", tag: "v0.6.2"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_logs", tag: "v0.7.3"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_site_settings", tag: "v0.5.4"'
+    refute_includes gemfile, "recording_studio_views"
     refute_includes gemfile, "recording_studio/v3.0.0"
   end
 
@@ -89,8 +93,20 @@ class RecordingStudioMcpUiTest < Minitest::Test
   def test_dummy_app_uses_recording_studio_default_layout
     controller_source = File.read(File.expand_path("dummy/app/controllers/application_controller.rb", __dir__))
 
-    assert_includes controller_source, "include RecordingStudio::UsesDefaultLayout"
+    assert_includes controller_source, "recording_studio_layout"
+    assert_includes controller_source, "RecordingStudio::MCP_UI.configuration.layout"
+    refute_includes controller_source, "UsesDefaultLayout"
     refute_includes controller_source, "flat_pack_sidebar"
+  end
+
+  def test_engine_application_controller_uses_recording_studio_layout
+    controller_source = File.read(
+      File.expand_path("../app/controllers/recording_studio/mcp_ui/application_controller.rb", __dir__)
+    )
+
+    assert_includes controller_source, "recording_studio_layout { RecordingStudio::MCP_UI.configuration.layout }"
+    refute_includes controller_source, 'layout "application"'
+    refute_includes controller_source, "UsesDefaultLayout"
   end
 
   def test_dummy_login_layout_keeps_flatpack_assets_without_tight_main_offset
@@ -120,18 +136,19 @@ class RecordingStudioMcpUiTest < Minitest::Test
     readme = File.read(File.expand_path("../README.md", __dir__))
 
     assert_includes readme, "RecordingStudio::MCP_UI"
-    assert_includes readme, "dummy GitHub tag `v4.7.0`"
-    assert_includes readme, "dummy GitHub tag `v0.1.329`"
+    assert_includes readme, "dummy GitHub tag `v6.3.0`"
+    assert_includes readme, "dummy GitHub tag `v0.1.341`"
+    refute_includes readme, "UPDATE_SUMMARY.md"
     refute_includes readme, "ExampleService"
     refute_includes readme, "RecordingStudio v3"
   end
 
-  def test_update_summary_drops_stale_pins
-    summary = File.read(File.expand_path("../UPDATE_SUMMARY.md", __dir__))
+  def test_template_shell_docs_are_gone
+    root = File.expand_path("..", __dir__)
 
-    refute_includes summary, "v4.2.2"
-    refute_includes summary, "v0.1.196"
-    assert_includes summary, "`v4.7.0`"
+    refute File.exist?(File.join(root, "UPDATE_SUMMARY.md"))
+    refute File.exist?(File.join(root, "MIGRATION_NOTES.md"))
+    refute Dir.exist?(File.join(root, "docs/gem_template"))
   end
 
   def test_coverage_is_untracked
@@ -164,9 +181,16 @@ class RecordingStudioMcpUiTest < Minitest::Test
     end
   end
 
-  def test_engine_does_not_ship_a_home_view
-    view_path = File.expand_path("../app/views/recording_studio/mcp_ui/home/index.html.erb", __dir__)
+  def test_engine_does_not_ship_a_home_stub
+    root = File.expand_path("..", __dir__)
+    view_path = File.join(root, "app/views/recording_studio/mcp_ui/home/index.html.erb")
+    controller_path = File.join(root, "app/controllers/recording_studio/mcp_ui/home_controller.rb")
+    routes = File.read(File.join(root, "config/routes.rb"))
+    dummy_routes = File.read(File.expand_path("dummy/config/routes.rb", __dir__))
 
     refute File.exist?(view_path)
+    refute File.exist?(controller_path)
+    refute_includes routes, "home#index"
+    refute_includes dummy_routes, "RecordingStudio::MCP_UI::Engine"
   end
 end

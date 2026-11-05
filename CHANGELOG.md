@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-05
+
+### Changed
+- Require `recording_studio` `>= 6.3.0`. Root and dummy GitHub tags pin Recording Studio `v6.3.0` and FlatPack `v0.1.341`. Dummy family tags: Accessible `v0.24.1`, Trashable `v0.12.2`, Metrics `v0.7.2`, Cache `v0.6.2`, Root Switchable `v0.11.5`, Logs `v0.7.3`. Existing dummy companions bumped to resolve on that floor: Admin `v2.9.1`, API `v0.17.1`, MCP `v0.23.2`, Oauth `v0.21.0`, Users `v0.27.0`, Attachable `v0.22.1`, Site Settings `v0.5.4`.
+- Engine `ApplicationController` calls `recording_studio_layout { RecordingStudio::MCP_UI.configuration.layout }`. `configuration.layout` defaults to `nil` (core Default Layout) and is validated by `RecordingStudio::Layout.accept`.
+- Root and dummy lockfiles refresh Rails `8.1.4.1`, Rack `>= 3.2.8`, Loofah, Nokogiri, and `rails-html-sanitizer`. Dummy also refreshes `net-ssh` when present.
+- Dummy copies Recording Studio Logs run migrations so MCP usage logging can insert aggregation runs. Dummy demo routes require a signed-in user and allowlist widget ids.
+
+### Removed
+- Template leftover `HomeController#index` stub (`head :ok`), its engine root route, and the dummy mount at `/recording_studio_mcp_ui`. Widget HTML is still packaged in-process; hosts that want an empty engine mount can keep the install-generator route.
+- Template leftover `docs/gem_template/`, `UPDATE_SUMMARY.md`, and `MIGRATION_NOTES.md`.
+
+### Upgrade notes
+- Pin `recording_studio` `>= 6.3.0` (this repo tests GitHub tag `v6.3.0`) and FlatPack `v0.1.341` if you use the dummy companion set. Dummy API stays on `v0.17.1` because `v0.18` needs `recording_studio_moveable`.
+- Replace a hardcoded engine `layout "application"` (or `UsesDefaultLayout`) with `recording_studio_layout { RecordingStudio::MCP_UI.configuration.layout }`. Set `config.layout` only when the host layout should differ from core's Default Layout.
+- Stop mounting this engine only to hit `/recording_studio_mcp_ui`. That path was a template stub. The install generator still offers a mount for hosts that want one.
+- `Capabilities::Example` is unchanged.
+
 ## [0.4.2] - 2026-10-28
 
 ### Changed
@@ -101,7 +119,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Ruby `action_executor`, `visibility_checker`, and `RecordingStudio::MCP_UI.execute`. Widget writes are ordinary MCP tool calls.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.3.0...v0.4.0

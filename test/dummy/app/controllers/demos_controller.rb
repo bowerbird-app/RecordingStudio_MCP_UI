@@ -1,6 +1,5 @@
 class DemosController < ApplicationController
-  skip_before_action :authenticate_user!, only: :document
-  skip_forgery_protection only: :document
+  DEMO_WIDGETS = %w[projects.preview projects.editor].freeze
 
   def show
     @project = Project.find(params[:id])
@@ -17,6 +16,8 @@ class DemosController < ApplicationController
   def document
     project = Project.find(params[:id])
     widget_id = params[:widget].presence || "projects.preview"
+    raise ActiveRecord::RecordNotFound unless DEMO_WIDGETS.include?(widget_id)
+
     document = RecordingStudio::MCP_UI.package(widget_id, data: Demo::ProjectPayload.call(project))
     render html: document.html.html_safe, layout: false, content_type: document.mime_type
   end

@@ -38,6 +38,20 @@ class ConfigurationTest < Minitest::Test
     assert_nil @configuration.to_h.fetch(:widget_script_path)
   end
 
+  def test_layout_defaults_to_nil
+    assert_nil @configuration.layout
+  end
+
+  def test_layout_accepts_core_default_layout_name
+    @configuration.layout = RecordingStudio::DEFAULT_LAYOUT
+
+    assert_equal RecordingStudio::DEFAULT_LAYOUT, @configuration.layout
+  end
+
+  def test_layout_rejects_blank_string
+    assert_raises(ArgumentError) { @configuration.layout = " " }
+  end
+
   def test_merge_sets_widget_script_path
     @configuration.merge!(widget_script_path: "/tmp/mcp_ui_widgets.js")
 
