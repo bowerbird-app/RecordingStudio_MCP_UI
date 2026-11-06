@@ -20,6 +20,7 @@ class McpUiI18nHostOverrideTest < ActionDispatch::IntegrationTest
       user.password = "Password"
       user.password_confirmation = "Password"
     end
+    grant_workspace_access!(user: @user)
     sign_in @user
     @project = Project.find_or_create_by!(title: "Beach House") do |project|
       project.description = "A coastal recording project."

@@ -2,17 +2,18 @@
 
 module Demo
   class ProjectUpdate
-    def self.call(attributes, access_grant: :allowed)
-      new(attributes, access_grant: access_grant).call
+    def self.call(attributes, actor:, recording:)
+      new(attributes, actor: actor, recording: recording).call
     end
 
-    def initialize(attributes, access_grant:)
+    def initialize(attributes, actor:, recording:)
       @attributes = attributes.to_h.stringify_keys
-      @access_grant = access_grant
+      @actor = actor
+      @recording = recording
     end
 
     def call
-      return failure("unauthorized", {}) if @access_grant == :denied
+      return failure("unauthorized", {}) unless ProjectAccess.writable?(actor: @actor, recording: @recording)
 
       project = Project.find(@attributes.fetch("id"))
       if @attributes["revision"].present? && project.revision.to_s != @attributes["revision"].to_s

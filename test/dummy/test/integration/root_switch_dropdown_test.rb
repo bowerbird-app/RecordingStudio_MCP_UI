@@ -5,6 +5,7 @@ require "devise/test/integration_helpers"
 
 class RootSwitchDropdownTest < ActionDispatch::IntegrationTest
   include Devise::Test::IntegrationHelpers
+  include OauthDummyHelpers
 
   test "sign in page uses the devise layout and is not squished by the default layout" do
     get new_user_session_path
@@ -27,7 +28,7 @@ class RootSwitchDropdownTest < ActionDispatch::IntegrationTest
     sign_in user
 
     workspace = Workspace.create!(name: "Dropdown Workspace")
-    RecordingStudio.root_recording_for(workspace)
+    grant_workspace_access!(user: user, workspace: workspace)
 
     get root_path
 
@@ -45,7 +46,7 @@ class RootSwitchDropdownTest < ActionDispatch::IntegrationTest
     sign_in user
 
     workspace = Workspace.create!(name: "Switch Page Workspace")
-    RecordingStudio.root_recording_for(workspace)
+    grant_workspace_access!(user: user, workspace: workspace)
 
     get "/recording_studio_root_switchable/v1/root_switch?scope=all_workspaces"
 
@@ -64,8 +65,8 @@ class RootSwitchDropdownTest < ActionDispatch::IntegrationTest
 
     source_workspace = Workspace.create!(name: "Source Workspace")
     target_workspace = Workspace.create!(name: "Target Workspace")
-    target_root_recording = RecordingStudio.root_recording_for(target_workspace)
-    RecordingStudio.root_recording_for(source_workspace)
+    grant_workspace_access!(user: user, workspace: source_workspace)
+    _workspace, target_root_recording = grant_workspace_access!(user: user, workspace: target_workspace)
 
     patch "/recording_studio_root_switchable/v1/root_switch", params: {
       scope: "all_workspaces",
@@ -78,6 +79,26 @@ class RootSwitchDropdownTest < ActionDispatch::IntegrationTest
     assert_redirected_to "/docs/install"
   end
 
+  test "root switcher hides workspaces the actor cannot view" do
+    user = User.find_or_create_by!(email: "root-switch-hidden-test@example.com") do |record|
+      record.password = "Password123!"
+      record.password_confirmation = "Password123!"
+    end
+
+    sign_in user
+
+    visible = Workspace.create!(name: "Visible Switch Workspace")
+    hidden = Workspace.create!(name: "Hidden Switch Workspace")
+    grant_workspace_access!(user: user, workspace: visible)
+    RecordingStudio.root_recording_for(hidden)
+
+    get root_path
+
+    assert_response :success
+    assert_includes response.body, visible.name
+    refute_includes response.body, hidden.name
+  end
+
   test "switching falls back to home when return_to is not a valid internal route" do
     user = User.find_or_create_by!(email: "root-switch-fallback-test@example.com") do |record|
       record.password = "Password123!"
@@ -88,8 +109,8 @@ class RootSwitchDropdownTest < ActionDispatch::IntegrationTest
 
     source_workspace = Workspace.create!(name: "Fallback Source Workspace")
     target_workspace = Workspace.create!(name: "Fallback Target Workspace")
-    target_root_recording = RecordingStudio.root_recording_for(target_workspace)
-    RecordingStudio.root_recording_for(source_workspace)
+    grant_workspace_access!(user: user, workspace: source_workspace)
+    _workspace, target_root_recording = grant_workspace_access!(user: user, workspace: target_workspace)
 
     patch "/recording_studio_root_switchable/v1/root_switch", params: {
       scope: "all_workspaces",

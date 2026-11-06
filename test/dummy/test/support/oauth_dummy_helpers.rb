@@ -10,7 +10,8 @@ module OauthDummyHelpers
     end
   end
 
-  def grant_or_bootstrap_access!(recording:, actor:, role:)
+  def grant_or_bootstrap_access!(recording:, actor:, role:, manager_actor: nil)
+    manager_actor ||= actor
     existing = RecordingStudioAccessible.access_recordings_for_actor(
       recording: recording,
       actor: actor
@@ -32,7 +33,7 @@ module OauthDummyHelpers
         recording: recording,
         actor: actor,
         role: role.to_s,
-        manager_actor: actor
+        manager_actor: manager_actor
       )
       return result.value if result.success?
 
@@ -53,6 +54,25 @@ module OauthDummyHelpers
     )
 
     [ root_recording, access_recording ]
+  end
+
+  def grant_workspace_access!(user:, workspace: nil, role: :admin)
+    Current.actor = user
+    workspace ||= Workspace.create!(name: "Access Workspace #{SecureRandom.hex(4)}")
+    root_recording = RecordingStudio.root_recording_for(workspace)
+    if role.to_s == "admin"
+      grant_or_bootstrap_access!(recording: root_recording, actor: user, role: :admin)
+    else
+      manager = User.find_by(email: "admin@admin.com") || create_user(email: "access-manager@example.com")
+      grant_or_bootstrap_access!(recording: root_recording, actor: manager, role: :admin)
+      grant_or_bootstrap_access!(
+        recording: root_recording,
+        actor: user,
+        role: role,
+        manager_actor: manager
+      )
+    end
+    [ workspace, root_recording ]
   end
 
   def create_oauth_client(name: "Demo App", redirect_uris: [ "http://127.0.0.1/callback" ], api: "public")

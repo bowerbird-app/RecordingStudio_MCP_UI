@@ -8,6 +8,11 @@ class RecordingStudioTemplateTest < ActiveSupport::TestCase
     assert_nil RecordingStudioRootSwitchable.configuration.layout
     assert_includes ApplicationController.ancestors, RecordingStudio::RootSwitchable::ControllerSupport
     assert_includes ApplicationController.ancestors, RecordingStudio::ControllerLayout
+
+    initializer = File.read(Rails.root.join("config/initializers/recording_studio_root_switchable.rb"))
+    refute_includes initializer, "scope.access_check = ->(**) { true }"
+    assert_includes initializer, "RecordingStudioAccessible.root_recordings_for"
+    assert_includes initializer, "config.mounted_page_authorizer"
   end
 
   test "dummy app validates recordable declarations" do

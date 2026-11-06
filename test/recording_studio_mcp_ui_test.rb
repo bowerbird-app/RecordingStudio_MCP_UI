@@ -4,17 +4,17 @@ require "test_helper"
 
 class RecordingStudioMcpUiTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.5.0", RecordingStudio::MCP_UI::VERSION
+    assert_equal "0.6.0", RecordingStudio::MCP_UI::VERSION
   end
 
   def test_engine_exists
     assert_kind_of Class, RecordingStudio::MCP_UI::Engine
   end
 
-  def test_gemspec_pins_recording_studio_6_3
+  def test_gemspec_pins_recording_studio_6_5
     gemspec = File.read(File.expand_path("../recording_studio_mcp_ui.gemspec", __dir__))
 
-    assert_includes gemspec, 'spec.add_dependency "recording_studio", ">= 6.3.0"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio", ">= 6.5.0"'
     assert_includes gemspec, 'spec.add_dependency "view_component"'
     refute_includes gemspec, 'spec.add_dependency "view_component", "4'
   end
@@ -46,21 +46,21 @@ class RecordingStudioMcpUiTest < Minitest::Test
   def test_dummy_gemfile_pins_verified_6x_github_tags
     gemfile = File.read(File.expand_path("dummy/Gemfile", __dir__))
 
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v6.3.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.24.1"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v6.5.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.24.2"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_admin", tag: "v2.9.1"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_attachable", tag: "v0.22.1"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.11.5"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.11.7"'
     assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.341"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_api", tag: "v0.17.1"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_mcp", tag: "v0.23.2"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_Oauth", tag: "v0.21.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_users", tag: "v0.27.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.7.2"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.12.2"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_cache", tag: "v0.6.2"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_logs", tag: "v0.7.3"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_site_settings", tag: "v0.5.4"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_mcp", tag: "v0.24.1"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_Oauth", tag: "v0.21.3"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_users", tag: "v0.27.1"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.7.3"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.12.3"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_cache", tag: "v0.6.3"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_logs", tag: "v0.7.4"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_site_settings", tag: "v0.5.5"'
     refute_includes gemfile, "recording_studio_views"
     refute_includes gemfile, "recording_studio/v3.0.0"
   end
@@ -127,6 +127,7 @@ class RecordingStudioMcpUiTest < Minitest::Test
     initializer_source = File.read(File.expand_path("dummy/config/initializers/recording_studio.rb", __dir__))
 
     assert_includes initializer_source, "config.require_recordable_declarations = true"
+    assert_includes initializer_source, "config.authorize_write"
     assert_includes initializer_source, '"Workspace"'
     assert_includes initializer_source, '"AdminRoot"'
     assert_includes initializer_source, '"RecordingStudioUser::People"'
@@ -136,7 +137,7 @@ class RecordingStudioMcpUiTest < Minitest::Test
     readme = File.read(File.expand_path("../README.md", __dir__))
 
     assert_includes readme, "RecordingStudio::MCP_UI"
-    assert_includes readme, "dummy GitHub tag `v6.3.0`"
+    assert_includes readme, "dummy GitHub tag `v6.5.0`"
     assert_includes readme, "dummy GitHub tag `v0.1.341`"
     refute_includes readme, "UPDATE_SUMMARY.md"
     refute_includes readme, "ExampleService"

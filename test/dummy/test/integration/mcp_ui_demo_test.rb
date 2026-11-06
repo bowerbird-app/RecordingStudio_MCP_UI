@@ -11,6 +11,7 @@ class McpUiDemoTest < ActionDispatch::IntegrationTest
       user.password = "Password"
       user.password_confirmation = "Password"
     end
+    grant_workspace_access!(user: @user)
     sign_in @user
     @project = Project.find_or_create_by!(title: "Beach House") do |project|
       project.description = "A coastal recording project."
@@ -98,11 +99,44 @@ class McpUiDemoTest < ActionDispatch::IntegrationTest
     assert_equal "validation_failed", response.parsed_body["error"]
   end
 
-  test "unauthorized write is rejected" do
+  test "access_grant query param cannot bypass Accessible" do
     post save_demo_path(@project), params: {
-      title: "Nope",
+      title: "Still Allowed",
+      description: @project.description,
+      status: "active",
       revision: @project.revision,
       access_grant: "denied"
+    }, as: :json
+
+    assert_response :success
+    assert_equal "Still Allowed", @project.reload.title
+  end
+
+  test "preview is hidden without Accessible view" do
+    stranger = User.create!(
+      email: "demo-stranger-#{SecureRandom.hex(4)}@example.com",
+      password: "Password123!",
+      password_confirmation: "Password123!"
+    )
+    sign_in stranger
+
+    get demo_path(@project)
+
+    assert_response :not_found
+  end
+
+  test "unauthorized write is rejected" do
+    viewer = User.create!(
+      email: "demo-viewer-#{SecureRandom.hex(4)}@example.com",
+      password: "Password123!",
+      password_confirmation: "Password123!"
+    )
+    grant_workspace_access!(user: viewer, role: :view)
+    sign_in viewer
+
+    post save_demo_path(@project), params: {
+      title: "Nope",
+      revision: @project.revision
     }, as: :json
 
     assert_response :forbidden

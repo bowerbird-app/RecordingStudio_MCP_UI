@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-06
+
+### Changed
+- Dummy demo reads and writes go through Recording Studio Accessible on the current workspace root. `DemosController` no longer takes access from `params[:access_grant]`. `Demo::ProjectUpdate` and `Demo::ProjectApiUpdate` use Accessible `:edit` (API via the request `AccessGrant`). Preview is Accessible `:view`.
+- Dummy Root Switchable lists `available_roots` from Accessible, uses the gem `access_check` default (`:view`), and sets `mounted_page_authorizer` to Accessible `:view` on the current root.
+- Dummy `config.authorize_write` is Accessible `:edit` (Access grant writes still use `AccessCreationContext`).
+- Require `recording_studio` `>= 6.5.0`. Root and dummy GitHub tags pin Recording Studio `v6.5.0` and FlatPack `v0.1.341`. Dummy family tags: Accessible `v0.24.2`, Trashable `v0.12.3`, Metrics `v0.7.3`, Cache `v0.6.3`, Root Switchable `v0.11.7`, Logs `v0.7.4`, MCP `v0.24.1`, Oauth `v0.21.3`, Users `v0.27.1`, Site Settings `v0.5.5`. Admin stays `v2.9.1`. API stays `v0.17.1` because MCP `v0.24.1` still requires `recording_studio_api < 0.18`.
+
+### Upgrade notes
+- Pin `recording_studio` `>= 6.5.0` (this repo tests GitHub tag `v6.5.0`) and set `config.authorize_write` (or `allow_unauthorized_writes`) for core 6.5 fail-closed writes.
+- Dummy hosts: drop `params[:access_grant]` and Root Switchable `access_check = ->(**) { true }`. Authorize demo widgets and the switcher with Accessible on the current root.
+- Dummy API stays on `v0.17.1` until MCP loosens `recording_studio_api < 0.18`. Admin stays on the existing dummy pin (`v2.9.1`); do not treat Users Admin `2.7.0` as policy.
+
 ## [0.5.0] - 2026-11-05
 
 ### Changed
@@ -119,7 +132,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Ruby `action_executor`, `visibility_checker`, and `RecordingStudio::MCP_UI.execute`. Widget writes are ordinary MCP tool calls.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.4.0...v0.4.1

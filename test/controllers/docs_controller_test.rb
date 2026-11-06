@@ -6,9 +6,11 @@ require_relative "../dummy/config/environment"
 
 require "devise/test/integration_helpers"
 require "rails/test_help"
+require_relative "../dummy/test/support/oauth_dummy_helpers"
 
 class DocsControllerTest < ActionDispatch::IntegrationTest
   include Devise::Test::IntegrationHelpers
+  include OauthDummyHelpers
 
   TEST_PASSWORD = "DocsTestPassword!2026"
 
@@ -19,6 +21,11 @@ class DocsControllerTest < ActionDispatch::IntegrationTest
     end
 
     sign_in @user
+    Current.actor = @user
+  end
+
+  teardown do
+    Current.actor = nil
   end
 
   test "install page renders successfully" do
@@ -73,7 +80,7 @@ class DocsControllerTest < ActionDispatch::IntegrationTest
 
   test "recordings tree page renders successfully" do
     workspace = Workspace.create!(name: "Tree Workspace")
-    root_recording = RecordingStudio.root_recording_for(workspace)
+    root_recording = grant_workspace_access!(user: @user, workspace: workspace).last
     folder = Folder.create!(name: "Reference")
     folder_recording = record_child(folder, root_recording, root_recording)
     page = Page.create!(title: "API")
@@ -131,10 +138,11 @@ class DocsControllerTest < ActionDispatch::IntegrationTest
 
     workspace = Workspace.create!(name: "Counted Workspace")
     2.times do
-      RecordingStudio.root_recording_for(Workspace.create!(name: "Counted Workspace #{SecureRandom.hex(4)}"))
+      extra = Workspace.create!(name: "Counted Workspace #{SecureRandom.hex(4)}")
+      grant_workspace_access!(user: @user, workspace: extra)
     end
 
-    root_recording = RecordingStudio.root_recording_for(workspace)
+    root_recording = grant_workspace_access!(user: @user, workspace: workspace).last
     folder = Folder.create!(name: "Counted Folder")
     record_child(folder, root_recording, root_recording)
 
