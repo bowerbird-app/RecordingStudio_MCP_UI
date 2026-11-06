@@ -128,6 +128,11 @@ class RecordingStudioMcpUiTest < Minitest::Test
 
     assert_includes initializer_source, "config.require_recordable_declarations = true"
     assert_includes initializer_source, "config.authorize_write"
+    assert_includes initializer_source, "recordable.is_a?(RecordingStudio::Access)"
+    assert_includes initializer_source, "RecordingStudioAccessible::AccessCreationContext.allowed?"
+    assert_includes initializer_source, "recording: root_recording"
+    assert_includes initializer_source, "role: :edit"
+    refute_includes initializer_source, "next true if RecordingStudioAccessible::AccessCreationContext.allowed?\n\n    target"
     assert_includes initializer_source, '"Workspace"'
     assert_includes initializer_source, '"AdminRoot"'
     assert_includes initializer_source, '"RecordingStudioUser::People"'

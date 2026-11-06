@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Dummy demo reads and writes go through Recording Studio Accessible on the current workspace root. `DemosController` no longer takes access from `params[:access_grant]`. `Demo::ProjectUpdate` and `Demo::ProjectApiUpdate` use Accessible `:edit` (API via the request `AccessGrant`). Preview is Accessible `:view`.
 - Dummy Root Switchable lists `available_roots` from Accessible, uses the gem `access_check` default (`:view`), and sets `mounted_page_authorizer` to Accessible `:view` on the current root.
-- Dummy `config.authorize_write` is Accessible `:edit` (Access grant writes still use `AccessCreationContext`).
+- Dummy `config.authorize_write` is Accessible `:edit` on the root. Access grant/bootstrap writes use `AccessCreationContext` only for `RecordingStudio::Access` recordables (not any write during grant context).
 - Require `recording_studio` `>= 6.5.0`. Root and dummy GitHub tags pin Recording Studio `v6.5.0` and FlatPack `v0.1.341`. Dummy family tags: Accessible `v0.24.2`, Trashable `v0.12.3`, Metrics `v0.7.3`, Cache `v0.6.3`, Root Switchable `v0.11.7`, Logs `v0.7.4`, MCP `v0.24.1`, Oauth `v0.21.3`, Users `v0.27.1`, Site Settings `v0.5.5`. Admin stays `v2.9.1`. API stays `v0.17.1` because MCP `v0.24.1` still requires `recording_studio_api < 0.18`.
 
 ### Upgrade notes
