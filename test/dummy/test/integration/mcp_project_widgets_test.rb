@@ -131,6 +131,50 @@ class McpProjectWidgetsTest < ActionDispatch::IntegrationTest
     assert body["contextUpdate"].to_s.include?("Updated House")
   end
 
+  test "view role cannot persist through projects.update" do
+    viewer = create_user
+    workspace = Workspace.create!(name: "View Widget Workspace #{SecureRandom.hex(4)}")
+    Current.actor = @user
+    view_root = RecordingStudio.root_recording_for(workspace)
+    grant_or_bootstrap_access!(recording: view_root, actor: @user, role: :admin)
+    view_access = grant_or_bootstrap_access!(
+      recording: view_root,
+      actor: viewer,
+      role: :view,
+      manager_actor: @user
+    )
+    refute_nil view_access
+    view_token = issue_delegated_token(
+      oauth_client: @oauth_client,
+      user: @user,
+      access_recording: view_access,
+      role: "view",
+      pkce: pkce_pair
+    )
+
+    post "/recording_studio_mcp",
+         params: rpc(
+           "tools/call",
+           name: "projects.update",
+           arguments: {
+             id: @project.id,
+             title: "Locked House",
+             description: @project.description,
+             status: "draft",
+             revision: @project.revision
+           }
+         ).to_json,
+         headers: json_headers("Authorization" => "Bearer #{view_token}")
+
+    assert_response :success, response.body
+    payload = JSON.parse(response.body)
+    body = tool_payload(payload)
+    assert_equal false, body["ok"]
+    assert_equal "unauthorized", body["error"]
+    assert_equal "Widget House", @project.reload.title
+    assert view_root.present?
+  end
+
   test "stale revision on the update tool returns a conflict" do
     post "/recording_studio_mcp",
          params: rpc(
