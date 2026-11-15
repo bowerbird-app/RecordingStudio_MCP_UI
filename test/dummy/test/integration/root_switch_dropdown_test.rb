@@ -90,7 +90,7 @@ class RootSwitchDropdownTest < ActionDispatch::IntegrationTest
     visible = Workspace.create!(name: "Visible Switch Workspace")
     hidden = Workspace.create!(name: "Hidden Switch Workspace")
     grant_workspace_access!(user: user, workspace: visible)
-    RecordingStudio.root_recording_for(hidden)
+    RecordingStudio.create_root_recording!(hidden, actor: user)
 
     get root_path
 

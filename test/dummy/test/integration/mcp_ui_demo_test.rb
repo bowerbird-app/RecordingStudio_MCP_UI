@@ -8,8 +8,8 @@ class McpUiDemoTest < ActionDispatch::IntegrationTest
 
   setup do
     @user = User.find_or_create_by!(email: "admin@admin.com") do |user|
-      user.password = "Password"
-      user.password_confirmation = "Password"
+      user.password = "Password123!"
+      user.password_confirmation = "Password123!"
     end
     grant_workspace_access!(user: @user)
     sign_in @user

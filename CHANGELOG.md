@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-15
+
+### Changed
+- Require `recording_studio` `>= 7.0, < 8.0`. Root and dummy GitHub tags pin Recording Studio `v7.0.0` and FlatPack `v0.1.376`.
+- Dummy family tags: Accessible `v0.44.0`, Admin `v2.16.0`, API `v0.24.0`, Attachable `v0.28.0`, Moveable `v5.0.0`, Icons `v0.2.1`, Trashable `v0.17.0`, MCP `v0.33.3`, Oauth `v0.21.9`, Root Switchable `v0.16.0`, Logs `v0.8.0`, Users `v0.30.0`, Site Settings `v0.6.0`, Cache `v0.6.3`, Metrics `v0.9.0`.
+- Dummy roots are created with `RecordingStudio.create_root_recording!(recordable, actor:)`. `root_recording_for` is find-only. `config.authorize_write` allows a persisted actor to create a root recordable when recording, root, and parent are all nil. Later writes still need Accessible `:edit` on that root. Access grants still use `AccessCreationContext`.
+- Dummy copies the core migration that adds `recording_studio_events.root_recording_id`.
+- Dummy admin uses `access_recording_resolver` and `Recording.kept`. Admin 2.16 dropped `site_admin_recording_resolver`. Trashable 0.17 dropped `kept_sql`.
+- Dummy pins Puma `8.1.0` and `msgpack` `>= 1.8.7` so Bundler Audit resolves.
+- Dummy users follow Users 0.30's 12-character password minimum. The seed password and Devise range are `Password123!` and `12..128`.
+
+### Upgrade notes
+- Pin `recording_studio` `>= 7.0, < 8.0` (this repo tests GitHub tag `v7.0.0`).
+- Replace root creation that called `root_recording_for` with `create_root_recording!(recordable, actor:)`.
+- In `config.authorize_write`, allow the write when `root_recording`, `recording`, and `parent_recording` are nil and `RecordingStudio.root_allowed?(recordable)`.
+- Run the core migration that adds `recording_studio_events.root_recording_id` before writing events on core 7.
+- Drop `site_admin_recording_resolver`. Resolve the admin recording with `access_recording_resolver` and `Recording.kept`.
+- Dummy hosts that follow this Gemfile should use the tags above. MCP `v0.33.3`, Oauth `v0.21.9`, and Root Switchable `v0.16.0` accept Recording Studio 7 and API `0.24`. API `v0.24.0` needs Moveable `v5.0.0` and Icons `v0.2.1`.
+
 ## [0.6.0] - 2026-11-06
 
 ### Changed
@@ -132,7 +151,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Ruby `action_executor`, `visibility_checker`, and `RecordingStudio::MCP_UI.execute`. Widget writes are ordinary MCP tool calls.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.4.1...v0.4.2

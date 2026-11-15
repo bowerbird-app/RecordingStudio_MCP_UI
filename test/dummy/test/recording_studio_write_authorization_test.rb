@@ -21,6 +21,33 @@ class RecordingStudioWriteAuthorizationTest < ActiveSupport::TestCase
     Current.actor = nil
   end
 
+  test "a persisted actor can create a root recordable and cannot create a child as a root" do
+    workspace = Workspace.new(name: "Authorizer Root")
+    page = Page.new(title: "Authorizer Page")
+
+    assert @authorizer.call(
+      actor: @editor,
+      root_recording: nil,
+      recording: nil,
+      parent_recording: nil,
+      recordable: workspace
+    )
+    refute @authorizer.call(
+      actor: @editor,
+      root_recording: nil,
+      recording: nil,
+      parent_recording: nil,
+      recordable: page
+    )
+    refute @authorizer.call(
+      actor: nil,
+      root_recording: nil,
+      recording: nil,
+      parent_recording: nil,
+      recordable: workspace
+    )
+  end
+
   test "non-access writes require Accessible edit on the root" do
     page = Page.new(title: "Write Gate")
 

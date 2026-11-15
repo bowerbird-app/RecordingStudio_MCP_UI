@@ -25,12 +25,12 @@ bin/dev
 Then open the app and sign in with:
 
 - Email: `admin@admin.com`
-- Password: `Password`
+- Password: `Password123!`
 
 Dev defaults (override with env):
 
 - `DUMMY_ADMIN_EMAIL` — default `admin@admin.com`
-- `DUMMY_ADMIN_PASSWORD` — default `Password`
+- `DUMMY_ADMIN_PASSWORD` — default `Password123!`
 
 ## MCP over a tunnel
 
