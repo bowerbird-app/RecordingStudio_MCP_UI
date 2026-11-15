@@ -135,7 +135,7 @@ class McpProjectWidgetsTest < ActionDispatch::IntegrationTest
     viewer = create_user
     workspace = Workspace.create!(name: "View Widget Workspace #{SecureRandom.hex(4)}")
     Current.actor = @user
-    view_root = RecordingStudio.root_recording_for(workspace)
+    view_root = RecordingStudio.create_root_recording!(workspace, actor: @user)
     grant_or_bootstrap_access!(recording: view_root, actor: @user, role: :admin)
     view_access = grant_or_bootstrap_access!(
       recording: view_root,

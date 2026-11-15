@@ -22,13 +22,19 @@ RecordingStudio.configure do |config|
   # Actor resolver for events when no actor is explicitly supplied
   config.actor = -> { Current.actor }
 
-  # Hosts must set authorize_write before Recording Studio core 6.5.0.
-  # Writes fail closed. Access grant/bootstrap writes go through Accessible's
-  # AccessCreationContext (same path as grant_access / bootstrap_owner_access!),
-  # not any-write-during-grant-context. Other writes need Accessible :edit on
-  # the root.
-  config.authorize_write = lambda { |actor:, root_recording:, recordable:, **|
-    next false if actor.blank?
+  # Hosts must set authorize_write. Writes fail closed.
+  # create_root_recording! calls this with recording, root_recording, and
+  # parent_recording all nil. A persisted actor may start a root recordable.
+  # Later writes need Accessible :edit on that root. Access grant/bootstrap
+  # writes go through Accessible's AccessCreationContext (same path as
+  # grant_access / bootstrap_owner_access!), not any-write-during-grant-context.
+  config.authorize_write = lambda { |actor:, root_recording:, recordable:, **context|
+    next false unless actor.respond_to?(:persisted?) && actor.persisted?
+
+    if root_recording.nil? && context[:recording].nil? && context[:parent_recording].nil?
+      next RecordingStudio.root_allowed?(recordable)
+    end
+
     next false unless root_recording
 
     if defined?(RecordingStudio::Access) && recordable.is_a?(RecordingStudio::Access)

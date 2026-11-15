@@ -47,7 +47,7 @@ grant_or_find_access = lambda do |recording, actor, role|
 end
 
 admin_email = ENV.fetch("DUMMY_ADMIN_EMAIL", "admin@admin.com")
-admin_password = ENV.fetch("DUMMY_ADMIN_PASSWORD", "Password")
+admin_password = ENV.fetch("DUMMY_ADMIN_PASSWORD", "Password123!")
 
 user = User.find_or_create_by!(email: admin_email) do |record|
   record.password = admin_password
@@ -70,9 +70,9 @@ previous_actor = Current.actor
 Current.actor = user
 
 begin
-  studio_root = RecordingStudio.root_recording_for(studio)
-  docs_root = RecordingStudio.root_recording_for(docs)
-  admin_recording = RecordingStudio.root_recording_for(admin_root)
+  studio_root = RecordingStudio.create_root_recording!(studio, actor: user)
+  docs_root = RecordingStudio.create_root_recording!(docs, actor: user)
+  admin_recording = RecordingStudio.create_root_recording!(admin_root, actor: user)
 
   studio_access = grant_or_find_access.call(studio_root, user, :admin)
   grant_or_find_access.call(docs_root, user, :admin)

@@ -22,7 +22,7 @@ See [docs/api_mcp_integration.md](docs/api_mcp_integration.md) for the exact API
 ## Installation
 
 ```ruby
-gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.6.0"
+gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.7.0"
 ```
 
 ```bash
@@ -30,7 +30,7 @@ bundle install
 bin/rails generate recording_studio_mcp_ui:install
 ```
 
-The engine keeps Recording Studio conventions: `RecordingStudio::Hooks`, core Default Layout via `recording_studio_layout`, and strict recordable declarations. Pins from the gemspec and Gemfiles: gemspec `recording_studio` `>= 6.5.0`, `rails` `~> 8.1.0`, `view_component` `>= 3.0`; root Recording Studio GitHub tag `v6.5.0` and FlatPack GitHub tag `v0.1.341`; dummy GitHub tag `v6.5.0` (Recording Studio), dummy GitHub tag `v2.9.1` (Admin), dummy GitHub tag `v0.27.1` (Users), dummy GitHub tag `v0.24.2` (Accessible), dummy GitHub tag `v0.22.1` (Attachable), dummy GitHub tag `v0.24.1` (MCP), dummy GitHub tag `v0.12.3` (Trashable), dummy GitHub tag `v0.21.3` (Oauth), dummy GitHub tag `v0.11.7` (Root Switchable), dummy GitHub tag `v0.17.1` (API), dummy GitHub tag `v0.6.3` (Cache), dummy GitHub tag `v0.7.4` (Logs), dummy GitHub tag `v0.7.3` (Metrics), dummy GitHub tag `v0.5.5` (Site Settings), dummy GitHub tag `v0.1.341` (FlatPack). API stays on `v0.17.1` because MCP `v0.24.1` still requires `recording_studio_api < 0.18`.
+The engine keeps Recording Studio conventions: `RecordingStudio::Hooks`, core Default Layout via `recording_studio_layout`, and strict recordable declarations. Pins from the gemspec and Gemfiles: gemspec `recording_studio` `>= 7.0, < 8.0`, `rails` `~> 8.1.0`, `view_component` `>= 3.0`; root Recording Studio GitHub tag `v7.0.0` and FlatPack GitHub tag `v0.1.376`; dummy GitHub tag `v7.0.0` (Recording Studio), dummy GitHub tag `v2.16.0` (Admin), dummy GitHub tag `v0.30.0` (Users), dummy GitHub tag `v0.44.0` (Accessible), dummy GitHub tag `v0.28.0` (Attachable), dummy GitHub tag `v0.33.3` (MCP), dummy GitHub tag `v0.17.0` (Trashable), dummy GitHub tag `v0.21.9` (Oauth), dummy GitHub tag `v0.16.0` (Root Switchable), dummy GitHub tag `v0.24.0` (API), dummy GitHub tag `v0.6.3` (Cache), dummy GitHub tag `v0.8.0` (Logs), dummy GitHub tag `v0.9.0` (Metrics), dummy GitHub tag `v0.6.0` (Site Settings), dummy GitHub tag `v5.0.0` (Moveable), dummy GitHub tag `v0.2.1` (Icons), dummy GitHub tag `v0.1.376` (FlatPack). API `v0.24.0` depends on Moveable, and Moveable depends on Icons, so the dummy pins those GitHub tags too. MCP `v0.33.3`, Oauth `v0.21.9`, and Root Switchable `v0.16.0` accept Recording Studio 7.
 
 ## Public Ruby API
 
@@ -223,7 +223,7 @@ The gem ships English only under `recording_studio.mcp_ui.editor.*` in `config/l
 
 ## Dummy app
 
-Sign in at `/users/sign_in` with `admin@admin.com` / `Password`.
+Sign in at `/users/sign_in` with `admin@admin.com` / `Password123!`.
 
 - Demo A: `/demos/:id` — read-only Project card (Accessible `:view` on the current workspace)
 - Demo B: `/demos/:id/edit` — editor that POSTs to `Demo::ProjectUpdate` (Accessible `:edit` on the current workspace). Status, Save, and Cancel are FlatPack components; the form uses `p-6`. Dummy Tailwind in `compiled_css_path` styles them in the packaged document.
