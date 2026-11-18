@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refresh host kit pins to the tags above. API `v1.15.0` needs Recording Studio `>= 7.7`, Accessible `>= 0.50`, and `config/recording_studio_api.yml`.
 - Custom endpoints whose path captures `:id` need `recordable_type`, or `scope_id: false`. Writes with `scope_id: false` also need `required_role`.
 - Run `rails generate recording_studio_user:migrations` (or the confirmable migration) before booting Users 0.36. That release adds Devise `:confirmable` to the host user class.
-- Hosts moving to Recording Studio 7.7 must run the 7.4, 7.5, and 7.7 root-index migrations (`add_recording_studio_recordings_root_type_creation_index`, `enforce_recording_studio_recording_root_invariant`, `replace_recording_studio_recordings_root_index`). Recording Studio 7.5 and 7.7, and API 1.4 and 1.7, require them. Only this repo's dummy app leaves them out. The dummy already has the core 7 `recording_studio_events.root_recording_id` migration.
+- Hosts moving to Recording Studio 7.7 must run the 7.4, 7.5, and 7.7 root-index migrations. Only this repo's dummy app leaves them out. The dummy already has the core 7 `recording_studio_events.root_recording_id` migration.
 - Trashable 1.x and Moveable 6 dropped `BaseService` and configuration hooks. This engine does not call those.
 
 ## [0.7.0] - 2026-11-15
