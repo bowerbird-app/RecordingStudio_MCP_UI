@@ -22,6 +22,7 @@ RecordingStudioApi.register_endpoint(
   "projects.show",
   http_verb: :get,
   path: "projects/:id",
+  scope_id: false,
   ui: "projects.preview",
   input_contract: {
     fields: {
@@ -35,6 +36,8 @@ RecordingStudioApi.register_endpoint(
   "projects.update",
   http_verb: :patch,
   path: "projects/:id",
+  scope_id: false,
+  required_role: :view,
   ui: "projects.editor",
   input_contract: {
     fields: {

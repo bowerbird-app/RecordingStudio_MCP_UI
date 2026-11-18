@@ -1,0 +1,3 @@
+# Minimal API config so recording_studio_api 1.12+ can boot.
+# Hosts fill named APIs here; an empty shared hash is valid.
+shared: {}
