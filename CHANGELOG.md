@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-18
+
+### Changed
+- Root and dummy GitHub tags pin Recording Studio `v7.7.1` and FlatPack `v0.1.378`. The gemspec constraint stays `recording_studio` `>= 7.0, < 8.0`.
+- Dummy family tags: Accessible `v0.54.0`, Admin `v2.19.0`, API `v1.15.0`, Attachable `v0.32.1`, Moveable `v6.0.1`, Icons `v0.4.1`, Trashable `v1.2.0`, MCP `v0.37.1`, Oauth `v0.25.0`, Root Switchable `v0.16.0`, Logs `v0.8.1`, Users `v0.36.0`, Site Settings `v0.6.0`, Cache `v0.7.0`, Metrics `v0.9.1`.
+- Dummy `config/recording_studio_api.yml` is a minimal `shared: {}` file so API 1.12+ can boot.
+- Dummy copies the Users confirmable migration. Users 0.36 adds Devise `:confirmable` at boot, so `users` needs `confirmed_at` and the related columns.
+- Dummy project endpoints pass `scope_id: false`. `projects.update` sets `required_role: :view` so API 1.15's recording guard lets the demo handler keep enforcing edit.
+- Dummy confirms users it creates. Users 0.36 adds Devise `:confirmable`, and this demo does not send confirmation mail.
+
+### Upgrade notes
+- Refresh host kit pins to the tags above. API `v1.15.0` needs Recording Studio `>= 7.7`, Accessible `>= 0.50`, and `config/recording_studio_api.yml`.
+- Custom endpoints whose path captures `:id` need `recordable_type`, or `scope_id: false`. Writes with `scope_id: false` also need `required_role`.
+- Run `rails generate recording_studio_user:migrations` (or the confirmable migration) before booting Users 0.36. That release adds Devise `:confirmable` to the host user class.
+- Hosts moving to Recording Studio 7.7 must run the 7.4, 7.5, and 7.7 root-index migrations. Only this repo's dummy app leaves them out. The dummy already has the core 7 `recording_studio_events.root_recording_id` migration.
+- Trashable 1.x and Moveable 6 dropped `BaseService` and configuration hooks. This engine does not call those.
+
 ## [0.7.0] - 2026-11-15
 
 ### Changed
@@ -151,7 +168,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Ruby `action_executor`, `visibility_checker`, and `RecordingStudio::MCP_UI.execute`. Widget writes are ordinary MCP tool calls.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.4.2...v0.5.0
