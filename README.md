@@ -22,7 +22,7 @@ See [docs/api_mcp_integration.md](docs/api_mcp_integration.md) for the exact API
 ## Installation
 
 ```ruby
-gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.7.1"
+gem "recording_studio_mcp_ui", github: "bowerbird-app/RecordingStudio_MCP_UI", tag: "v0.8.0"
 ```
 
 ```bash
@@ -94,8 +94,19 @@ Packaged documents define `window.mcpUI`:
 - `mcpUI.markDirty()` / `mcpUI.isDirty()`
 - `mcpUI.onData(listener)` — listener receives `(data, { dirty, dataChanged })`. `dataChanged` is true for `applyData`, `reset`, start, and accepted tool results. `markDirty` only flips `dirty`.
 - `mcpUI.execute(alias, payload)` — looks up the real tool name and calls `app.callServerTool`; rejects unknown aliases without sending; rejects with `No action transport` when no host is connected
+- `mcpUI.openLink(url)` calls `app.openLink({ url })`, the MCP Apps `ui/open-link` request. Pass an absolute `http:` or `https:` URL. The call sends the parsed URL. `javascript:`, `data:`, relative URLs, other schemes, and strings with surrounding whitespace or control characters reject with `URL must be an absolute http or https URL` before the request. When no host is connected, the call rejects with `No link transport`. When the host returns `isError`, the call rejects with `Host could not open the link`. The host may ask the user to confirm.
 
-Host communication uses the official MCP Apps View SDK (`App` + `PostMessageTransport` from `@modelcontextprotocol/ext-apps`). The packaged document vendors that SDK, registers `ontoolresult` before `app.connect()`, and calls `app.callServerTool()` / `app.updateModelContext()`. The tool-result notification that opened the widget, and the result of `mcpUI.execute`, share one unwrap: use `structuredContent` when present, then `data` when that object has a `data` object. That is the widget record. A successful write may also include `contextUpdate` (camelCase) for `app.updateModelContext`. Boot writes widget data into every `[data-mcp-text]` node after start and on each `onData`. The editor writes `[data-mcp-field]` values only when `dataChanged` is true, so typing then blurring Save does not restore the opening record. `execute` fills blank `id` and `revision` from current widget data so hidden fields that have not bound yet do not wipe the record. There is no per-client protocol, sniffing, or host-specific metadata. Clients that cannot load the UI keep the structured tool result.
+Host communication uses the official MCP Apps View SDK (`App` + `PostMessageTransport` from `@modelcontextprotocol/ext-apps`). The packaged document vendors that SDK, registers `ontoolresult` before `app.connect()`, and calls `app.callServerTool()`, `app.updateModelContext()`, and `app.openLink({ url })`. The tool-result notification that opened the widget, and the result of `mcpUI.execute`, share one unwrap: use `structuredContent` when present, then `data` when that object has a `data` object. That is the widget record. A successful write may also include `contextUpdate` (camelCase) for `app.updateModelContext`. Boot writes widget data into every `[data-mcp-text]` node after start and on each `onData`. On those same updates, `data-mcp-link-field` copies a string field into `data-mcp-link`. The editor writes `[data-mcp-field]` values only when `dataChanged` is true, so typing then blurring Save does not restore the opening record. `execute` fills blank `id` and `revision` from current widget data so hidden fields that have not bound yet do not wipe the record. There is no per-client protocol, sniffing, or host-specific metadata. Clients that cannot load the UI keep the structured tool result.
+
+### Open a link
+
+A sandboxed widget cannot rely on `<a href>`. Mark the control and let boot forward the click, or call `mcpUI.openLink` yourself.
+
+- `data-mcp-link="https://example.com/demos/1"` holds the URL.
+- `<a data-mcp-link href="https://example.com/demos/1">` uses `href` when `data-mcp-link` is present and empty.
+- `data-mcp-link-field="url"` names a string field on the current widget data. Each data update copies that string into `data-mcp-link`. It does not write `href`.
+
+A click on `[data-mcp-link]` calls `preventDefault`, then `mcpUI.openLink`. A non-empty `data-mcp-link` wins over `href`. Put the record URL in the tool result. Escape other tool-result text in the component, and do not build HTML from the URL.
 
 ## How Flatpack CSS and Stimulus get into widget HTML
 
@@ -218,14 +229,14 @@ The gem ships English only under `recording_studio.mcp_ui.editor.*` in `config/l
 - Validation and authorization failures return structured errors. Successful saves replace widget data.
 - If the API supplies a revision, a stale save returns a conflict instead of overwriting.
 - Packaged HTML strips keys matching token/secret/password/authorization/api_key/credential.
-- CSP defaults to no network, no frames, inline script/style only.
-- Treat tool-result data as untrusted; escape it in components.
+- CSP defaults to no network, no frames, inline script/style only. Opening a link does not change CSP. The host opens it.
+- Treat tool-result data as untrusted. Escape it in components. `mcpUI.openLink` allows only absolute `http:` and `https:` URLs.
 
 ## Dummy app
 
 Sign in at `/users/sign_in` with `admin@admin.com` / `Password123!`.
 
-- Demo A: `/demos/:id` — read-only Project card (Accessible `:view` on the current workspace)
+- Demo A: `/demos/:id` — read-only Project card (Accessible `:view` on the current workspace). Open project reads `url` from the tool result (`https://example.com/demos/<id>`) and asks the host to open it.
 - Demo B: `/demos/:id/edit` — editor that POSTs to `Demo::ProjectUpdate` (Accessible `:edit` on the current workspace). Status, Save, and Cancel are FlatPack components; the form uses `p-6`. Dummy Tailwind in `compiled_css_path` styles them in the packaged document.
 - Packaged document: `/demos/:id/document?widget=projects.preview`
 

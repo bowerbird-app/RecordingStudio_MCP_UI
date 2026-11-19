@@ -38,6 +38,19 @@ class PackagerTest < Minitest::Test
     assert_equal "text/html;profile=mcp-app", document.mime_type
     assert_includes document.html, "mcp-ui-root"
     assert_includes document.html, "Content-Security-Policy"
+    policy = [
+      "default-src 'none'",
+      "script-src 'unsafe-inline'",
+      "style-src 'unsafe-inline'",
+      "img-src data: https:",
+      "font-src data:",
+      "connect-src 'none'",
+      "object-src 'none'",
+      "base-uri 'none'",
+      "frame-src 'none'",
+      "form-action 'none'"
+    ].join("; ")
+    assert_includes document.html, %(content="#{policy}")
     assert_includes document.html, "mcpUI"
     assert_includes document.html, "McpApps"
     refute_includes document.html, "secret-token"

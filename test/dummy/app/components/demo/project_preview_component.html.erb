@@ -13,4 +13,13 @@
       <p data-mcp-text="status"><%= ERB::Util.html_escape(status.to_s) %></p>
     </div>
   <% end %>
+  <% card.footer do %>
+    <%= render FlatPack::Button::Component.new(
+      text: "Open project",
+      style: :secondary,
+      size: :md,
+      type: "button",
+      data: { mcp_link_field: "url" }
+    ) %>
+  <% end %>
 <% end %>

@@ -8,7 +8,8 @@ module Demo
         "title" => project.title,
         "description" => project.description,
         "status" => project.status,
-        "revision" => project.revision
+        "revision" => project.revision,
+        "url" => "https://example.com/demos/#{project.id}"
       }
     end
   end

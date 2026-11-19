@@ -10,7 +10,7 @@ function initializeResult(params) {
   };
 }
 
-function attachMockHost(windowLike, { onToolCall } = {}) {
+function attachMockHost(windowLike, { onToolCall, onOpenLink } = {}) {
   const listeners = [];
   const parent = {
     postMessage(message) {
@@ -30,6 +30,9 @@ function attachMockHost(windowLike, { onToolCall } = {}) {
           };
         } else if (message.method === "ui/update-model-context") {
           reply = { jsonrpc: "2.0", id: message.id, result: {} };
+        } else if (message.method === "ui/open-link") {
+          const opened = onOpenLink ? onOpenLink(message.params) : {};
+          reply = { jsonrpc: "2.0", id: message.id, result: opened || {} };
         }
         if (!reply) return;
         listeners.forEach((listener) => listener({ data: reply, source: parent }));
