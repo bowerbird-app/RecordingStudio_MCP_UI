@@ -121,7 +121,7 @@ Keep structured tool results. If the client cannot load `ui://` resources, retur
 
 ### 5. Official MCP Apps SDK
 
-Hosts and views use the official MCP Apps SDK (`@modelcontextprotocol/ext-apps`). This gem vendors the published View SDK and uses `App.connect` / `App.callServerTool` / `App.updateModelContext` only. Do not add client sniffing, per-host branches, host-specific `_meta` keys, or protocol workarounds. If a client cannot render `text/html;profile=mcp-app`, return the structured tool result.
+Hosts and views use the official MCP Apps SDK (`@modelcontextprotocol/ext-apps`). This gem vendors the published View SDK and uses `App.connect`, `App.callServerTool`, `App.updateModelContext`, and `App.openLink`. `App.openLink({ url })` is the `ui/open-link` request. Widget code calls `mcpUI.openLink`, which allows only absolute `http:` and `https:` URLs. Do not add client sniffing, per-host branches, host-specific `_meta` keys, or protocol workarounds. If a client cannot render `text/html;profile=mcp-app`, return the structured tool result.
 
 ## Circular dependencies
 

@@ -26,6 +26,38 @@ class McpUiDemoTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Beach House"
     assert_includes response.body, "A coastal recording project."
     assert_includes response.body, "active"
+    assert_includes response.body, "Open project"
+    assert_includes response.body, 'data-mcp-link-field="url"'
+    assert_includes response.body, "fp-button"
+  end
+
+  test "packaged preview keeps the closed CSP and the open-link control" do
+    get document_demo_path(@project, widget: "projects.preview")
+
+    assert_response :success
+    policy = [
+      "default-src 'none'",
+      "script-src 'unsafe-inline'",
+      "style-src 'unsafe-inline'",
+      "img-src data: https:",
+      "font-src data:",
+      "connect-src 'none'",
+      "object-src 'none'",
+      "base-uri 'none'",
+      "frame-src 'none'",
+      "form-action 'none'"
+    ].join("; ")
+    assert_includes response.body, %(content="#{policy}")
+    assert_includes response.body, 'data-mcp-link-field="url"'
+    assert_includes response.body, "Open project"
+    assert_includes response.body, "fp-button"
+    assert_includes response.body, "No link transport"
+    assert_includes response.body, "[data-mcp-link]"
+    config = JSON.parse(response.body[%r{id="mcp-ui-config">(?<json>.*?)</script>}m, :json])
+    assert_equal "https://example.com/demos/#{@project.id}", config.dig("data", "url")
+    refute_includes response.body, %(href="https://example.com/demos/#{@project.id}")
+    refute_includes response.body, "connect-src 'self'"
+    refute_includes response.body, "frame-src 'self'"
   end
 
   test "editor widget renders fields and packaged document includes runtime" do

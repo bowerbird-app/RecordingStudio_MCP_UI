@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `mcpUI.openLink(url)` asks the host to open an absolute `http:` or `https:` URL with `app.openLink({ url })` (`ui/open-link`). The host may ask the user to confirm. `javascript:`, `data:`, relative URLs, and other schemes are rejected before that request. With no host connected, the call rejects with `No link transport`.
+- A click on `[data-mcp-link]` calls `mcpUI.openLink`. Put the URL in `data-mcp-link`, or leave that attribute empty on an `<a>` to use `href`. `data-mcp-link-field` copies a string field from widget data into `data-mcp-link` on each data update. The dummy Project preview button uses `data-mcp-link-field="url"`.
+
+### Upgrade notes
+- No register or package API change, and CSP is unchanged. To link out of a widget, add `data-mcp-link` or `data-mcp-link-field` and pass only absolute `http:` or `https:` URLs to `mcpUI.openLink`.
+
 ## [0.7.1] - 2026-11-18
 
 ### Changed

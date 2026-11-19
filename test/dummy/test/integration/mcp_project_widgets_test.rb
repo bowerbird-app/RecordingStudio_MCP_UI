@@ -100,6 +100,7 @@ class McpProjectWidgetsTest < ActionDispatch::IntegrationTest
     assert_equal "A project the widget can edit.", body["description"]
     assert_equal "active", body["status"]
     assert_equal @project.revision, body["revision"]
+    assert_equal "https://example.com/demos/#{@project.id}", body["url"]
   end
 
   test "calling the real update tool persists the project" do
