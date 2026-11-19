@@ -28,9 +28,13 @@ function fakeDocument(config, extras) {
     querySelectorAll(selector) {
       if (selector === "[data-mcp-text]") return extras.textNodes || [];
       if (selector === "[data-controller~='mcp-editor']") return extras.editorRoots || [];
+      if (selector === "[data-mcp-link-field]") return extras.linkFields || [];
       return [];
     },
-    addEventListener() {},
+    addEventListener(type, fn) {
+      if (!extras.listeners) return;
+      (extras.listeners[type] = extras.listeners[type] || []).push(fn);
+    },
     createElement() { return { style: {}, textContent: "" }; },
     head: { appendChild() {} }
   };
@@ -861,4 +865,222 @@ test("editor save status falls back to english when i18n blob is absent", async 
   await new Promise((resolve) => setTimeout(resolve, 0));
 
   assert.equal(statusNode.textContent, "Save failed");
+});
+
+function linkControl(initial) {
+  const attrs = Object.assign({}, initial.attrs || {});
+  const node = {
+    tagName: initial.tagName || "BUTTON",
+    getAttribute(name) {
+      return Object.prototype.hasOwnProperty.call(attrs, name) ? attrs[name] : null;
+    },
+    setAttribute(name, value) {
+      attrs[name] = String(value);
+    },
+    removeAttribute(name) {
+      delete attrs[name];
+    },
+    closest(selector) {
+      if (selector === "[data-mcp-link]" && Object.prototype.hasOwnProperty.call(attrs, "data-mcp-link")) {
+        return node;
+      }
+      return null;
+    }
+  };
+  return node;
+}
+
+function dispatchClick(listeners, target) {
+  const event = {
+    target,
+    prevented: false,
+    preventDefault() { event.prevented = true; }
+  };
+  (listeners.click || []).forEach((fn) => fn(event));
+  return event;
+}
+
+function flush() {
+  return new Promise((resolve) => setTimeout(resolve, 0))
+    .then(() => new Promise((resolve) => setTimeout(resolve, 0)));
+}
+
+test("openLink sends http and https URLs through ui/open-link", async () => {
+  const opened = [];
+  const windowLike = windowStub({ widgetId: "projects.preview", data: {} });
+  attachMockHost(windowLike, {
+    onOpenLink(params) {
+      opened.push(params);
+      return {};
+    }
+  });
+  const ctx = loadEngine(windowLike, { boot: false });
+  await ctx.mcpUI.start();
+
+  await ctx.mcpUI.openLink("https://example.com/projects/1");
+  await ctx.mcpUI.openLink("http://example.com/a");
+  await ctx.mcpUI.openLink("HTTPS://Example.COM/a");
+
+  assert.deepEqual(opened.map((params) => params.url), [
+    "https://example.com/projects/1",
+    "http://example.com/a",
+    "https://example.com/a"
+  ]);
+});
+
+test("openLink rejects unsafe URLs without sending ui/open-link", async () => {
+  const opened = [];
+  const windowLike = windowStub({ widgetId: "projects.preview", data: {} });
+  attachMockHost(windowLike, {
+    onOpenLink(params) {
+      opened.push(params);
+      return {};
+    }
+  });
+  const ctx = loadEngine(windowLike, { boot: false });
+  await ctx.mcpUI.start();
+
+  const rejected = [
+    "javascript:alert(1)",
+    "JAVASCRIPT:alert(1)",
+    "data:text/html,hi",
+    "/projects/1",
+    "projects/1",
+    "//example.com/projects/1",
+    "ftp://example.com/a",
+    "mailto:person@example.com",
+    "not a url",
+    "http://",
+    "https:example.com",
+    "",
+    " https://example.com",
+    "https://example.com ",
+    "https://example.com\n",
+    null,
+    1
+  ];
+
+  for (const value of rejected) {
+    await assert.rejects(() => ctx.mcpUI.openLink(value), (error) => {
+      assert.equal(error.message, "URL must be an absolute http or https URL");
+      return true;
+    });
+  }
+  assert.equal(opened.length, 0);
+});
+
+test("openLink rejects when no host is connected", async () => {
+  const windowLike = windowStub({ widgetId: "projects.preview", data: {} });
+  const ctx = loadEngine(windowLike, { sdk: false, boot: false });
+  await ctx.mcpUI.start();
+  await assert.rejects(() => ctx.mcpUI.openLink("https://example.com"), (error) => {
+    assert.equal(error.message, "No link transport");
+    return true;
+  });
+});
+
+test("openLink rejects when the host reports isError", async () => {
+  const windowLike = windowStub({ widgetId: "projects.preview", data: {} });
+  attachMockHost(windowLike, {
+    onOpenLink() { return { isError: true }; }
+  });
+  const ctx = loadEngine(windowLike, { boot: false });
+  await ctx.mcpUI.start();
+  await assert.rejects(() => ctx.mcpUI.openLink("https://example.com"), (error) => {
+    assert.equal(error.message, "Host could not open the link");
+    return true;
+  });
+});
+
+test("a click on data-mcp-link calls openLink with that URL", async () => {
+  const opened = [];
+  const listeners = {};
+  const node = linkControl({
+    tagName: "BUTTON",
+    attrs: { "data-mcp-link": "https://example.com/projects/1" }
+  });
+  const child = { closest: (selector) => node.closest(selector) };
+  const windowLike = windowStub(
+    { widgetId: "projects.preview", data: {} },
+    { listeners }
+  );
+  attachMockHost(windowLike, {
+    onOpenLink(params) {
+      opened.push(params);
+      return {};
+    }
+  });
+  loadEngine(windowLike, { boot: true });
+  await flush();
+
+  const event = dispatchClick(listeners, child);
+  await flush();
+
+  assert.equal(event.prevented, true);
+  assert.deepEqual(opened.map((params) => params.url), ["https://example.com/projects/1"]);
+});
+
+test("an empty data-mcp-link on an anchor uses href", async () => {
+  const opened = [];
+  const listeners = {};
+  const node = linkControl({
+    tagName: "A",
+    attrs: { "data-mcp-link": "", href: "https://example.com/from-href" }
+  });
+  const windowLike = windowStub(
+    { widgetId: "projects.preview", data: {} },
+    { listeners }
+  );
+  attachMockHost(windowLike, {
+    onOpenLink(params) {
+      opened.push(params);
+      return {};
+    }
+  });
+  loadEngine(windowLike, { boot: true });
+  await flush();
+
+  const event = dispatchClick(listeners, node);
+  await flush();
+
+  assert.equal(event.prevented, true);
+  assert.deepEqual(opened.map((params) => params.url), ["https://example.com/from-href"]);
+});
+
+test("a data-bound link updates after applyData", async () => {
+  const opened = [];
+  const listeners = {};
+  const node = linkControl({
+    tagName: "BUTTON",
+    attrs: { "data-mcp-link-field": "url" }
+  });
+  const windowLike = windowStub(
+    { widgetId: "projects.preview", data: { url: "https://example.com/first" } },
+    { listeners, linkFields: [node] }
+  );
+  attachMockHost(windowLike, {
+    onOpenLink(params) {
+      opened.push(params);
+      return {};
+    }
+  });
+  const ctx = loadEngine(windowLike, { boot: true });
+  await flush();
+
+  assert.equal(node.getAttribute("data-mcp-link"), "https://example.com/first");
+  ctx.mcpUI.applyData({ url: "https://example.com/next" });
+  assert.equal(node.getAttribute("data-mcp-link"), "https://example.com/next");
+
+  dispatchClick(listeners, node);
+  await flush();
+  assert.deepEqual(opened.map((params) => params.url), ["https://example.com/next"]);
+
+  ctx.mcpUI.applyData({ url: "javascript:alert(1)" });
+  assert.equal(node.getAttribute("data-mcp-link"), "javascript:alert(1)");
+  dispatchClick(listeners, node);
+  await flush();
+  assert.equal(opened.length, 1);
+
+  ctx.mcpUI.applyData({ title: "Gone" });
+  assert.equal(node.getAttribute("data-mcp-link"), null);
 });

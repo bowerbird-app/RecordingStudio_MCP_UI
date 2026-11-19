@@ -125,6 +125,21 @@
     });
   }
 
+  function absoluteHttpUrl(value) {
+    if (typeof value !== "string" || value !== value.trim()) return null;
+    if (/[\u0000-\u001F\u007F]/.test(value)) return null;
+    if (!/^https?:\/\//i.test(value)) return null;
+    var url;
+    try {
+      url = new URL(value);
+    } catch (error) {
+      return null;
+    }
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    if (!url.hostname) return null;
+    return url.href;
+  }
+
   var mcpUI = {
     config: function () { return config; },
     data: function () { return data; },
@@ -168,6 +183,24 @@
         }
         applyAcceptedToolResult(result);
         return payloadResult;
+      });
+    },
+    openLink: function (url) {
+      var href = absoluteHttpUrl(url);
+      if (!href) {
+        return Promise.reject(new Error("URL must be an absolute http or https URL"));
+      }
+      if (!app || typeof app.openLink !== "function") {
+        return Promise.reject(new Error("No link transport"));
+      }
+
+      return Promise.resolve().then(function () {
+        return app.openLink({ url: href });
+      }).then(function (result) {
+        if (result && result.isError === true) {
+          return Promise.reject(new Error("Host could not open the link"));
+        }
+        return result;
       });
     },
     start: function () {
