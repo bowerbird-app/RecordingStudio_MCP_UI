@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-19
+
 ### Added
 - `mcpUI.openLink(url)` asks the host to open an absolute `http:` or `https:` URL with `app.openLink({ url })` (`ui/open-link`). The host may ask the user to confirm. `javascript:`, `data:`, relative URLs, and other schemes are rejected before that request. With no host connected, the call rejects with `No link transport`.
 - A click on `[data-mcp-link]` calls `mcpUI.openLink`. Put the URL in `data-mcp-link`, or leave that attribute empty on an `<a>` to use `href`. `data-mcp-link-field` copies a string field from widget data into `data-mcp-link` on each data update. The dummy Project preview button uses `data-mcp-link-field="url"`.
@@ -175,7 +177,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Ruby `action_executor`, `visibility_checker`, and `RecordingStudio::MCP_UI.execute`. Widget writes are ordinary MCP tool calls.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/bowerbird-app/RecordingStudio_MCP_UI/compare/v0.5.0...v0.6.0

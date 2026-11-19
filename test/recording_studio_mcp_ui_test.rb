@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioMcpUiTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.7.1", RecordingStudio::MCP_UI::VERSION
+    assert_equal "0.8.0", RecordingStudio::MCP_UI::VERSION
   end
 
   def test_engine_exists
